@@ -1,0 +1,102 @@
+- id: '1730621215142'
+  alias: Hygrometer Alert
+  description: ''
+  triggers:
+  - trigger: numeric_state
+    entity_id:
+    - sensor.sensortest_3bd8_temperature
+    above: 85
+  - trigger: numeric_state
+    entity_id:
+    - sensor.sensortest_3bd8_temperature
+    below: 65
+  conditions: []
+  actions:
+  - device_id: 2edd307c906117471b35b8951c10e6a1
+    domain: mobile_app
+    type: notify
+    message: The temp is too high!!
+    title: Temp is too high!
+  mode: single
+- id: '1730622599095'
+  alias: Leak Alert
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.andy_flood_sensor_moisture
+    from: 'off'
+    to: 'on'
+  conditions: []
+  actions:
+  - action: notify.notify
+    metadata: {}
+    data:
+      message: Flood Detector is WET :(
+  mode: single
+- id: '1731112607857'
+  alias: Tsst pumps off
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - switch.120_gallon_socket_2
+    for:
+      hours: 0
+      minutes: 1
+      seconds: 0
+    from:
+    to: 'off'
+  conditions: []
+  actions:
+  - parallel:
+    - action: switch.turn_off
+      metadata: {}
+      data: {}
+      target:
+        entity_id:
+        - switch.120_gallon_socket_2
+        - switch.120_gallon_socket_3
+        - switch.120_gallon_socket_4
+    enabled: false
+  - delay:
+      hours: 0
+      minutes: 5
+      seconds: 0
+      milliseconds: 0
+    enabled: false
+  - if:
+    - condition: state
+      state: 'off'
+      entity_id: switch.120_gallon_socket_2
+    then:
+    - action: notify.notify
+      data:
+        message: "The 120 gallon is off. Please fix,\U0001F433,"
+    enabled: false
+  - action: notify.mobile_app_gillians_ipad
+    metadata: {}
+    data:
+      message: The pump is off!!!!!
+  mode: single
+- id: '1731283746026'
+  alias: New automation
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - schedule.fish_lights_on
+    from: 'off'
+    to: 'on'
+    attribute: next_event
+  conditions: []
+  actions:
+  - action: switch.turn_off
+    metadata: {}
+    data: {}
+  - action: persistent_notification.create
+    metadata: {}
+    data:
+      message: 'Lights are on! '
+      title: 'Hi there '
+  mode: single

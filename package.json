@@ -1,0 +1,123 @@
+{
+    "name": "@gbt/home-assistant-config",
+    "version": "0.0.0",
+    "private": false,
+    "description": "Home assistant config",
+    "scripts": {
+        "\n========== DEVELOPMENT >> ==========": "",
+        "dev": "pnpm build:ts --watch",
+        "dev:ts": "pnpm build:ts --watch",
+        "\n========== BUILD >> ==========": "",
+        "build": "pnpm build:ts && pnpm build:vite",
+        "build:ts": "pnpm exec tsc --build",
+        "\n========== CLEAN >> ==========": "",
+        "clean": "pnpm clean:ts && pnpm clean:build",
+        "clean:ts": "pnpm exec tsc --build --clean",
+        "clean:build": "pnpm exec rm -rf ./dist ./types",
+        "\n========== TEST >> ==========": "",
+        "test": "echo '\"\\n===\\n>> Unit Test:: no test specified!'",
+        "\n========== COMMIT >> ==========": "",
+        "commit": "pnpm build:ts && pnpm commit:msg",
+        "commit:msg": "pnpm exec git commit -m ",
+        "prepare:all": "pnpm run fix && pnpm run check",
+        "\n========== LIFECYCLE >> ==========": "",
+        "prepare": "husky",
+        "pre:commit": "echo '\n===\n>> Todo:: enable `pnpm exec lint-staged --debug`'",
+        "postinstall": "echo '\n=== >> Success:: Install complete.'",
+        "\n========== PUBLISH >> ==========": "",
+        "release": "pnpm run prerelease && pnpm changeset",
+        "prerelease": "pnpm run build && pnpm run fix && pnpm run check && pnpm test",
+        "\n========== CODE STYLE >> ==========": "",
+        "prettier": "cross-var prettier ./.husky/* --ignore-path ./.gitignore --no-error-on-unmatched-pattern {$npm_package_config_prettier_path}.{$npm_package_config_prettier_extensions} --config $(git rev-parse --show-toplevel)/$npm_package_config_prettier_config",
+        "lint": "cross-var eslint -c $(git rev-parse --show-toplevel)/$npm_package_config_eslint_config",
+        "lint:md": "pnpm exec markdownlint-cli2 '{./*,./**/*}.md' '#**/node_modules/**' '#packages/test-package/**/*' ",
+        "\n========== CHECK >> ==========": "",
+        "check": "pnpm check:self",
+        "check:md": "pnpm run lint:md",
+        "check:self": "pnpm lint",
+        "\n========== FIX >> ==========": "",
+        "fix": "pnpm fix:self",
+        "fix:md": "pnpm run lint:md --fix",
+        "fix:self": "pnpm prettier --write && pnpm lint --fix",
+        "\n========== UNINSTALL >> ==========": "",
+        "uninstall": "pnpm run clean && pnpm uninstall:list && pnpm run uninstall:rm && pnpm run uninstall:lock",
+        "uninstall:list": "find . -name 'node_modules' -type d -prune",
+        "uninstall:rm": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +",
+        "uninstall:lock": "rm -f pnpm-lock.yaml && rm -f packages/**/pnpm-lock.yaml"
+    },
+    "bin": {
+        "example": ""
+    },
+    "exports": {
+        ".": {
+            "default": "./dist/index.js",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs",
+            "types": "./dist/index.d.ts"
+        }
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "module": "./dist/index.mjs",
+    "commonjs": "./dist/index.cjs",
+    "keywords": [
+        "boilerplate"
+    ],
+    "files": [
+        "types",
+        "dist",
+        "CHANGELOG.md"
+    ],
+    "devDependencies": {
+        "@changesets/cli": "^2.27.1",
+        "@commitlint/cli": "^19.3.0",
+        "@commitlint/config-conventional": "^19.2.2",
+        "@commitlint/cz-commitlint": "^19.2.0",
+        "@commitlint/types": "^19.0.3",
+        "@snailicide/build-config": "^1.3.0",
+        "@types/node": "^22.7.3",
+        "@types/shelljs": "^0.8.15",
+        "commitizen": "^4.3.0",
+        "cross-var": "^1.1.0",
+        "eslint": "^9.11.1",
+        "husky": "^9.0.11",
+        "lint-staged": "^15.2.2",
+        "prettier": "^3.3.3",
+        "prettier-plugin-jsdoc": "^1.3.0",
+        "prettier-plugin-sh": "^0.14.0",
+        "rollup": "^4.22.5",
+        "shelljs": "^0.8.5",
+        "typescript": "^5.4.5",
+        "vitest": "^2.1.1"
+    },
+    "engines": {
+        "node": ">=18.7.0",
+        "pnpm": ">=9.0.0"
+    },
+    "license": "MIT",
+    "type": "module",
+    "author": {
+        "name": "Gillian Tunney",
+        "email": "gbtunney@mac.com"
+    },
+    "homepage": "https://github.com/gbtunney/gbt-boilerplate",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/gbtunney/gbt-boilerplate"
+    },
+    "config": {
+        "prettier": {
+            "extensions": "ts,js,cjs,mjs,cts,mts,sh,html,json,yaml,yml,graphql,md",
+            "path": "*,**/*",
+            "config": "prettier.config.js"
+        },
+        "eslint": {
+            "extensions": "ts,js,cjs,mjs",
+            "path": "*",
+            "config": "eslint.config.js"
+        },
+        "commitizen": {
+            "path": "@commitlint/cz-commitlint"
+        }
+    }
+}
