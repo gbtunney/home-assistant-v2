@@ -1,30 +1,10 @@
-- id: '1730621215142'
-  alias: Hygrometer Alert
-  description: ''
-  triggers:
-  - trigger: numeric_state
-    entity_id:
-    - sensor.sensortest_3bd8_temperature
-    above: 85
-  - trigger: numeric_state
-    entity_id:
-    - sensor.sensortest_3bd8_temperature
-    below: 65
-  conditions: []
-  actions:
-  - device_id: 2edd307c906117471b35b8951c10e6a1
-    domain: mobile_app
-    type: notify
-    message: The temp is too high!!
-    title: Temp is too high!
-  mode: single
 - id: '1730622599095'
-  alias: Leak Alert
+  alias: Leak Alert (Unlocated)
   description: ''
   triggers:
   - trigger: state
     entity_id:
-    - binary_sensor.andy_flood_sensor_moisture
+    - binary_sensor.leak_detector_moisture
     from: 'off'
     to: 'on'
   conditions: []
@@ -86,17 +66,181 @@
   - trigger: state
     entity_id:
     - schedule.fish_lights_on
-    from: 'off'
-    to: 'on'
     attribute: next_event
+    enabled: true
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.to_state.state in [''on'', ''off''] }}'
+  actions:
+  - action: switch.turn_{{ trigger.to_state.state }}
+    metadata: {}
+    data: {}
+    target:
+      entity_id:
+      - switch.20_gallon_long_socket_1
+      - switch.10g_m_guppies_socket_1
+      - switch.120_gallon_socket_1
+  mode: single
+- id: '1731300280308'
+  alias: 'Co '
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - schedule.fish_co2_schedule
+    attribute: next_event
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.to_state.state in [''on'', ''off''] }}'
+  actions:
+  - action: switch.turn_{{ trigger.to_state.state }}
+    metadata: {}
+    data: {}
+    target:
+      entity_id:
+      - switch.20_gallon_long_socket_3
+  mode: single
+- id: '1731300678056'
+  alias: 'Reptile Lights Scheduled: ON'
+  description: 'Lights turn on 2 hrs after sunrise '
+  triggers:
+  - trigger: sun
+    event: sunrise
+    offset: 02:00:00
+  conditions: []
+  actions:
+  - action: switch.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id:
+      - switch.dorn_and_marceline_socket_1
+      - switch.seafoam_styx_socket_1
+  mode: single
+- id: '1731300893649'
+  alias: Lizard Lights Scheduled Off
+  description: Lights turn off 45 min after sunset
+  triggers:
+  - trigger: sun
+    event: sunset
+    offset: 00:45:00
   conditions: []
   actions:
   - action: switch.turn_off
     metadata: {}
     data: {}
-  - action: persistent_notification.create
+    target:
+      entity_id:
+      - switch.dorn_and_marceline_socket_1
+      - switch.seafoam_styx_socket_1
+  mode: single
+- id: '1731385051359'
+  alias: Test Temp Automation
+  description: ''
+  triggers:
+  - trigger: numeric_state
+    entity_id:
+    - sensor.hygrometer_temperature
+    - input_number.dummy_thermometer
+    below: 65
+    enabled: true
+  - trigger: numeric_state
+    entity_id:
+    - sensor.hygrometer_temperature
+    - input_number.dummy_thermometer
+    above: 85
+    enabled: true
+  conditions: []
+  actions:
+  - action: script.sms_notification
     metadata: {}
     data:
-      message: 'Lights are on! '
-      title: 'Hi there '
+      entity_targets:
+      - 7188138156@mms.att.net
+      - gbtunney@mac.com
+      message: '{% set entity = trigger.entity_id  %} ALERT! {% if trigger.above ==
+        none %}Low {% else %}High {% endif %} temperature! Device: {{ trigger.to_state.name
+        }} is registering temp of {{ trigger.to_state.state }}F in Area: {{ area_name(trigger.entity_id)
+        }} :: Please fix!!
+
+        '
+    enabled: false
+  - action: script.notify_dispatcher
+    metadata: {}
+    data:
+      entity_targets:
+      - 7188138156@mms.att.net
+      - gbtunney@mac.com
+      message: '{% set entity = trigger.entity_id  %} ALERT! {% if trigger.above ==
+        none %}Low {% else %}High {% endif %} temperature! Device: {{ trigger.to_state.name
+        }} is registering temp of {{ trigger.to_state.state }}F in Area: {{ area_name(trigger.entity_id)
+        }} :: Please fix!!
+
+        '
+  mode: single
+- id: '1731390977361'
+  alias: 'Rest pumps 45min'
+  description: ''
+  triggers:
+  - trigger: tag
+    tag_id: ''
+  conditions: []
+  actions:
+  - action: switch.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id:
+      - switch.20_gallon_long_socket_4
+      - switch.20_gallon_long_socket_2
+      - switch.20_gallon_long_socket_3
+  - delay:
+      hours: 0
+      minutes: 45
+      seconds: 0
+      milliseconds: 0
+  - action: switch.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id:
+      - switch.20_gallon_long_socket_4
+      - switch.20_gallon_long_socket_1
+  - if:
+    - condition: state
+      entity_id: schedule.fish_co2_schedule
+      state: 'on'
+    then:
+    - action: switch.turn_on
+      metadata: {}
+      data: {}
+      target:
+        entity_id: switch.20_gallon_long_socket_3
+  mode: single
+- id: '1731391147850'
+  alias: Fish Lights 15min
+  description: ''
+  triggers: []
+  conditions: []
+  actions:
+  - action: switch.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.fish_lights
+  - delay:
+      hours: 0
+      minutes: 15
+      seconds: 0
+      milliseconds: 0
+  - if:
+    - condition: state
+      entity_id: schedule.fish_lights_on
+      state: 'off'
+    then:
+    - action: switch.turn_off
+      metadata: {}
+      data: {}
+      target:
+        entity_id: switch.fish_lights
   mode: single

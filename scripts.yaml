@@ -1,0 +1,160 @@
+delayed_timer_thing:
+  alias: Delayed Timer Thing
+  sequence:
+  - action: switch.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.fish_lights
+  - delay:
+      hours: 0
+      minutes: 15
+      seconds: 0
+      milliseconds: 0
+  - if:
+    - condition: state
+      entity_id: schedule.fish_lights_on
+      state: 'off'
+    then:
+    - action: switch.turn_off
+      metadata: {}
+      data: {}
+      target:
+        entity_id: switch.fish_lights
+  description: ''
+ha_persistant_notification:
+  alias: HA Persistant Notification
+  sequence:
+  - action: notify.persistent_notification
+    metadata: {}
+    data:
+      message: '{{ message | default(''HA NOTIFICATION ERROR.'') }}'
+      title: '{% if title is defined -%} {{ title | default(''Title'') }} {%- endif
+        %}'
+  description: ''
+  icon: mdi:bell
+sms_notification:
+  alias: SMS Notification
+  sequence:
+  - action: notify.gbtunney_gmail_com
+    metadata: {}
+    data:
+      message: '{{ message |  default(''HA NOTIFICATION ERROR::'')}}'
+      target: '{{ entity_targets | default(''gbtunney@mac.com'') }}'
+  description: ''
+  icon: mdi:message-alert-outline
+notification_sample_scripts:
+  alias: Notification Sample Scripts
+  sequence:
+  - action: script.ha_persistant_notification
+    data:
+      message: This is a test message over HA!
+      title: this is an example title
+  - action: script.sms_notification
+    metadata: {}
+    data:
+      message: This is a test message over sms!
+      entity_targets:
+      - 7188138156@mms.att.net
+      - gbtunney@mac.com
+  description: ''
+  icon: mdi:bell-outline
+notify_dispatcher:
+  alias: Notiification Dispatcher
+  sequence:
+  - variables:
+      sms: true
+      persistant: true
+      iPad: false
+      macBook: false
+      iPhone: true
+  - if:
+    - condition: template
+      value_template: '{{ sms == true }}'
+    then:
+    - action: script.sms_notification
+      metadata: {}
+      data:
+        entity_targets: '{{ entity_targets }}'
+        message: '{{ message }}'
+  - if:
+    - condition: template
+      value_template: '{{ persistant == true }}'
+    then:
+    - action: script.ha_persistant_notification
+      metadata: {}
+      data:
+        title: Alert:Temperature
+        entity_targets: '{{ entity_targets }}'
+        message: '{{ message }}'
+  - if:
+    - condition: template
+      value_template: '{{ iPhone == true }}'
+    then:
+    - action: notify.mobile_app_iphone
+      metadata: {}
+      data:
+        message: '{{ message | default(''HA PUSH NOTIFICATION ERROR.'') }}'
+        title: '{% if title is defined -%} {{ title | default(''Title'') }} {%- endif
+          %}'
+  - if:
+    - condition: template
+      value_template: '{{ iPad == true }}'
+    then:
+    - action: notify.mobile_app_gillians_ipad
+      metadata: {}
+      data:
+        message: '{{ message | default(''HA PUSH NOTIFICATION ERROR.'') }}'
+        title: '{% if title is defined -%} {{ title | default(''Title'') }} {%- endif
+          %}'
+  - if:
+    - condition: template
+      value_template: '{{ macBook == true }}'
+    then:
+    - action: notify.mobile_app_gillians_macbook_pro_624
+      metadata: {}
+      data:
+        message: '{{ message | default(''HA PUSH NOTIFICATION ERROR.'') }}'
+        title: '{% if title is defined -%} {{ title | default(''Title'') }} {%- endif
+          %}'
+  description: Send to multiple notification types
+  icon: mdi:bell-outline
+push_notification_dispatcher:
+  alias: Push Notification Dispatcher
+  sequence:
+  - variables:
+      iPad: true
+      macBook: true
+      iPhone: true
+  - if:
+    - condition: template
+      value_template: '{{ iPhone == true }}'
+    then:
+    - action: notify.mobile_app_iphone
+      metadata: {}
+      data:
+        message: '{{ message | default(''HA PUSH NOTIFICATION ERROR.'') }}'
+        title: '{% if title is defined -%} {{ title | default(''Title'') }} {%- endif
+          %}'
+  - if:
+    - condition: template
+      value_template: '{{ iPad == true }}'
+    then:
+    - action: notify.mobile_app_gillians_ipad
+      metadata: {}
+      data:
+        message: '{{ message | default(''HA PUSH NOTIFICATION ERROR.'') }}'
+        title: '{% if title is defined -%} {{ title | default(''Title'') }} {%- endif
+          %}'
+  - if:
+    - condition: template
+      value_template: '{{ macBook == true }}'
+    then:
+    - action: notify.mobile_app_gillians_macbook_pro_624
+      metadata: {}
+      data:
+        message: '{{ message | default(''HA PUSH NOTIFICATION ERROR.'') }}'
+        title: '{% if title is defined -%} {{ title | default(''Title'') }} {%- endif
+          %}'
+  description: ''
+  icon: mdi:bell-badge-outline

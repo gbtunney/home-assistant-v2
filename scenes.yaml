@@ -21,30 +21,3 @@
       entity_only: true
     switch.120_gallon_socket_4:
       entity_only: true
-- id: '1731109992016'
-  name: Test Scene
-  entities:
-    light.led_strip_color:
-      supported_color_modes:
-      - hs
-      color_mode: hs
-      brightness: 55
-      hs_color:
-      - 24
-      - 100
-      rgb_color:
-      - 16
-      - 0
-      - 255
-      xy_color:
-      - 0.138
-      - 0.041
-      friendly_name: 'LED Strip: Color'
-      supported_features: 0
-      state: 'on'
-    switch.bedroom_light_socket_1:
-      device_class: outlet
-      icon: mdi:lightbulb
-      friendly_name: Bedroom Light
-      state: 'on'
-  metadata: {}
