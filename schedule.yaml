@@ -1,0 +1,50 @@
+#################################################################
+## schedule
+#################################################################
+
+fish_lights_on:
+  name: "Fish Lights Schedule"
+  monday:
+    - from: "15:00:00"
+      to: "24:00:00"
+  tuesday:
+    - from: "15:00:00"
+      to: "24:00:00"
+  wednesday:
+    - from: "15:00:00"
+      to: "24:00:00"
+  thursday:
+    - from: "15:00:00"
+      to: "24:00:00"
+  friday:
+    - from: "15:00:00"
+      to: "24:00:00"
+  saturday:
+    - from: "15:00:00"
+      to: "24:00:00"
+  sunday:
+    - from: "15:00:00"
+      to: "24:00:00"
+fish_co2_schedule:
+  "name": "Fish CO2 Schedule",
+  monday:
+    - from: "13:30:00"
+      to: "22:30:00"
+    tuesday:
+      - from: "13:30:00"
+        to: "22:30:00"
+    wednesday:
+      - from: "13:30:00"
+        to: "22:30:00"
+    thursday:
+      - from: "13:30:00"
+        to: "22:30:00"
+    friday:
+      - from: "13:30:00"
+        to: "22:30:00"
+    saturday:
+      - from: "13:30:00"
+        to: "22:30:00"
+    sunday:
+      - from: "13:30:00"
+        to: "22:30:00"
