@@ -1,34 +1,27 @@
-# Loads default set of integrations. Do not remove.
-default_config:
+#####
+# Home Assistant Configuration.yaml.
+# By using packages: I'm pulling all other configuration files
+# from individual folders, starting with Integrations
+#####
 
 homeassistant:
+  packages: !include_dir_named integrations # package setup/config split
+
+  # directory for camera snapshots
   allowlist_external_dirs:
     - "/config/snapshots"
     - "./snapshots"
 
-# Load frontend themes from the themes folder
-frontend:
-  themes: !include_dir_merge_named themes
+#automation: !include automations.yaml
+#script: !include scripts.yaml
+#scene: !include scenes.yaml
 
-automation: !include automations.yaml
-script: !include scripts.yaml
-scene: !include scenes.yaml
-#schedule: !include schedule.yaml
+#input_number: !include input_number.yaml
 
-input_number: !include input_number.yaml
+#logger:
+#default: warn
 
-# Example configuration.yaml entry
-#device_tracker:
-# - platform: bluetooth_le_tracker
-#  track_new_devices: true
-
-# Example configuration.yaml entry
-
-bluetooth:
-
-logger:
-  default: warn
-
+#todo: move
 sun2:
   - unique_id: tanzania
     location: Lushoto,Tanzania
@@ -37,37 +30,3 @@ sun2:
     time_zone: Africa/Nairobi
 
   - unique_id: home
-# Example configuration entry
-binary_sensor:
-  # Example configuration.yaml ent:
-  # Example configuration.yaml entry
-  - platform: ffmpeg_motion
-    input: camera.camera_1_q5_profile1
-
-  - platform: tod
-    name: Test Reptile Schedule
-    after: sunrise
-    after_offset: "2:00"
-    before: sunset
-    before_offset: "0:45"
-    unique_id: test_rep_schedule
-
-# Example configuration.yaml entry
-alarm_control_panel:
-  - platform: manual
-    name: Home Alarm
-    unique_id: a_very_unique_id
-    code: "1234"
-    arming_time: 30
-    delay_time: 20
-    trigger_time: 4
-    arming_states:
-      - armed_away
-      - armed_home
-    disarmed:
-      trigger_time: 0
-    armed_home:
-      arming_time: 0
-      delay_time: 0
-
-  # Example configuration.yaml entry

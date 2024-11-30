@@ -1,0 +1,15 @@
+#####
+# Binary Sensor TODO
+#####
+
+- platform: ffmpeg_motion
+  input: camera.camera_1_q5_profile1
+
+# times of day sensor
+- platform: tod
+  name: Test Reptile Schedule
+  after: sunrise
+  after_offset: "2:00"
+  before: sunset
+  before_offset: "0:45"
+  unique_id: test_rep_schedule

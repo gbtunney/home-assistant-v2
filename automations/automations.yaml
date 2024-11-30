@@ -45,49 +45,9 @@
         message:
           "{% set entity = trigger.entity_id  %} ALERT! Device: {{ trigger.to_state.name
           }} is registering being off for more than 2hrs in Area: {{ area_name(trigger.entity_id)
-          }} :: Please fix!!
+          }} :: Please fix!!"
+  mode: single
 
-          "
-  mode: single
-- id: "1731283746026"
-  alias: New automation
-  description: ""
-  triggers:
-    - trigger: state
-      entity_id:
-        - schedule.fish_lights_schedule
-      attribute: next_event
-      enabled: true
-  conditions:
-    - condition: template
-      value_template: "{{ trigger.to_state.state in ['on', 'off'] }}"
-  actions:
-    - action: switch.turn_{{ trigger.to_state.state }}
-      metadata: {}
-      data: {}
-      target:
-        entity_id:
-          - switch.fish_lights
-  mode: single
-- id: "1731300280308"
-  alias: "Co "
-  description: ""
-  triggers:
-    - trigger: state
-      entity_id:
-        - schedule.fish_co2_schedule
-      attribute: next_event
-  conditions:
-    - condition: template
-      value_template: "{{ trigger.to_state.state in ['on', 'off'] }}"
-  actions:
-    - action: switch.turn_{{ trigger.to_state.state }}
-      metadata: {}
-      data: {}
-      target:
-        entity_id:
-          - switch.20_gallon_long_socket_3
-  mode: single
 - id: "1731300678056"
   alias: "Reptile Lights Scheduled: ON"
   description: "Lights turn on 2 hrs after sunrise "
@@ -106,7 +66,7 @@
           - switch.seafoam_styx_socket_1
   mode: single
 - id: "1731300893649"
-  alias: Lizard Lights Scheduled Off
+  alias: "Reptile Lights Scheduled: OFF"
   description: Lights turn off 45 min after sunset
   triggers:
     - trigger: sun

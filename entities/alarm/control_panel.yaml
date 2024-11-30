@@ -1,0 +1,19 @@
+#####
+# Alarm Control Panel TODO
+#####
+
+- platform: manual
+  name: Home Alarm
+  unique_id: a_very_unique_id
+  code: "1234"
+  arming_time: 30
+  delay_time: 20
+  trigger_time: 4
+  arming_states:
+    - armed_away
+    - armed_home
+  disarmed:
+    trigger_time: 0
+  armed_home:
+    arming_time: 0
+    delay_time: 0

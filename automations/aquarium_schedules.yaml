@@ -1,0 +1,43 @@
+#####
+# Aquarium schedules ( Lights and C02 )
+#####
+
+- id: "1731283746026"
+  alias: "Aquarium Lights Scheduled On/Off"
+  description: "Aquarium CO2 Scheduled On/Off according to a schedule"
+  triggers:
+    - trigger: state
+      entity_id:
+        - schedule.fish_lights_schedule
+      attribute: next_event
+      enabled: true
+  conditions:
+    - condition: template
+      value_template: "{{ trigger.to_state.state in ['on', 'off'] }}"
+  actions:
+    - action: switch.turn_{{ trigger.to_state.state }}
+      metadata: {}
+      data: {}
+      target:
+        entity_id:
+          - switch.fish_lights
+  mode: single
+- id: "1731300280308"
+  alias: "Aquarium CO2 Scheduled On/Off"
+  description: "CO2 Toggle Schedule for Aquariums"
+  triggers:
+    - trigger: state
+      entity_id:
+        - schedule.fish_co2_schedule
+      attribute: next_event
+  conditions:
+    - condition: template
+      value_template: "{{ trigger.to_state.state in ['on', 'off'] }}"
+  actions:
+    - action: switch.turn_{{ trigger.to_state.state }}
+      metadata: {}
+      data: {}
+      target:
+        entity_id:
+          - switch.20_gallon_long_socket_3
+  mode: single

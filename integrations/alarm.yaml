@@ -1,0 +1,5 @@
+#####
+# ALARM!  todo: i dont know how these include things merge
+#####
+
+alarm_control_panel: !include_dir_list ../entities/alarm

@@ -1,0 +1,7 @@
+#####
+# Added Alexa integration to Home Assistant
+# https://www.home-assistant.io/integrations/alexa.smart_home/
+#####
+
+alexa:
+  smart_home:
