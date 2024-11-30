@@ -1,0 +1,87 @@
+notify_dispatcher:
+  alias: Notification Dispatcher
+  sequence:
+    - variables:
+        message: not set
+        sms: false
+        persistant: true
+        iPad: true
+        macBook: true
+        iPhone: true
+        critical: true
+        title_topic: false
+        entity_targets:
+          - 7188138156@mms.att.net
+          - gbtunney@mac.com
+      enabled: false
+    - variables:
+        sms: false
+        persistant: true
+        iPad: true
+        macBook: true
+        iPhone: true
+        critical: false
+        title_topic: false
+      enabled: true
+    - if:
+        - condition: template
+          value_template: "{{ sms == true }}"
+      then:
+        - action: script.sms_notification
+          metadata: {}
+          data:
+            entity_targets: "{{ entity_targets }}"
+            message: "{{ message }}"
+      alias: If SMS
+    - alias: "If Persistant app "
+      if:
+        - condition: template
+          value_template: "{{ persistant == true }}"
+      then:
+        - action: script.ha_persistant_notification
+          metadata: {}
+          data:
+            title: Alert:Temperature
+            entity_targets: "{{ entity_targets }}"
+            message: "{{ message }}"
+    - alias: If iPhone
+      if:
+        - condition: template
+          value_template: "{{ iPhone == true }}"
+      then:
+        - action: notify.mobile_app_iphone
+          metadata: {}
+          data:
+            message: "{{ message | default('HA PUSH NOTIFICATION ERROR.') }}"
+            data:
+              push:
+                sound:
+                  name: default
+                  critical: "{% if critical == true %}1{% else %}0{% endif %}"
+      enabled: true
+    - if:
+        - condition: template
+          value_template: "{{ iPad == true }}"
+      then:
+        - action: notify.mobile_app_gillians_ipad
+          metadata: {}
+          data:
+            message: "{{ message | default('HA PUSH NOTIFICATION ERROR.') }}"
+            title:
+              "{% if title is defined -%} {{ title | default('Title') }} {%- endif
+              %}"
+      alias: If pad
+    - if:
+        - condition: template
+          value_template: "{{ macBook == true }}"
+      then:
+        - action: notify.mobile_app_gillians_macbook_pro_624
+          metadata: {}
+          data:
+            message: "{{ message | default('HA PUSH NOTIFICATION ERROR.') }}"
+            title:
+              "{% if title is defined -%} {{ title | default('Title') }} {%- endif
+              %}"
+      alias: "If MacBook "
+  description: Send to multiple notification types
+  icon: mdi:bell-outline

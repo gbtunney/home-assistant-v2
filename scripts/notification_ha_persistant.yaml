@@ -1,0 +1,16 @@
+#####
+# SCRIPTS: HA Persistant (Sidebar) Notification
+#####
+
+ha_persistant_notification:
+  alias: HA Persistant Notification
+  sequence:
+    - action: notify.persistent_notification
+      metadata: {}
+      data:
+        message: "{{ message | default('HA NOTIFICATION ERROR.') }}"
+        title:
+          "{% if title is defined -%} {{ title | default('Title') }} {%- endif
+          %}"
+  description: ""
+  icon: mdi:bell

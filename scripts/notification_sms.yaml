@@ -1,0 +1,15 @@
+#####
+# SCRIPTS: SMS / Email Notification
+# Uses gmail to send a carrier sms via email
+# https://avtech.com/articles/138/list-of-email-to-sms-addresses
+#####
+sms_notification:
+  alias: SMS/Email Notification
+  sequence:
+    - action: notify.gbtunney_gmail_com
+      metadata: {}
+      data:
+        message: "{{ message | default('HA NOTIFICATION ERROR::')}}"
+        target: "{{ entity_targets | default('gbtunney@mac.com') }}"
+  description: 'Uses gmail to send email, sms is via carrier. <b>see</b><a href="https://avtech.com/articles/138/list-of-email-to-sms-addresses">List Of Email-To-SMS Addresses</a>'
+  icon: mdi:message-alert-outline

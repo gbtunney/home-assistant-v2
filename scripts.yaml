@@ -1,28 +1,34 @@
-test_photo_uploader:
-  alias: Test photo uploader
+#####
+# SCRIPTS: UI
+# https://www.home-assistant.io/integrations/script/
+#####
+
+notification_sample_scripts:
+  alias: Notification Sample Scripts
   sequence:
-    - action: google_photos.upload
+    - action: script.ha_persistant_notification
+      data:
+        message: This is a test message over HA!
+        title: this is an example title
+        iphone: false
+    - action: script.sms_notification
       metadata: {}
       data:
-        config_entry_id: 01JDXZWF95N644N5ACX8K3Q189
-        filename: snapshots/test-image2-1732940331.96996.png
-        album: Home Assistant Camera
-  description: ""
-camera_snap_and_upload:
-  alias: Camera Snap and Upload
-  sequence:
-    - variables:
-        directory: snapshots
-        prefix: test-image2
-        ext: png
-        timestamp: "{{ as_timestamp(now()) }}"
-        filename: undefined
-    - action: notify.persistent_notification
-      metadata: {}
+        message: This is a test message over sms!
+        entity_targets:
+          - 7188138156@mms.att.net
+          - gbtunney@mac.com
+    - action: script.ha_persistant_notification
       data:
-        message: hi there latest '{{ directory }}/{{prefix }}-{{ timestamp }}.{{ext}}'
-    - variables: {}
+        message: This is a test message over HA!
+        title: this is an example title
+        iphone: false
+    - action: script.notify_dispatcher
+      metadata: {}
+      data: {}
   description: ""
+  icon: mdi:bell-outline
+
 llv_test:
   alias: " LLV Test"
   sequence:
