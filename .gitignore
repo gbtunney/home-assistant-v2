@@ -194,6 +194,8 @@ OZW_Log.txt
 www
 .esphome
 
+storage
 # Scratch Files
 scratch
 examples
+configurationbk.yaml

@@ -1,0 +1,164 @@
+substitutions:
+  device_name: gosund-sp1
+  friendly_name: Gosund SP1
+  device_description: Gosund SP01 Smart Plug
+  sp1_current_resistor: "0.00221"
+  sp1_voltage_divider: "871"
+  #############
+  # Note: These numbers were found online
+  # BW SHP2 Current Resistor: 0.0028
+  # BW SHP2 Voltage Devider: 960
+  # Gosund SP1 Current Resistor: 0.00221
+  # Gosund SP1 Voltage Devider: 871
+  # Gosund SP1 Current Resistor ALT: 0.00103
+  # Gosund SP1 Voltage Devider ALT: 2160
+  #############
+  red_led_pin: GPIO13
+  blue_led_pin: GPIO1
+
+esphome:
+  name: ${device_name}
+  comment: ${device_description}
+
+
+esp8266:
+  board: esp01_1m
+
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "7GrQefuE87mtoLZANlf6KvMTUJSM9Yp81B/0CmxHED8="
+
+ota:
+  - platform: esphome
+    password: "f7b819aa671edb4826dfb43fead262a0"
+
+wifi:
+  ssid: "Snailicide"
+  password: "Betta$11"
+  manual_ip:
+      # Set this to the IP of the ESP
+      static_ip: 192.168.1.8
+      # Set this to the IP address of the router. Often ends with .1
+      gateway: 192.168.1.1
+      # The subnet of the network. 255.255.255.0 works for most home networks.
+      subnet: 255.255.255.0
+  
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Gosundyaml Fallback Hotspot"
+    password: "dExIHRUmHqla"
+
+captive_portal:
+
+
+# Enable Web server
+web_server:
+  port: 80
+
+# Sync time with Home Assistant
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+
+# Text sensors with general information
+text_sensor:
+  - platform: version
+    name: ${friendly_name} Version
+  - platform: wifi_info
+    ip_address:
+      name: ${friendly_name} IP Address
+
+sensor:
+  # Uptime sensor
+  - platform: uptime
+    name: ${friendly_name} Uptime
+  # WiFi Signal sensor
+  - platform: wifi_signal
+    name: ${friendly_name} Wifi Signal
+    update_interval: 60s
+  # Gosund SP1 Config
+  # Power sensor
+  - platform: hlw8012
+    sel_pin:
+      number: GPIO12
+      inverted: true
+    cf_pin: GPIO04
+    cf1_pin: GPIO05
+    current_resistor: ${sp1_current_resistor}
+    voltage_divider: ${sp1_voltage_divider}
+    change_mode_every: 8
+    update_interval: 10s
+    # Current sensor
+    current:
+      name: ${friendly_name} Energy Current
+      unit_of_measurement: A
+      accuracy_decimals: 2
+    # Voltage sensor
+    voltage:
+      name: ${friendly_name} Energy Voltage
+      unit_of_measurement: V
+      accuracy_decimals: 1
+    # Power sensor
+    power:
+      id: power
+      name: ${friendly_name} Energy Power
+      unit_of_measurement: W
+      accuracy_decimals: 0
+  # Total daily energy sensor
+  - platform: total_daily_energy
+    name: ${friendly_name} Daily Energy Usage
+    power_id: power
+    filters:
+      # Multiplication factor from W to kW is 0.001
+      - multiply: 0.001
+    unit_of_measurement: kWh
+# Binary sensor for the power button
+binary_sensor:
+  - platform: gpio
+    name: ${friendly_name} Power Button
+    id: button
+    pin:
+      number: GPIO3
+      inverted: true
+    on_press:
+      - switch.toggle: relay
+
+switch:
+  # Switch to restart the plug
+  - platform: restart
+    name: ${friendly_name} Restart Switch
+  # Switch for the relay
+  - platform: gpio
+    id: relay
+    name: ${friendly_name} Power Switch
+    pin: GPIO14
+    restore_mode: RESTORE_DEFAULT_OFF
+    on_turn_on:
+      - light.turn_on: led
+    on_turn_off:
+      - light.turn_off: led
+
+output:
+  # esphome state led
+  - platform: esp8266_pwm
+    id: state_led
+    pin:
+      number: ${blue_led_pin}
+      inverted: true
+
+light:
+  # Power state light
+  - platform: monochromatic
+    output: state_led
+    id: led
+
+# Uses the red LED as a status indicator
+status_led:
+  pin:
+    number: ${red_led_pin}
+    inverted: true

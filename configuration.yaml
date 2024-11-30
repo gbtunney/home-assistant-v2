@@ -9,6 +9,59 @@ frontend:
 automation: !include automations.yaml
 script: !include scripts.yaml
 scene: !include scenes.yaml
+#schedule: !include schedule.yaml
 
 input_number: !include input_number.yaml
-schedule: !include schedule.yaml
+
+# Example configuration.yaml entry
+#device_tracker:
+ # - platform: bluetooth_le_tracker
+  #  track_new_devices: true
+
+# Example configuration.yaml entry
+    
+bluetooth:
+
+logger:
+  default: warn
+  
+sun2:
+  - unique_id: tanzania
+    location: Lushoto,Tanzania  
+    latitude: -4.875124
+    longitude: 38.462557
+    time_zone: Africa/Nairobi
+
+  - unique_id: home
+# Example configuration entry
+binary_sensor:
+ # Example configuration.yaml ent:
+  - platform: ffmpeg_motion
+    input: camera.camera_2_q5_profile1
+  - platform: tod
+    name: Test Reptile Schedule
+    after: sunrise
+    after_offset: "2:00"
+    before: sunset
+    before_offset: "0:45"
+    unique_id: test_rep_schedule
+
+# Example configuration.yaml entry
+alarm_control_panel:
+  - platform: manual
+    name: Home Alarm
+    unique_id: a_very_unique_id
+    code: "1234"
+    arming_time: 30
+    delay_time: 20
+    trigger_time: 4
+    arming_states:
+      - armed_away
+      - armed_home
+    disarmed:
+      trigger_time: 0
+    armed_home:
+      arming_time: 0
+      delay_time: 0
+
+ # Example configuration.yaml entry

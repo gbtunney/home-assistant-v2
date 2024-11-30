@@ -20,44 +20,33 @@
   triggers:
   - trigger: state
     entity_id:
-    - switch.120_gallon_socket_2
+    - switch.120g_pumps_heaters
+    - switch.10g_m_pumps_heaters
+    - switch.20g_pumps_heaters
+    - switch.new_20g_powerstrip_kasa_smart_plug_3a71_1
     for:
-      hours: 0
-      minutes: 1
+      hours: 2
+      minutes: 0
       seconds: 0
     from:
     to: 'off'
   conditions: []
   actions:
-  - parallel:
-    - action: switch.turn_off
-      metadata: {}
-      data: {}
-      target:
-        entity_id:
-        - switch.120_gallon_socket_2
-        - switch.120_gallon_socket_3
-        - switch.120_gallon_socket_4
-    enabled: false
-  - delay:
-      hours: 0
-      minutes: 5
-      seconds: 0
-      milliseconds: 0
-    enabled: false
-  - if:
-    - condition: state
-      state: 'off'
-      entity_id: switch.120_gallon_socket_2
-    then:
-    - action: notify.notify
-      data:
-        message: "The 120 gallon is off. Please fix,\U0001F433,"
-    enabled: false
-  - action: notify.mobile_app_gillians_ipad
+  - action: script.notify_dispatcher
     metadata: {}
     data:
-      message: The pump is off!!!!!
+      sms: true
+      iphone: true
+      ipad: true
+      critical: false
+      entity_targets:
+      - 7188138156@mms.att.net
+      - gbtunney@mac.com
+      message: '{% set entity = trigger.entity_id  %} ALERT! Device: {{ trigger.to_state.name
+        }} is registering being off for more than 2hrs in Area: {{ area_name(trigger.entity_id)
+        }} :: Please fix!!
+
+        '
   mode: single
 - id: '1731283746026'
   alias: New automation
@@ -65,7 +54,7 @@
   triggers:
   - trigger: state
     entity_id:
-    - schedule.fish_lights_on
+    - schedule.fish_lights_schedule
     attribute: next_event
     enabled: true
   conditions:
@@ -77,9 +66,7 @@
     data: {}
     target:
       entity_id:
-      - switch.20_gallon_long_socket_1
-      - switch.10g_m_guppies_socket_1
-      - switch.120_gallon_socket_1
+      - switch.fish_lights
   mode: single
 - id: '1731300280308'
   alias: 'Co '
@@ -168,6 +155,7 @@
   - action: script.notify_dispatcher
     metadata: {}
     data:
+      critical: false
       entity_targets:
       - 7188138156@mms.att.net
       - gbtunney@mac.com
@@ -178,69 +166,62 @@
 
         '
   mode: single
-- id: '1731390977361'
-  alias: 'Rest pumps 45min'
+- id: '1732604678342'
+  alias: Test CMERA
   description: ''
   triggers:
-  - trigger: tag
-    tag_id: ''
+  - trigger: state
+    entity_id:
+    - alarm_control_panel.home_alarm
+    to: armed_away
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 0
   conditions: []
   actions:
-  - action: switch.turn_off
+  - action: camera.enable_motion_detection
     metadata: {}
     data: {}
     target:
-      entity_id:
-      - switch.20_gallon_long_socket_4
-      - switch.20_gallon_long_socket_2
-      - switch.20_gallon_long_socket_3
-  - delay:
-      hours: 0
-      minutes: 45
-      seconds: 0
-      milliseconds: 0
-  - action: switch.turn_on
-    metadata: {}
-    data: {}
-    target:
-      entity_id:
-      - switch.20_gallon_long_socket_4
-      - switch.20_gallon_long_socket_1
-  - if:
-    - condition: state
-      entity_id: schedule.fish_co2_schedule
-      state: 'on'
-    then:
-    - action: switch.turn_on
-      metadata: {}
-      data: {}
-      target:
-        entity_id: switch.20_gallon_long_socket_3
+      entity_id: camera.camera_1_q5_profile1
   mode: single
-- id: '1731391147850'
-  alias: Fish Lights 15min
+- id: '1732834246888'
+  alias: Camera Off
   description: ''
   triggers: []
   conditions: []
   actions:
-  - action: switch.turn_on
+  - action: camera.turn_off
     metadata: {}
     data: {}
     target:
-      entity_id: switch.fish_lights
-  - delay:
-      hours: 0
-      minutes: 15
-      seconds: 0
-      milliseconds: 0
-  - if:
-    - condition: state
-      entity_id: schedule.fish_lights_on
-      state: 'off'
-    then:
-    - action: switch.turn_off
-      metadata: {}
-      data: {}
-      target:
-        entity_id: switch.fish_lights
+      entity_id: camera.camera_1_q5_profile1
+  mode: single
+- id: '1732933639597'
+  alias: Image sace
+  description: ''
+  triggers: []
+  conditions: []
+  actions:
+  - action: camera.snapshot
+    metadata: {}
+    data:
+      filename: gbttest
+    target:
+      entity_id: camera.camera_1_q5_profile1
+  mode: single
+- id: '1732934005983'
+  alias: New automation
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - switch.10g_m_guppies_socket_2
+    to: 'off'
+  conditions: []
+  actions:
+  - action: button.press
+    metadata: {}
+    data: {}
   mode: single
