@@ -1,0 +1,15 @@
+#####
+# Scripts created from the ui
+# https://www.home-assistant.io/docs/configuration/splitting_configuration/
+####
+
+test_photo_uploader:
+  alias: Test photo uploader
+  sequence:
+    - action: google_photos.upload
+      metadata: {}
+      data:
+        config_entry_id: 01JDXZWF95N644N5ACX8K3Q189
+        filename: snapshots/test-image2-1732940331.96996.png
+        album: Home Assistant Camera
+  description: ""
