@@ -1,15 +1,9 @@
 #####
-# Lovelace UI - mainly used foor decluttering templates
+# Card Templates - Decluttering Templates
 # https://github.com/custom-cards/decluttering-card
 #####
 
-lovelace_ui:
-  resources:
-    - url: /local/decluttering-card.js
-      type: module
-
-  decluttering_templates:
-    my_first_template:     # This is the name of a template
+my_first_template:     # This is the name of a template
       default:
         - icon: fire
       card:
@@ -17,7 +11,7 @@ lovelace_ui:
         name: '[[name]]'
         icon: 'mdi:[[icon]]'
 
-    my_second_template:    # This is the name of another template
+my_second_template:    # This is the name of another template
       card:
         type: custom:vertical-stack-in-card
         cards:
