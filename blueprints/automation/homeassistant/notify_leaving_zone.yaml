@@ -25,9 +25,9 @@ blueprint:
           filter:
             integration: mobile_app
 
-trigger:
-  platform: state
-  entity_id: !input person_entity
+triggers:
+  - trigger: state
+    entity_id: !input person_entity
 
 variables:
   zone_entity: !input zone_entity
