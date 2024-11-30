@@ -1,0 +1,3 @@
+{% macro snapshot_path(prefix ='camera-image',directory ='snapshots' , ext='png') %}
+{{ directory }}/{{prefix }}-{{ as_timestamp(now()) }}.{{ext}}
+{% endmacro %}
