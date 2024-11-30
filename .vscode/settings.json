@@ -1,5 +1,10 @@
 {
   "files.associations": {
     "*.yaml": "home-assistant"
-  }
+  },
+  "editor.formatOnPaste": true,
+  "editor.formatOnSave": true,
+  "prettier.documentSelectors": [
+    "{*,**/*}.{ts,js,cjs,mjs,cts,mts,sh,html,json,yaml,yml,graphql,md}"
+  ]
 }
