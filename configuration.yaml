@@ -1,6 +1,11 @@
 # Loads default set of integrations. Do not remove.
 default_config:
 
+homeassistant:
+  allowlist_external_dirs:
+    - "/config/snapshots"
+    - "./snapshots"
+
 # Load frontend themes from the themes folder
 frontend:
   themes: !include_dir_merge_named themes
@@ -35,8 +40,10 @@ sun2:
 # Example configuration entry
 binary_sensor:
   # Example configuration.yaml ent:
+  # Example configuration.yaml entry
   - platform: ffmpeg_motion
-    input: camera.camera_2_q5_profile1
+    input: camera.camera_1_q5_profile1
+
   - platform: tod
     name: Test Reptile Schedule
     after: sunrise

@@ -281,79 +281,13 @@ llv_test:
           - camera.camera_1_q5_profile1
       response_variable: mytestvar
   description: ""
-new_script:
-  alias: New Script
-  sequence:
-    - variables:
-        gbttest: undefined
-    - action: llmvision.stream_analyzer
-      metadata: {}
-      data:
-        remember: false
-        duration: 5
-        max_frames: 3
-        include_filename: false
-        target_width: 1280
-        detail: low
-        max_tokens: 100
-        temperature: 0.2
-        expose_images: false
-        provider: 01JDVKCP2N9XZ6BQYGS518Q79N
-        image_entity:
-          - camera.camera_1_q5_profile1
-        message: "how many pictures ar eon the wall
-
-          "
-      response_variable: gbttest
-  description: ""
-save_image:
-  alias: "Save image "
-  sequence:
-    - action: camera.snapshot
-      metadata: {}
-      data:
-        filename: gbttestme
-      target:
-        entity_id: camera.camera_1_q5_profile1
-  description: ""
-test_snapshot:
-  alias: Test snapshot
-  sequence:
-    - action: camera.snapshot
-      metadata: {}
-      data:
-        filename: gbttestme
-      target:
-        entity_id: camera.camera_1_q5_profile1
-  description: ""
-snapshot_testme:
-  alias: Snapshot testme
-  sequence:
-    - action: camera.snapshot
-      metadata: {}
-      data:
-        filename: gbt-test-snap
-      target:
-        entity_id: camera.camera_1_q5_profile1
-  description: ""
-script_wtfnew_script:
-  alias: SCRIPT WTFNew Script
-  sequence:
-    - type: turn_off
-      device_id: 8c47d81137a36710435db50081c8460c
-      entity_id: 6e438ba6c4e4600cd7ea33f8e3a8d762
-      domain: switch
-    - action: button.press
-      metadata: {}
-      data: {}
-  description: ""
 new_script_2:
   alias: New Script
   sequence:
     - action: camera.snapshot
       metadata: {}
       data:
-        filename: Gggg
+        filename: snapshots/test-image2-{{ as_timestamp(now()) }}.png
       target:
         entity_id: camera.camera_1_q5_profile1
   description: ""
