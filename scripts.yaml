@@ -1,353 +1,359 @@
 ha_persistant_notification:
   alias: HA Persistant Notification
   sequence:
-  - action: notify.persistent_notification
-    metadata: {}
-    data:
-      message: '{{ message | default(''HA NOTIFICATION ERROR.'') }}'
-      title: '{% if title is defined -%} {{ title | default(''Title'') }} {%- endif
-        %}'
-  description: ''
+    - action: notify.persistent_notification
+      metadata: {}
+      data:
+        message: "{{ message | default('HA NOTIFICATION ERROR.') }}"
+        title:
+          "{% if title is defined -%} {{ title | default('Title') }} {%- endif
+          %}"
+  description: ""
   icon: mdi:bell
 sms_notification:
   alias: SMS Notification
   sequence:
-  - action: notify.gbtunney_gmail_com
-    metadata: {}
-    data:
-      message: '{{ message |  default(''HA NOTIFICATION ERROR::'')}}'
-      target: '{{ entity_targets | default(''gbtunney@mac.com'') }}'
-  description: ''
+    - action: notify.gbtunney_gmail_com
+      metadata: {}
+      data:
+        message: "{{ message |  default('HA NOTIFICATION ERROR::')}}"
+        target: "{{ entity_targets | default('gbtunney@mac.com') }}"
+  description: ""
   icon: mdi:message-alert-outline
 notification_sample_scripts:
   alias: Notification Sample Scripts
   sequence:
-  - action: script.ha_persistant_notification
-    data:
-      message: This is a test message over HA!
-      title: this is an example title
-      iphone: false
-  - action: script.sms_notification
-    metadata: {}
-    data:
-      message: This is a test message over sms!
-      entity_targets:
-      - 7188138156@mms.att.net
-      - gbtunney@mac.com
-  - action: script.ha_persistant_notification
-    data:
-      message: This is a test message over HA!
-      title: this is an example title
-      iphone: false
-  - action: script.notify_dispatcher
-    metadata: {}
-    data: {}
-  description: ''
+    - action: script.ha_persistant_notification
+      data:
+        message: This is a test message over HA!
+        title: this is an example title
+        iphone: false
+    - action: script.sms_notification
+      metadata: {}
+      data:
+        message: This is a test message over sms!
+        entity_targets:
+          - 7188138156@mms.att.net
+          - gbtunney@mac.com
+    - action: script.ha_persistant_notification
+      data:
+        message: This is a test message over HA!
+        title: this is an example title
+        iphone: false
+    - action: script.notify_dispatcher
+      metadata: {}
+      data: {}
+  description: ""
   icon: mdi:bell-outline
 notify_dispatcher:
   alias: Notification Dispatcher
   sequence:
-  - variables:
-      message: not set
-      sms: false
-      persistant: true
-      iPad: true
-      macBook: true
-      iPhone: true
-      critical: true
-      title_topic: false
-      entity_targets:
-      - 7188138156@mms.att.net
-      - gbtunney@mac.com
-    enabled: false
-  - variables:
-      sms: false
-      persistant: true
-      iPad: true
-      macBook: true
-      iPhone: true
-      critical: false
-      title_topic: false
-    enabled: true
-  - if:
-    - condition: template
-      value_template: '{{ sms == true }}'
-    then:
-    - action: script.sms_notification
-      metadata: {}
-      data:
-        entity_targets: '{{ entity_targets }}'
-        message: '{{ message }}'
-    alias: If SMS
-  - alias: 'If Persistant app '
-    if:
-    - condition: template
-      value_template: '{{ persistant == true }}'
-    then:
-    - action: script.ha_persistant_notification
-      metadata: {}
-      data:
-        title: Alert:Temperature
-        entity_targets: '{{ entity_targets }}'
-        message: '{{ message }}'
-  - alias: If iPhone
-    if:
-    - condition: template
-      value_template: '{{ iPhone == true }}'
-    then:
-    - action: notify.mobile_app_iphone
-      metadata: {}
-      data:
-        message: '{{ message | default(''HA PUSH NOTIFICATION ERROR.'') }}'
-        data:
-          push:
-            sound:
-              name: default
-              critical: '{% if critical == true %}1{% else %}0{% endif %}'
-    enabled: true
-  - if:
-    - condition: template
-      value_template: '{{ iPad == true }}'
-    then:
-    - action: notify.mobile_app_gillians_ipad
-      metadata: {}
-      data:
-        message: '{{ message | default(''HA PUSH NOTIFICATION ERROR.'') }}'
-        title: '{% if title is defined -%} {{ title | default(''Title'') }} {%- endif
-          %}'
-    alias: If pad
-  - if:
-    - condition: template
-      value_template: '{{ macBook == true }}'
-    then:
-    - action: notify.mobile_app_gillians_macbook_pro_624
-      metadata: {}
-      data:
-        message: '{{ message | default(''HA PUSH NOTIFICATION ERROR.'') }}'
-        title: '{% if title is defined -%} {{ title | default(''Title'') }} {%- endif
-          %}'
-    alias: 'If MacBook '
+    - variables:
+        message: not set
+        sms: false
+        persistant: true
+        iPad: true
+        macBook: true
+        iPhone: true
+        critical: true
+        title_topic: false
+        entity_targets:
+          - 7188138156@mms.att.net
+          - gbtunney@mac.com
+      enabled: false
+    - variables:
+        sms: false
+        persistant: true
+        iPad: true
+        macBook: true
+        iPhone: true
+        critical: false
+        title_topic: false
+      enabled: true
+    - if:
+        - condition: template
+          value_template: "{{ sms == true }}"
+      then:
+        - action: script.sms_notification
+          metadata: {}
+          data:
+            entity_targets: "{{ entity_targets }}"
+            message: "{{ message }}"
+      alias: If SMS
+    - alias: "If Persistant app "
+      if:
+        - condition: template
+          value_template: "{{ persistant == true }}"
+      then:
+        - action: script.ha_persistant_notification
+          metadata: {}
+          data:
+            title: Alert:Temperature
+            entity_targets: "{{ entity_targets }}"
+            message: "{{ message }}"
+    - alias: If iPhone
+      if:
+        - condition: template
+          value_template: "{{ iPhone == true }}"
+      then:
+        - action: notify.mobile_app_iphone
+          metadata: {}
+          data:
+            message: "{{ message | default('HA PUSH NOTIFICATION ERROR.') }}"
+            data:
+              push:
+                sound:
+                  name: default
+                  critical: "{% if critical == true %}1{% else %}0{% endif %}"
+      enabled: true
+    - if:
+        - condition: template
+          value_template: "{{ iPad == true }}"
+      then:
+        - action: notify.mobile_app_gillians_ipad
+          metadata: {}
+          data:
+            message: "{{ message | default('HA PUSH NOTIFICATION ERROR.') }}"
+            title:
+              "{% if title is defined -%} {{ title | default('Title') }} {%- endif
+              %}"
+      alias: If pad
+    - if:
+        - condition: template
+          value_template: "{{ macBook == true }}"
+      then:
+        - action: notify.mobile_app_gillians_macbook_pro_624
+          metadata: {}
+          data:
+            message: "{{ message | default('HA PUSH NOTIFICATION ERROR.') }}"
+            title:
+              "{% if title is defined -%} {{ title | default('Title') }} {%- endif
+              %}"
+      alias: "If MacBook "
   description: Send to multiple notification types
   icon: mdi:bell-outline
 push_notification_dispatcher:
   alias: Push Notification Dispatcher
   sequence:
-  - variables:
-      iPad: true
-      macBook: true
-      iPhone: true
-  - if:
-    - condition: template
-      value_template: '{{ iPhone == true }}'
-    then:
-    - action: notify.mobile_app_iphone
-      metadata: {}
-      data:
-        message: '{{ message | default(''HA PUSH NOTIFICATION ERROR.'') }}'
-        title: '{% if title is defined -%} {{ title | default(''Title'') }} {%- endif
-          %}'
-  - if:
-    - condition: template
-      value_template: '{{ iPad == true }}'
-    then:
-    - action: notify.mobile_app_gillians_ipad
-      metadata: {}
-      data:
-        message: '{{ message | default(''HA PUSH NOTIFICATION ERROR.'') }}'
-        title: '{% if title is defined -%} {{ title | default(''Title'') }} {%- endif
-          %}'
-  - if:
-    - condition: template
-      value_template: '{{ macBook == true }}'
-    then:
-    - action: notify.mobile_app_gillians_macbook_pro_624
-      metadata: {}
-      data:
-        message: '{{ message | default(''HA PUSH NOTIFICATION ERROR.'') }}'
-        title: '{% if title is defined -%} {{ title | default(''Title'') }} {%- endif
-          %}'
-  description: ''
+    - variables:
+        iPad: true
+        macBook: true
+        iPhone: true
+    - if:
+        - condition: template
+          value_template: "{{ iPhone == true }}"
+      then:
+        - action: notify.mobile_app_iphone
+          metadata: {}
+          data:
+            message: "{{ message | default('HA PUSH NOTIFICATION ERROR.') }}"
+            title:
+              "{% if title is defined -%} {{ title | default('Title') }} {%- endif
+              %}"
+    - if:
+        - condition: template
+          value_template: "{{ iPad == true }}"
+      then:
+        - action: notify.mobile_app_gillians_ipad
+          metadata: {}
+          data:
+            message: "{{ message | default('HA PUSH NOTIFICATION ERROR.') }}"
+            title:
+              "{% if title is defined -%} {{ title | default('Title') }} {%- endif
+              %}"
+    - if:
+        - condition: template
+          value_template: "{{ macBook == true }}"
+      then:
+        - action: notify.mobile_app_gillians_macbook_pro_624
+          metadata: {}
+          data:
+            message: "{{ message | default('HA PUSH NOTIFICATION ERROR.') }}"
+            title:
+              "{% if title is defined -%} {{ title | default('Title') }} {%- endif
+              %}"
+  description: ""
   icon: mdi:bell-badge-outline
 aquarium_lights_on_for_15min:
   alias: Aquarium Lights (ON for 15min)
   sequence:
-  - action: switch.turn_on
-    metadata: {}
-    data: {}
-    target:
-      entity_id: switch.fish_lights
-  - delay:
-      hours: 0
-      minutes: '{{ states(''input_number.light_minutes'') | int}}'
-      seconds: 0
-      milliseconds: 0
-  - if:
-    - condition: state
-      state: 'off'
-      entity_id: schedule.fish_lights_schedule
-    then:
-    - action: switch.turn_off
-      metadata: {}
-      data: {}
-      target:
-        entity_id: switch.fish_lights
-  - action: input_number.set_value
-    metadata: {}
-    data:
-      value: 15
-    target:
-      entity_id: input_number.light_minutes
-  - action: logbook.log
-    metadata: {}
-    data:
-      entity_id: script.20g_rest_pumps_45_min
-      name: 20g Rest Pumps (minutes)
-      message: Aquarium Lights Timer has ran successfully!
-  description: ''
-  icon: mdi:fish
-20g_rest_pumps_45_min:
-  alias: 20g Rest Pumps (45 min)
-  sequence:
-  - action: switch.turn_off
-    metadata: {}
-    data: {}
-    target:
-      entity_id:
-      - switch.20_gallon_long_socket_4
-      - switch.20_gallon_long_socket_2
-      - switch.20_gallon_long_socket_3
-  - delay: 0{{ state_attr('timer.pumps_off_delay','duration') }}
-    enabled: false
-  - delay:
-      hours: 0
-      minutes: '{{ states(''input_number.rest_pumps_minutes'') }}'
-      milliseconds: 0
-    enabled: true
-  - action: switch.turn_on
-    metadata: {}
-    data: {}
-    target:
-      entity_id:
-      - switch.20_gallon_long_socket_4
-      - switch.20_gallon_long_socket_2
-    alias: 'Turn on pumps thing '
-  - if:
-    - condition: state
-      entity_id: schedule.fish_co2_schedule
-      state: 'on'
-    then:
     - action: switch.turn_on
       metadata: {}
       data: {}
       target:
-        entity_id: switch.20_gallon_long_socket_3
-    alias: Auto turn CO2 back on
-  - action: input_number.set_value
-    metadata: {}
-    data:
-      value: 45
-    target:
-      entity_id: input_number.rest_pumps_minutes
-  - action: logbook.log
-    metadata: {}
-    data:
-      entity_id: script.20g_rest_pumps_45_min
-      name: 20g Rest Pumps
-      message: Pump Rest Has Run Successfully!
-  description: ''
+        entity_id: switch.fish_lights
+    - delay:
+        hours: 0
+        minutes: "{{ states('input_number.light_minutes') | int}}"
+        seconds: 0
+        milliseconds: 0
+    - if:
+        - condition: state
+          state: "off"
+          entity_id: schedule.fish_lights_schedule
+      then:
+        - action: switch.turn_off
+          metadata: {}
+          data: {}
+          target:
+            entity_id: switch.fish_lights
+    - action: input_number.set_value
+      metadata: {}
+      data:
+        value: 15
+      target:
+        entity_id: input_number.light_minutes
+    - action: logbook.log
+      metadata: {}
+      data:
+        entity_id: script.20g_rest_pumps_45_min
+        name: 20g Rest Pumps (minutes)
+        message: Aquarium Lights Timer has ran successfully!
+  description: ""
+  icon: mdi:fish
+20g_rest_pumps_45_min:
+  alias: 20g Rest Pumps (45 min)
+  sequence:
+    - action: switch.turn_off
+      metadata: {}
+      data: {}
+      target:
+        entity_id:
+          - switch.20_gallon_long_socket_4
+          - switch.20_gallon_long_socket_2
+          - switch.20_gallon_long_socket_3
+    - delay: 0{{ state_attr('timer.pumps_off_delay','duration') }}
+      enabled: false
+    - delay:
+        hours: 0
+        minutes: "{{ states('input_number.rest_pumps_minutes') }}"
+        milliseconds: 0
+      enabled: true
+    - action: switch.turn_on
+      metadata: {}
+      data: {}
+      target:
+        entity_id:
+          - switch.20_gallon_long_socket_4
+          - switch.20_gallon_long_socket_2
+      alias: "Turn on pumps thing "
+    - if:
+        - condition: state
+          entity_id: schedule.fish_co2_schedule
+          state: "on"
+      then:
+        - action: switch.turn_on
+          metadata: {}
+          data: {}
+          target:
+            entity_id: switch.20_gallon_long_socket_3
+      alias: Auto turn CO2 back on
+    - action: input_number.set_value
+      metadata: {}
+      data:
+        value: 45
+      target:
+        entity_id: input_number.rest_pumps_minutes
+    - action: logbook.log
+      metadata: {}
+      data:
+        entity_id: script.20g_rest_pumps_45_min
+        name: 20g Rest Pumps
+        message: Pump Rest Has Run Successfully!
+  description: ""
   icon: mdi:fish-off
 llv_test:
-  alias: ' LLV Test'
+  alias: " LLV Test"
   sequence:
-  - variables:
-      mytestvar: undefined
-  - action: llmvision.image_analyzer
-    metadata: {}
-    data:
-      include_filename: true
-      target_width: 702
-      detail: low
-      max_tokens: 29
-      temperature: 0.2
-      provider: 01JDVNFP4KWD6XERDGQ5V3TY6W
-      message: please count the images on the walls
-      image_entity:
-      - camera.camera_1_q5_profile1
-    response_variable: mytestvar
-  description: ''
+    - variables:
+        mytestvar: undefined
+    - action: llmvision.image_analyzer
+      metadata: {}
+      data:
+        include_filename: true
+        target_width: 702
+        detail: low
+        max_tokens: 29
+        temperature: 0.2
+        provider: 01JDVNFP4KWD6XERDGQ5V3TY6W
+        message: please count the images on the walls
+        image_entity:
+          - camera.camera_1_q5_profile1
+      response_variable: mytestvar
+  description: ""
 new_script:
   alias: New Script
   sequence:
-  - variables:
-      gbttest: undefined
-  - action: llmvision.stream_analyzer
-    metadata: {}
-    data:
-      remember: false
-      duration: 5
-      max_frames: 3
-      include_filename: false
-      target_width: 1280
-      detail: low
-      max_tokens: 100
-      temperature: 0.2
-      expose_images: false
-      provider: 01JDVKCP2N9XZ6BQYGS518Q79N
-      image_entity:
-      - camera.camera_1_q5_profile1
-      message: 'how many pictures ar eon the wall
+    - variables:
+        gbttest: undefined
+    - action: llmvision.stream_analyzer
+      metadata: {}
+      data:
+        remember: false
+        duration: 5
+        max_frames: 3
+        include_filename: false
+        target_width: 1280
+        detail: low
+        max_tokens: 100
+        temperature: 0.2
+        expose_images: false
+        provider: 01JDVKCP2N9XZ6BQYGS518Q79N
+        image_entity:
+          - camera.camera_1_q5_profile1
+        message: "how many pictures ar eon the wall
 
-        '
-    response_variable: gbttest
-  description: ''
+          "
+      response_variable: gbttest
+  description: ""
 save_image:
-  alias: 'Save image '
+  alias: "Save image "
   sequence:
-  - action: camera.snapshot
-    metadata: {}
-    data:
-      filename: gbttestme
-    target:
-      entity_id: camera.camera_1_q5_profile1
-  description: ''
+    - action: camera.snapshot
+      metadata: {}
+      data:
+        filename: gbttestme
+      target:
+        entity_id: camera.camera_1_q5_profile1
+  description: ""
 test_snapshot:
   alias: Test snapshot
   sequence:
-  - action: camera.snapshot
-    metadata: {}
-    data:
-      filename: gbttestme
-    target:
-      entity_id: camera.camera_1_q5_profile1
-  description: ''
+    - action: camera.snapshot
+      metadata: {}
+      data:
+        filename: gbttestme
+      target:
+        entity_id: camera.camera_1_q5_profile1
+  description: ""
 snapshot_testme:
   alias: Snapshot testme
   sequence:
-  - action: camera.snapshot
-    metadata: {}
-    data:
-      filename: gbt-test-snap
-    target:
-      entity_id: camera.camera_1_q5_profile1
-  description: ''
+    - action: camera.snapshot
+      metadata: {}
+      data:
+        filename: gbt-test-snap
+      target:
+        entity_id: camera.camera_1_q5_profile1
+  description: ""
 script_wtfnew_script:
   alias: SCRIPT WTFNew Script
   sequence:
-  - type: turn_off
-    device_id: 8c47d81137a36710435db50081c8460c
-    entity_id: 6e438ba6c4e4600cd7ea33f8e3a8d762
-    domain: switch
-  - action: button.press
-    metadata: {}
-    data: {}
-  description: ''
+    - type: turn_off
+      device_id: 8c47d81137a36710435db50081c8460c
+      entity_id: 6e438ba6c4e4600cd7ea33f8e3a8d762
+      domain: switch
+    - action: button.press
+      metadata: {}
+      data: {}
+  description: ""
 new_script_2:
   alias: New Script
   sequence:
-  - action: camera.snapshot
-    metadata: {}
-    data:
-      filename: Gggg
-    target:
-      entity_id: camera.camera_1_q5_profile1
-  description: ''
+    - action: camera.snapshot
+      metadata: {}
+      data:
+        filename: Gggg
+      target:
+        entity_id: camera.camera_1_q5_profile1
+  description: ""

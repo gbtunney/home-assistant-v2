@@ -1,227 +1,230 @@
-- id: '1730622599095'
+- id: "1730622599095"
   alias: Leak Alert (Unlocated)
-  description: ''
+  description: ""
   triggers:
-  - trigger: state
-    entity_id:
-    - binary_sensor.leak_detector_moisture
-    from: 'off'
-    to: 'on'
+    - trigger: state
+      entity_id:
+        - binary_sensor.leak_detector_moisture
+      from: "off"
+      to: "on"
   conditions: []
   actions:
-  - action: notify.notify
-    metadata: {}
-    data:
-      message: Flood Detector is WET :(
+    - action: notify.notify
+      metadata: {}
+      data:
+        message: Flood Detector is WET :(
   mode: single
-- id: '1731112607857'
+- id: "1731112607857"
   alias: Tsst pumps off
-  description: ''
+  description: ""
   triggers:
-  - trigger: state
-    entity_id:
-    - switch.120g_pumps_heaters
-    - switch.10g_m_pumps_heaters
-    - switch.20g_pumps_heaters
-    - switch.new_20g_powerstrip_kasa_smart_plug_3a71_1
-    for:
-      hours: 2
-      minutes: 0
-      seconds: 0
-    from:
-    to: 'off'
+    - trigger: state
+      entity_id:
+        - switch.120g_pumps_heaters
+        - switch.10g_m_pumps_heaters
+        - switch.20g_pumps_heaters
+        - switch.new_20g_powerstrip_kasa_smart_plug_3a71_1
+      for:
+        hours: 2
+        minutes: 0
+        seconds: 0
+      from:
+      to: "off"
   conditions: []
   actions:
-  - action: script.notify_dispatcher
-    metadata: {}
-    data:
-      sms: true
-      iphone: true
-      ipad: true
-      critical: false
-      entity_targets:
-      - 7188138156@mms.att.net
-      - gbtunney@mac.com
-      message: '{% set entity = trigger.entity_id  %} ALERT! Device: {{ trigger.to_state.name
-        }} is registering being off for more than 2hrs in Area: {{ area_name(trigger.entity_id)
-        }} :: Please fix!!
+    - action: script.notify_dispatcher
+      metadata: {}
+      data:
+        sms: true
+        iphone: true
+        ipad: true
+        critical: false
+        entity_targets:
+          - 7188138156@mms.att.net
+          - gbtunney@mac.com
+        message:
+          "{% set entity = trigger.entity_id  %} ALERT! Device: {{ trigger.to_state.name
+          }} is registering being off for more than 2hrs in Area: {{ area_name(trigger.entity_id)
+          }} :: Please fix!!
 
-        '
+          "
   mode: single
-- id: '1731283746026'
+- id: "1731283746026"
   alias: New automation
-  description: ''
+  description: ""
   triggers:
-  - trigger: state
-    entity_id:
-    - schedule.fish_lights_schedule
-    attribute: next_event
-    enabled: true
-  conditions:
-  - condition: template
-    value_template: '{{ trigger.to_state.state in [''on'', ''off''] }}'
-  actions:
-  - action: switch.turn_{{ trigger.to_state.state }}
-    metadata: {}
-    data: {}
-    target:
+    - trigger: state
       entity_id:
-      - switch.fish_lights
-  mode: single
-- id: '1731300280308'
-  alias: 'Co '
-  description: ''
-  triggers:
-  - trigger: state
-    entity_id:
-    - schedule.fish_co2_schedule
-    attribute: next_event
+        - schedule.fish_lights_schedule
+      attribute: next_event
+      enabled: true
   conditions:
-  - condition: template
-    value_template: '{{ trigger.to_state.state in [''on'', ''off''] }}'
+    - condition: template
+      value_template: "{{ trigger.to_state.state in ['on', 'off'] }}"
   actions:
-  - action: switch.turn_{{ trigger.to_state.state }}
-    metadata: {}
-    data: {}
-    target:
-      entity_id:
-      - switch.20_gallon_long_socket_3
+    - action: switch.turn_{{ trigger.to_state.state }}
+      metadata: {}
+      data: {}
+      target:
+        entity_id:
+          - switch.fish_lights
   mode: single
-- id: '1731300678056'
-  alias: 'Reptile Lights Scheduled: ON'
-  description: 'Lights turn on 2 hrs after sunrise '
+- id: "1731300280308"
+  alias: "Co "
+  description: ""
   triggers:
-  - trigger: sun
-    event: sunrise
-    offset: 02:00:00
+    - trigger: state
+      entity_id:
+        - schedule.fish_co2_schedule
+      attribute: next_event
+  conditions:
+    - condition: template
+      value_template: "{{ trigger.to_state.state in ['on', 'off'] }}"
+  actions:
+    - action: switch.turn_{{ trigger.to_state.state }}
+      metadata: {}
+      data: {}
+      target:
+        entity_id:
+          - switch.20_gallon_long_socket_3
+  mode: single
+- id: "1731300678056"
+  alias: "Reptile Lights Scheduled: ON"
+  description: "Lights turn on 2 hrs after sunrise "
+  triggers:
+    - trigger: sun
+      event: sunrise
+      offset: 02:00:00
   conditions: []
   actions:
-  - action: switch.turn_on
-    metadata: {}
-    data: {}
-    target:
-      entity_id:
-      - switch.dorn_and_marceline_socket_1
-      - switch.seafoam_styx_socket_1
+    - action: switch.turn_on
+      metadata: {}
+      data: {}
+      target:
+        entity_id:
+          - switch.dorn_and_marceline_socket_1
+          - switch.seafoam_styx_socket_1
   mode: single
-- id: '1731300893649'
+- id: "1731300893649"
   alias: Lizard Lights Scheduled Off
   description: Lights turn off 45 min after sunset
   triggers:
-  - trigger: sun
-    event: sunset
-    offset: 00:45:00
+    - trigger: sun
+      event: sunset
+      offset: 00:45:00
   conditions: []
   actions:
-  - action: switch.turn_off
-    metadata: {}
-    data: {}
-    target:
-      entity_id:
-      - switch.dorn_and_marceline_socket_1
-      - switch.seafoam_styx_socket_1
+    - action: switch.turn_off
+      metadata: {}
+      data: {}
+      target:
+        entity_id:
+          - switch.dorn_and_marceline_socket_1
+          - switch.seafoam_styx_socket_1
   mode: single
-- id: '1731385051359'
+- id: "1731385051359"
   alias: Test Temp Automation
-  description: ''
+  description: ""
   triggers:
-  - trigger: numeric_state
-    entity_id:
-    - sensor.hygrometer_temperature
-    - input_number.dummy_thermometer
-    below: 65
-    enabled: true
-  - trigger: numeric_state
-    entity_id:
-    - sensor.hygrometer_temperature
-    - input_number.dummy_thermometer
-    above: 85
-    enabled: true
+    - trigger: numeric_state
+      entity_id:
+        - sensor.hygrometer_temperature
+        - input_number.dummy_thermometer
+      below: 65
+      enabled: true
+    - trigger: numeric_state
+      entity_id:
+        - sensor.hygrometer_temperature
+        - input_number.dummy_thermometer
+      above: 85
+      enabled: true
   conditions: []
   actions:
-  - action: script.sms_notification
-    metadata: {}
-    data:
-      entity_targets:
-      - 7188138156@mms.att.net
-      - gbtunney@mac.com
-      message: '{% set entity = trigger.entity_id  %} ALERT! {% if trigger.above ==
-        none %}Low {% else %}High {% endif %} temperature! Device: {{ trigger.to_state.name
-        }} is registering temp of {{ trigger.to_state.state }}F in Area: {{ area_name(trigger.entity_id)
-        }} :: Please fix!!
+    - action: script.sms_notification
+      metadata: {}
+      data:
+        entity_targets:
+          - 7188138156@mms.att.net
+          - gbtunney@mac.com
+        message:
+          "{% set entity = trigger.entity_id  %} ALERT! {% if trigger.above ==
+          none %}Low {% else %}High {% endif %} temperature! Device: {{ trigger.to_state.name
+          }} is registering temp of {{ trigger.to_state.state }}F in Area: {{ area_name(trigger.entity_id)
+          }} :: Please fix!!
 
-        '
-    enabled: false
-  - action: script.notify_dispatcher
-    metadata: {}
-    data:
-      critical: false
-      entity_targets:
-      - 7188138156@mms.att.net
-      - gbtunney@mac.com
-      message: '{% set entity = trigger.entity_id  %} ALERT! {% if trigger.above ==
-        none %}Low {% else %}High {% endif %} temperature! Device: {{ trigger.to_state.name
-        }} is registering temp of {{ trigger.to_state.state }}F in Area: {{ area_name(trigger.entity_id)
-        }} :: Please fix!!
+          "
+      enabled: false
+    - action: script.notify_dispatcher
+      metadata: {}
+      data:
+        critical: false
+        entity_targets:
+          - 7188138156@mms.att.net
+          - gbtunney@mac.com
+        message:
+          "{% set entity = trigger.entity_id  %} ALERT! {% if trigger.above ==
+          none %}Low {% else %}High {% endif %} temperature! Device: {{ trigger.to_state.name
+          }} is registering temp of {{ trigger.to_state.state }}F in Area: {{ area_name(trigger.entity_id)
+          }} :: Please fix!!
 
-        '
+          "
   mode: single
-- id: '1732604678342'
+- id: "1732604678342"
   alias: Test CMERA
-  description: ''
+  description: ""
   triggers:
-  - trigger: state
-    entity_id:
-    - alarm_control_panel.home_alarm
-    to: armed_away
-    for:
-      hours: 0
-      minutes: 0
-      seconds: 0
+    - trigger: state
+      entity_id:
+        - alarm_control_panel.home_alarm
+      to: armed_away
+      for:
+        hours: 0
+        minutes: 0
+        seconds: 0
   conditions: []
   actions:
-  - action: camera.enable_motion_detection
-    metadata: {}
-    data: {}
-    target:
-      entity_id: camera.camera_1_q5_profile1
+    - action: camera.enable_motion_detection
+      metadata: {}
+      data: {}
+      target:
+        entity_id: camera.camera_1_q5_profile1
   mode: single
-- id: '1732834246888'
+- id: "1732834246888"
   alias: Camera Off
-  description: ''
+  description: ""
   triggers: []
   conditions: []
   actions:
-  - action: camera.turn_off
-    metadata: {}
-    data: {}
-    target:
-      entity_id: camera.camera_1_q5_profile1
+    - action: camera.turn_off
+      metadata: {}
+      data: {}
+      target:
+        entity_id: camera.camera_1_q5_profile1
   mode: single
-- id: '1732933639597'
+- id: "1732933639597"
   alias: Image sace
-  description: ''
+  description: ""
   triggers: []
   conditions: []
   actions:
-  - action: camera.snapshot
-    metadata: {}
-    data:
-      filename: gbttest
-    target:
-      entity_id: camera.camera_1_q5_profile1
+    - action: camera.snapshot
+      metadata: {}
+      data:
+        filename: gbttest
+      target:
+        entity_id: camera.camera_1_q5_profile1
   mode: single
-- id: '1732934005983'
+- id: "1732934005983"
   alias: New automation
-  description: ''
+  description: ""
   triggers:
-  - trigger: state
-    entity_id:
-    - switch.10g_m_guppies_socket_2
-    to: 'off'
+    - trigger: state
+      entity_id:
+        - switch.10g_m_guppies_socket_2
+      to: "off"
   conditions: []
   actions:
-  - action: button.press
-    metadata: {}
-    data: {}
+    - action: button.press
+      metadata: {}
+      data: {}
   mode: single
