@@ -262,32 +262,3 @@ aquarium_lights_on_for_15min:
         message: Pump Rest Has Run Successfully!
   description: ""
   icon: mdi:fish-off
-llv_test:
-  alias: " LLV Test"
-  sequence:
-    - variables:
-        mytestvar: undefined
-    - action: llmvision.image_analyzer
-      metadata: {}
-      data:
-        include_filename: true
-        target_width: 702
-        detail: low
-        max_tokens: 29
-        temperature: 0.2
-        provider: 01JDVNFP4KWD6XERDGQ5V3TY6W
-        message: please count the images on the walls
-        image_entity:
-          - camera.camera_1_q5_profile1
-      response_variable: mytestvar
-  description: ""
-new_script_2:
-  alias: New Script
-  sequence:
-    - action: camera.snapshot
-      metadata: {}
-      data:
-        filename: snapshots/test-image2-{{ as_timestamp(now()) }}.png
-      target:
-        entity_id: camera.camera_1_q5_profile1
-  description: ""

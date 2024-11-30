@@ -1,8 +1,3 @@
-#####
-# Scripts created from the ui
-# https://www.home-assistant.io/docs/configuration/splitting_configuration/
-####
-
 test_photo_uploader:
   alias: Test photo uploader
   sequence:
@@ -12,4 +7,38 @@ test_photo_uploader:
         config_entry_id: 01JDXZWF95N644N5ACX8K3Q189
         filename: snapshots/test-image2-1732940331.96996.png
         album: Home Assistant Camera
+  description: ""
+camera_snap_and_upload:
+  alias: Camera Snap and Upload
+  sequence:
+    - variables:
+        directory: snapshots
+        prefix: test-image2
+        ext: png
+        timestamp: "{{ as_timestamp(now()) }}"
+        filename: undefined
+    - action: notify.persistent_notification
+      metadata: {}
+      data:
+        message: hi there latest '{{ directory }}/{{prefix }}-{{ timestamp }}.{{ext}}'
+    - variables: {}
+  description: ""
+llv_test:
+  alias: " LLV Test"
+  sequence:
+    - variables:
+        mytestvar: undefined
+    - action: llmvision.image_analyzer
+      metadata: {}
+      data:
+        include_filename: true
+        target_width: 702
+        detail: low
+        max_tokens: 29
+        temperature: 0.2
+        provider: 01JDVNFP4KWD6XERDGQ5V3TY6W
+        message: please count the images on the walls
+        image_entity:
+          - camera.camera_1_q5_profile1
+      response_variable: mytestvar
   description: ""
