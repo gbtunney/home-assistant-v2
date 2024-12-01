@@ -2,7 +2,7 @@ blueprint:
   name: Confirmable Notification
   description: >-
     A script that sends an actionable notification with a confirmation before
-    running the specified action.
+    running the specified action. (modified)
   domain: script
   source_url: https://github.com/home-assistant/core/blob/master/homeassistant/components/script/blueprints/confirmable_notification.yaml
   author: Home Assistant
