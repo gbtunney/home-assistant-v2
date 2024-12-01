@@ -5,32 +5,46 @@
 #####
 camera_snap_and_upload:
   alias: Camera Snapshot and Upload
+  description: >
+    "- Takes camera snapshot and saves
+    - Uploads to google photos 
+    - Sends notification when completed "
+  icon: mdi:camera-retake-outline
   sequence:
     - variables:
         response: not set
+        upload_google: true
         filename:
           "{% from 'camera.jinja' import snapshot_path %}{{ snapshot_path(
           entity | default('camera.camera_1_q5_profile1')  ) }}"
     - action: camera.snapshot
       metadata: {}
       data:
-        filename: "{{ filename }}"
+        filename: /media/{{ filename }}
       target:
         entity_id: "{{entity | default('camera.camera_1_q5_profile1') }}"
-    - action: google_photos.upload
-      metadata: {}
-      data:
-        config_entry_id: 01JDXZWF95N644N5ACX8K3Q189
-        filename: "{{ filename }}"
-        album: Home Assistant Camera
-      response_variable: response
+    - if:
+        - condition: template
+          value_template: "{{ upload_google }}"
+      then:
+        - action: google_photos.upload
+          metadata: {}
+          data:
+            config_entry_id: 01JDXZWF95N644N5ACX8K3Q189
+            filename: /media/{{ filename }}
+            album: Home Assistant Camera
+          response_variable: response
+      alias: Upload to Google photos
     - action: persistent_notification.create
       metadata: {}
       data:
         title: Snapshot Success!
-        message: "File was created at: {{ filename }}  Google Upload status: {{ response }}"
-  description: >
-    - Takes camera snapshot and saves
-    - Uploads to google photos
-    - Sends notification when completed '
-  icon: mdi:camera-retake-outline
+        message:
+          "File was created at: /media/{{ filename }}  Google Upload status:
+          {{ response }}"
+    - action: input_text.set_value
+      metadata: {}
+      data:
+        value: media-source://media_source/local/{{filename}}
+      target:
+        entity_id: input_text.url_llv

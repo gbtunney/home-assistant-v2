@@ -1,3 +1,9 @@
-{% macro snapshot_path(prefix ='camera-image',directory ='snapshots' , ext='png') %}
+{% macro snapshot_path(prefix ='camera-image',directory ='camera_stills' , ext='png') %}
+{% set media_lib_directory = "/media" %}
 {{ directory }}/{{prefix }}-{{ as_timestamp(now()) }}.{{ext}}
+{% endmacro %}
+
+{% macro snapshot_media_source(prefix ='camera-image',directory ='camera_stills' , ext='png') %}
+{% set media_lib_alias = "media-source://media_source/local" %}
+{{ media_lib_alias }}/{{ directory }}/{{prefix }}-{{ as_timestamp(now()) }}.{{ext}}
 {% endmacro %}

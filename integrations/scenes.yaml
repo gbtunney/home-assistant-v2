@@ -5,5 +5,7 @@
 # https://www.home-assistant.io/integrations/scene/
 #####
 
-scene: []
+scene manual: []
   #!include_dir_list ../scenes
+
+scene ui: !include ./../scenes.yaml

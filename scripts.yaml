@@ -1,8 +1,3 @@
-#####
-# SCRIPTS: UI
-# https://www.home-assistant.io/integrations/script/
-#####
-
 notification_sample_scripts:
   alias: Notification Sample Scripts
   sequence:
@@ -28,23 +23,196 @@ notification_sample_scripts:
       data: {}
   description: ""
   icon: mdi:bell-outline
-
 llv_test:
-  alias: " LLV Test"
+  alias: "LLM Vision Describe Scene"
+  fields:
+    prompt:
+      selector:
+        text:
+      name: prompt
+      required: true
+      default: >
+        "Summarize what's happening in the camera feed (one sentence max).
+         Don't describe the scene! If there is a person, describe what they're
+         doing and what they look like. If they look like a courier mention that!
+         If nothing is happening, say so."
   sequence:
     - variables:
-        mytestvar: undefined
+        llv_response: undefined
     - action: llmvision.image_analyzer
       metadata: {}
       data:
-        include_filename: true
-        target_width: 702
+        include_filename: false
+        target_width: 800
         detail: low
-        max_tokens: 29
-        temperature: 0.2
+        max_tokens: 100
+        temperature: 0.5
         provider: 01JDVNFP4KWD6XERDGQ5V3TY6W
-        message: please count the images on the walls
+        message: "{{ prompt }}"
+        remember: false
+        expose_images: false
+        image_file: /media/{{ states( 'input_text.url_llv')  }}
+      response_variable: llv_response
+    - action: input_text.set_value
+      metadata: {}
+      data:
+        value: "{{ llv_response }}"
+      target:
+        entity_id: input_text.llm_response
+  description: ""
+  icon: mdi:camera
+llm_car_in_driveway:
+  alias: LLM Car in Driveway
+  sequence:
+    - data:
+        max_tokens: 100
+        image_entity:
+          - camera.carport
+        provider: 01J99F4T99PA1XGQ4CTQS3CP8H
+        model: gpt-4o
+        target_width: 512
+        temperature: 0.5
+        detail: low
+        include_filename: false
+        message:
+          Please check if there is a car in the driveway with the license plate
+          "<your_license_plate_number>" and respond with a JSON object. The JSON object
+          should have a single key, "car_in_driveway," which should be set to true if
+          - and only  if - there is a car with the license number provided above in
+          the  driveway and false otherwise.
+      response_variable: response
+      action: llmvision.image_analyzer
+    - choose:
+        - conditions:
+            - condition: template
+              value_template:
+                "{{ (( response.response_text |regex_replace(find='```json
+
+                ', replace='', ignorecase=False) |regex_replace(find='
+
+                ```', replace='', ignorecase=False)  ) | from_json).car_in_driveway }}"
+              enabled: true
+          sequence:
+            - target:
+                entity_id: input_boolean.car_in_driveway
+              data: {}
+              action: input_boolean.turn_on
+      default:
+        - target:
+            entity_id: input_boolean.car_in_driveway
+          data: {}
+          action: input_boolean.turn_off
+      enabled: true
+  mode: single
+  description: ""
+llv_prompt_test:
+  alias: LLV Prompt Test
+  fields:
+    prompt:
+      selector:
+        text:
+      name: prompt
+      required: true
+  sequence:
+    - metadata: {}
+      data:
+        max_tokens: 100
+        model: gpt-4o
+        provider: 01J99F4T99PA1XGQ4CTQS3CP8H
+        target_width: 1280
+        include_filename: false
+        image_entity:
+          - camera.front_door
+          - camera.garage
+        message: "{{ prompt }}"
+      response_variable: response
+      action: llmvision.image_analyzer
+    - metadata: {}
+      data:
+        cache: true
+        media_player_entity_id: media_player.entity_id
+        message: "{{response.response_text}}"
+      target:
+        entity_id: tts.piper
+      action: tts.speak
+  description: ""
+bring_clothes_in_when_it_rains:
+  alias: Bring Clothes in when it rains
+  sequence:
+    - action: llmvision.image_analyzer
+      metadata: {}
+      data:
+        remember: false
+        include_filename: false
+        detail: low
+        max_tokens: 100
+        expose_images: false
+        temperature: 0.5
+        message:
+          Reply with a simple number, how many pictures of artwork are hanging
+          on the wall?
         image_entity:
           - camera.camera_1_q5_profile1
-      response_variable: mytestvar
-  description: ""
+        model: gemini-1.5-flash
+        target_width: 512
+    - if:
+        - condition: template
+          value_template: '"{{ gemini.response_text | int > 1 }}"'
+      then:
+        - action: persistent_notification.create
+          metadata: {}
+          data:
+            message:
+              "The clothing items were counted.  COUNT: {{ gemini.response_text
+              | int }}"
+  description: ddd
+  icon: mdi:weather-lightning-rainy
+count_pictures_on_wall:
+  alias: Count Pictures on Wall
+  sequence:
+    - variables:
+        llm_response: undefined
+    - action: llmvision.image_analyzer
+      metadata: {}
+      response_variable: llm_response
+      data:
+        remember: false
+        include_filename: false
+        detail: low
+        max_tokens: 100
+        expose_images: false
+        temperature: 0.5
+        message:
+          Reply with a simple number, how many pictures of artwork are hanging
+          on the wall?
+        target_width: 512
+        provider: 01JDVNFP4KWD6XERDGQ5V3TY6W
+        image_file: /media/{{ states( 'input_text.url_llv')  }}
+    - if:
+        - condition: template
+          value_template:
+            "{% if llm_response.response_text | is_number %}true{% else
+            %}false{% endif %}"
+      then:
+        - action: input_number.set_value
+          metadata: {}
+          data:
+            value: "{{  llm_response.response_text | float}}"
+          target:
+            entity_id: input_number.llv_picture_wall_count
+        - action: persistent_notification.create
+          metadata: {}
+          data:
+            message:
+              "Pictures on the wall were counted.  COUNT: {{  states('input_number.llv_picture_wall_count')
+              | int }}"
+      else:
+        - action: persistent_notification.create
+          metadata: {}
+          data:
+            title: FAILURE!
+            message:
+              "FAILURE! Pictures on the wall were NOT COUNTED> .  RESPONSE: {{  llm_response
+              }}"
+  description: ddd
+  icon: mdi:panorama-variant-outline

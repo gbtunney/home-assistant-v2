@@ -6,21 +6,11 @@
 
 homeassistant:
   packages: !include_dir_named integrations # package setup/config split
-
-  # directory for camera snapshots
+  media_dirs:
+    local: /media
+    # directory for camera snapshots
   allowlist_external_dirs:
-    - "/config/snapshots"
-    - "./snapshots"
-
-#automation: !include automations.yaml
-#script: !include scripts.yaml
-#scene: !include scenes.yaml
-
-#input_number: !include input_number.yaml
-
-#logger:
-#default: warn
-
+    - "/media"
 #todo: move
 sun2:
   - unique_id: tanzania
