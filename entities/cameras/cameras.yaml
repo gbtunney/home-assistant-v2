@@ -1,0 +1,15 @@
+#####
+# FFMpeg Cameras
+# Camera 1
+#####
+- platform: ffmpeg
+  name: "Camera #1 RTSP Stream"
+  input: !secret "camera_feed_1"
+
+#####
+# FFMpeg Cameras
+# Camera 2
+#####
+- platform: ffmpeg
+  name: "Camera #2 RTSP Stream"
+  input: !secret "camera_feed_2"

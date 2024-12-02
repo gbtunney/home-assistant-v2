@@ -1,16 +1,34 @@
-- id: "1730622599095"
+- id: '1730622599095'
   alias: Leak Alert (Unlocated)
-  description: "todo: fix"
+  description: 'todo: fix'
   triggers:
-    - trigger: state
-      entity_id:
-        - binary_sensor.leak_detector_moisture
-      from: "off"
-      to: "on"
+  - trigger: state
+    entity_id:
+    - binary_sensor.leak_detector_moisture
+    from: 'off'
+    to: 'on'
   conditions: []
   actions:
-    - action: notify.notify
-      metadata: {}
-      data:
-        message: Flood Detector is WET :(
+  - action: notify.notify
+    metadata: {}
+    data:
+      message: Flood Detector is WET :(
+  mode: single
+- id: '1733132017854'
+  alias: Test motion. Detect
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.motion_detection_camera_1
+    to: 'on'
+  conditions:
+  - condition: state
+    entity_id: alarm_control_panel.home_alarm
+    state: armed_home
+  actions:
+  - action: persistent_notification.create
+    metadata: {}
+    data:
+      message: Motion detection!!
   mode: single

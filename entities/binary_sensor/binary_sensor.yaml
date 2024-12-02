@@ -8,7 +8,7 @@
 #####
 - platform: ffmpeg_motion
   name: "Motion Detection Camera #1"
-  input: !secret camera_feed_1
+  input: !secret "camera_feed_1"
   changes: 2
   repeat: 2
   repeat_time: 3
@@ -19,7 +19,7 @@
 #####
 - platform: ffmpeg_motion
   name: "Motion Detection Camera #2"
-  input: !secret camera_feed_2
+  input: !secret "camera_feed_2"
 
 # times of day sensor
 - platform: tod
