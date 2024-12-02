@@ -3,17 +3,13 @@
 # https://www.home-assistant.io/integrations/script/
 # https://www.home-assistant.io/docs/configuration/splitting_configuration/
 #####
-camera_snap_and_upload:
+camera_snapshot_and_upload:
   alias: Camera Snapshot and Upload
-  description: >
-    "- Takes camera snapshot and saves
-    - Uploads to google photos 
-    - Sends notification when completed "
-  icon: mdi:camera-retake-outline
   sequence:
     - variables:
         response: not set
         upload_google: true
+        image_path_id: input_text.camera_1_still_path
         filename:
           "{% from 'camera.jinja' import snapshot_path %}{{ snapshot_path(
           entity | default('camera.camera_1_q5_profile1')  ) }}"
@@ -23,7 +19,8 @@ camera_snap_and_upload:
         filename: /media/{{ filename }}
       target:
         entity_id: "{{entity | default('camera.camera_1_q5_profile1') }}"
-    - if:
+    - alias: Upload to Google photos
+      if:
         - condition: template
           value_template: "{{ upload_google }}"
       then:
@@ -34,17 +31,26 @@ camera_snap_and_upload:
             filename: /media/{{ filename }}
             album: Home Assistant Camera
           response_variable: response
-      alias: Upload to Google photos
-    - action: persistent_notification.create
-      metadata: {}
-      data:
-        title: Snapshot Success!
-        message:
-          "File was created at: /media/{{ filename }}  Google Upload status:
-          {{ response }}"
+        - action: persistent_notification.create
+          metadata: {}
+          data:
+            title: Snapshot Success!
+            message:
+              "File was created at: /media/{{ filename }}  Google Upload status:
+              {{ response }}"
+      else:
+        - action: persistent_notification.create
+          metadata: {}
+          data:
+            title: Snapshot Success!
+            message: "File was created at: /media/{{ filename }} "
     - action: input_text.set_value
       metadata: {}
       data:
         value: media-source://media_source/local/{{filename}}
       target:
-        entity_id: input_text.url_llv
+        entity_id: "{{ image_path_id }}"
+  description: >
+    "- Takes camera snapshot and saves - Uploads to google photos  - Sends
+    notification when completed "
+  icon: mdi:camera-retake-outline

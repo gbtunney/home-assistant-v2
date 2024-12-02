@@ -216,24 +216,6 @@ count_pictures_on_wall:
               }}"
   description: ddd
   icon: mdi:panorama-variant-outline
-test_tts:
-  alias: Test TTS
-  sequence:
-    - action: tts.speak
-      metadata: {}
-      data:
-        cache: false
-        media_player_entity_id: media_player.alexa_s_baby
-        message: This is a test message!!
-      target:
-        entity_id: tts.home_assistant_cloud
-  description: ""
-test_notify_alexa:
-  alias: TEST Notify Alexa
-  use_blueprint:
-    path: TheAppleFreak/notify_alexa.yaml
-  description: ""
-  icon: mdi:alarm-light
 alexa_notify_real_test:
   alias: Alexa Notify Real Test
   sequence:

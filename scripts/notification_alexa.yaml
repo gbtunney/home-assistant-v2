@@ -1,0 +1,15 @@
+#####
+# SCRIPTS: Alexa Notification
+# Uses alexa media player integration
+#####
+
+alexa_notification:
+  alias: Alexa Notification
+  sequence:
+    - action: notify.alexa_media
+      metadata: {}
+      data:
+        target: media_player.alexa_s_baby
+        message: "{% if critical == true %}Critical Alert!{% endif %}{{ message | default('HANOTIFICATION ERROR::')}}"
+  description: Uses Alexa media player integration
+  icon: mdi:bullhorn

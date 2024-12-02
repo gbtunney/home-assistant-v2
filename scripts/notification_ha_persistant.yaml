@@ -9,8 +9,6 @@ ha_persistant_notification:
       metadata: {}
       data:
         message: "{{ message | default('HA NOTIFICATION ERROR.') }}"
-        title:
-          "{% if title is defined -%} {{ title | default('Title') }} {%- endif
-          %}"
+        title: "{% if bool( title , false ) == true -%} {{ title | default('Error: Title NOT SET') }}{%- endif%}"
   description: ""
   icon: mdi:bell
