@@ -1,6 +1,16 @@
-#####
-# Automations created from the ui
-# https://www.home-assistant.io/docs/automation/
-####
-
-[]
+- id: "1730622599095"
+  alias: Leak Alert (Unlocated)
+  description: "todo: fix"
+  triggers:
+    - trigger: state
+      entity_id:
+        - binary_sensor.leak_detector_moisture
+      from: "off"
+      to: "on"
+  conditions: []
+  actions:
+    - action: notify.notify
+      metadata: {}
+      data:
+        message: Flood Detector is WET :(
+  mode: single

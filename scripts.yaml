@@ -23,19 +23,20 @@ notification_sample_scripts:
       data: {}
   description: ""
   icon: mdi:bell-outline
-llv_test:
-  alias: "LLM Vision Describe Scene"
+llm_vision_describe_scene:
+  alias: LLM Vision Describe Scene
+  description: "LLM Vision: Describe the Camera Feed in Sentence"
   fields:
     prompt:
       selector:
         text:
       name: prompt
       required: true
-      default: >
-        "Summarize what's happening in the camera feed (one sentence max).
-         Don't describe the scene! If there is a person, describe what they're
-         doing and what they look like. If they look like a courier mention that!
-         If nothing is happening, say so."
+      default:
+        "\"Summarize what's happening in the camera feed (one sentence max).\n
+        Don't describe the scene! If there is a person, describe what they're\n doing
+        and what they look like. If they look like a courier mention that!\n If nothing
+        is happening, say so.\"\n"
   sequence:
     - variables:
         llv_response: undefined
@@ -59,7 +60,6 @@ llv_test:
         value: "{{ llv_response }}"
       target:
         entity_id: input_text.llm_response
-  description: ""
   icon: mdi:camera
 llm_car_in_driveway:
   alias: LLM Car in Driveway
@@ -216,3 +216,42 @@ count_pictures_on_wall:
               }}"
   description: ddd
   icon: mdi:panorama-variant-outline
+test_tts:
+  alias: Test TTS
+  sequence:
+    - action: tts.speak
+      metadata: {}
+      data:
+        cache: false
+        media_player_entity_id: media_player.alexa_s_baby
+        message: This is a test message!!
+      target:
+        entity_id: tts.home_assistant_cloud
+  description: ""
+test_notify_alexa:
+  alias: TEST Notify Alexa
+  use_blueprint:
+    path: TheAppleFreak/notify_alexa.yaml
+  description: ""
+  icon: mdi:alarm-light
+alexa_notify_real_test:
+  alias: Alexa Notify Real Test
+  sequence:
+    - action: media_player.play_media
+      metadata:
+        title: mixkit-ambulance-siren-us-1642.mp3
+        thumbnail:
+        media_class: music
+        children_media_class:
+        navigateIds:
+          - {}
+          - media_content_type: app
+            media_content_id: media-source://media_source
+          - media_content_type: ""
+            media_content_id: media-source://media_source/local/music
+      data:
+        media_content_id: media-source://media_source/local/music/mixkit-ambulance-siren-us-1642.mp3
+        media_content_type: audio/mpeg
+      target:
+        entity_id: media_player.living_room_tv_roku
+  description: ""

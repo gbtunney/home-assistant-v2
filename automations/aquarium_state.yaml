@@ -1,0 +1,43 @@
+#####
+# Aquarium State
+# attempt to detect irregularities in state
+# todo: leak detector
+# todo: water levels based on camera
+# todo: C02 levels based on camera
+#####
+
+#####
+# Aquarium Pumps Irregular Off
+# currently just notifies
+#####
+- id: "1731112607857"
+  alias: Aquarium Pumps Irregular Off State
+  description: "TODO: trigger a notification if any of the pumps have been OFF for 2 hrs"
+  triggers:
+    - trigger: state
+      entity_id:
+        - switch.120g_pumps_heaters
+        - switch.10g_m_pumps_heaters
+        - switch.20g_pumps_heaters
+        - switch.new_20g_powerstrip_kasa_smart_plug_3a71_1
+      for:
+        hours: 2
+        minutes: 0
+        seconds: 0
+      from:
+      to: "off"
+  actions:
+    - action: script.notify_dispatcher
+      data:
+        sms: true
+        iphone: true
+        ipad: true
+        critical: false
+        entity_targets:
+          - 7188138156@mms.att.net
+          - gbtunney@mac.com
+        message: >
+          "{% set entity = trigger.entity_id  %} ALERT! Device: {{ trigger.to_state.name }} is registering being off for more than 2hrs.
+          - Area: {{ area_name(trigger.entity_id) }}
+          - Please fix!!"
+  mode: single

@@ -1,0 +1,40 @@
+#####
+# Reptile schedules ( Lights )
+# todo: make a single sensor to toggle like aquariums?
+#####
+
+#####
+# Reptiles Scheduled ( ON )
+#####
+- id: "1731300678056"
+  alias: "Reptile Lights Scheduled: ON"
+  description: Lights turn on 2 hrs after sunrise
+  triggers:
+    - trigger: sun
+      event: sunrise
+      offset: 02:00:00
+  actions:
+    - action: switch.turn_on
+      target:
+        entity_id:
+          - switch.dorn_and_marceline_socket_1
+          - switch.seafoam_styx_socket_1
+  mode: single
+
+#####
+# Reptiles Scheduled ( OFF )
+#####
+- id: "1731300893649"
+  alias: "Reptile Lights Scheduled: OFF"
+  description: Lights turn off 45 min after sunset
+  triggers:
+    - trigger: sun
+      event: sunset
+      offset: 00:45:00
+  actions:
+    - action: switch.turn_off
+      target:
+        entity_id:
+          - switch.dorn_and_marceline_socket_1
+          - switch.seafoam_styx_socket_1
+  mode: single

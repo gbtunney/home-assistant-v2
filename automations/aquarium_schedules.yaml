@@ -1,5 +1,6 @@
 #####
 # Aquarium schedules ( Lights and C02 )
+# todo: switch to times of day sensor instead
 #####
 
 - id: "1731283746026"
