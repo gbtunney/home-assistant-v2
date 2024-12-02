@@ -2,8 +2,24 @@
 # Binary Sensor TODO
 #####
 
+#####
+# FFMpeg Motion Detection
+# Camera 1
+#####
 - platform: ffmpeg_motion
-  input: camera.camera_1_q5_profile1
+  name: "Motion Detection Camera #1"
+  input: !secret camera_feed_1
+  changes: 2
+  repeat: 2
+  repeat_time: 3
+
+#####
+# FFMpeg Motion Detection
+# Camera 2
+#####
+- platform: ffmpeg_motion
+  name: "Motion Detection Camera #2"
+  input: !secret camera_feed_2
 
 # times of day sensor
 - platform: tod
