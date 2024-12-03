@@ -1,9 +1,13 @@
-{% macro snapshot_path(prefix ='camera-image',directory ='camera_stills' , ext='png') %}
-{% set media_lib_directory = "/media" %}
-{{ directory }}/{{prefix }}-{{ as_timestamp(now()) }}.{{ext}}
-{% endmacro %}
-
-{% macro snapshot_media_source(prefix ='camera-image',directory ='camera_stills' , ext='png') %}
-{% set media_lib_alias = "media-source://media_source/local" %}
-{{ media_lib_alias }}/{{ directory }}/{{prefix }}-{{ as_timestamp(now()) }}.{{ext}}
-{% endmacro %}
+{% macro camera_media_path(entity_id = 'camera-entity-unknown', mime_type = "image/jpeg") -%}
+  {%- if not mime_type | regex_match('^(video|image)/[a-z]{3,4}$') -%}
+    {%- set mime_type = "image/jpeg" -%}
+  {%- endif -%}
+  {%- set mime_ext = mime_type.split('/')[1] -%}
+  {%- if mime_ext | length >= 3 -%}
+    {%- set file_ext = mime_ext -%}
+  {%- else -%}
+    {%- set file_ext = 'jpeg' -%}
+  {%- endif -%}
+  {%- set mime_domain = mime_type.split('/')[0] -%}
+  {{ mime_domain }}/{{ entity_id }}-{{ as_timestamp(now()) }}.{{ file_ext }}
+{%- endmacro %}
