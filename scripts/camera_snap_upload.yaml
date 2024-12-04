@@ -7,50 +7,81 @@ camera_snapshot_and_upload:
   alias: Camera Snapshot and Upload
   sequence:
     - variables:
-        response: not set
-        upload_google: true
-        image_path_id: input_text.camera_1_still_path
-        filename:
-          "{% from 'camera.jinja' import snapshot_path %}{{ snapshot_path(
-          entity | default('camera.camera_1_q5_profile1')  ) }}"
+        file_path_id: >-
+          {% from 'camera.jinja' import camera_media_path %}{{ camera_media_path(
+          capture_camera_stream.entity_id , capture_mime_type ) }}
+    - variables:
+        file_path:
+          id: "{{- file_path_id -}}"
+          media_rel: /media/camera_media/{{- file_path_id -}}
+          media_source: media-source://media_source/local/{{- file_path_id -}}
+          text_entity: >-
+            {% if file_path_save_target is defined %}{{
+            file_path_save_target.entity_id }}{% else %}undefined{% endif %}
+          camera: "{{  capture_camera_stream.entity_id }}"
     - action: camera.snapshot
       metadata: {}
       data:
-        filename: /media/{{ filename }}
+        filename: "{{ file_path.media_rel }}"
       target:
-        entity_id: "{{entity | default('camera.camera_1_q5_profile1') }}"
-    - alias: Upload to Google photos
-      if:
-        - condition: template
-          value_template: "{{ upload_google }}"
-      then:
-        - action: google_photos.upload
-          metadata: {}
-          data:
-            config_entry_id: 01JDXZWF95N644N5ACX8K3Q189
-            filename: /media/{{ filename }}
-            album: Home Assistant Camera
-          response_variable: response
-        - action: persistent_notification.create
-          metadata: {}
-          data:
-            title: Snapshot Success!
-            message:
-              "File was created at: /media/{{ filename }}  Google Upload status:
-              {{ response }}"
-      else:
-        - action: persistent_notification.create
-          metadata: {}
-          data:
-            title: Snapshot Success!
-            message: "File was created at: /media/{{ filename }} "
-    - action: input_text.set_value
+        entity_id: "{{ file_path.camera }}"
+      enabled: true
+    - action: logbook.log
       metadata: {}
       data:
-        value: media-source://media_source/local/{{filename}}
-      target:
-        entity_id: "{{ image_path_id }}"
-  description: >
-    "- Takes camera snapshot and saves - Uploads to google photos  - Sends
-    notification when completed "
+        domain: camera
+        entity_id: "{{ file_path.camera}}"
+        name: Camera Capture Saved
+        message: >
+          Camera Capture Saved to Media Library File: {{- file_path.id -}} Saved
+          to Text Input:</b> {%- if file_path_save_target is defined -%}{{-
+          file_path.text_entity -}}{%- else -%}NO{%- endif -%}"
+      enabled: true
+    - alias: Set file path text_input
+      if:
+        - condition: template
+          value_template: >-
+            {% if file_path_save_target is defined %}true{% else %}false{% endif
+            %}
+      then:
+        - action: input_text.set_value
+          metadata: {}
+          data:
+            value: "{{ file_path.id }}"
+            entity_id: "{{ file_path.text_entity }}"
+          enabled: true
+      enabled: true
+    - stop: Camera Capture Saved to Media Library
+      response_variable: file_path
+      enabled: true
+  description: Takes camera snapshot (video or still image) and saves to media library
   icon: mdi:camera-retake-outline
+  fields:
+    file_path_save_target:
+      selector:
+        target:
+          entity:
+            domain: input_text
+      name: File Path Save Target
+      required: false
+      description: Input text entity to save the file path to
+    capture_camera_stream:
+      selector:
+        target:
+          entity:
+            domain: camera
+      name: Camera Stream
+      default:
+        entity_id: camera.camera_1_q5_profile1
+      required: true
+    capture_mime_type:
+      selector:
+        select:
+          options:
+            - image/png
+            - image/jpeg
+            - video/mp4
+      name: Capture Mime Type
+      description: "The format of the capture todo: figure out video length etc"
+      default: image/png
+      required: true
