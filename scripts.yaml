@@ -162,48 +162,237 @@ bring_clothes_in_when_it_rains:
           | int }}'
   description: ddd
   icon: mdi:weather-lightning-rainy
-count_pictures_on_wall:
-  alias: Count Pictures on Wall
+llv_numeric_question:
+  alias: LLV Numeric Question
   sequence:
   - variables:
-      llm_response: undefined
-  - action: llmvision.image_analyzer
+      camera_image_file: undefined
+      test_count: 0
+  - action: script.camera_snapshot_and_upload
     metadata: {}
-    response_variable: llm_response
     data:
-      remember: false
+      capture_camera_stream:
+        entity_id: '{{capture_camera_stream.entity_id }}'
+      capture_mime_type: image/png
+    response_variable: camera_image_file
+  - action: llmvision.data_analyzer
+    metadata: {}
+    data:
+      message: '{{ questions_prompt }}'
       include_filename: false
-      detail: low
-      max_tokens: 100
-      expose_images: false
-      temperature: 0.5
-      message: Reply with a simple number, how many pictures of artwork are hanging
-        on the wall?
-      target_width: 512
+      target_width: 1280
+      detail: high
+      max_tokens: 5
+      temperature: 0.1
       provider: 01JDVNFP4KWD6XERDGQ5V3TY6W
-      image_file: /media/{{ states( 'input_text.url_llv')  }}
-  - if:
+      sensor_entity: '{{ file_path_save_target.entity_id }}'
+      image_file: '{{camera_image_file.media_rel }}'
+  description: ''
+  fields:
+    questions_prompt:
+      selector:
+        text:
+      name: Questions Prompt
+      default: Can you count the pictures on the wall ?
+      required: true
+    file_path_save_target:
+      selector:
+        target:
+          entity:
+            domain: input_boolean
+      name: File Path Save Target
+      required: true
+      description: Input text entity to save the file path to
+      default:
+        entity_id: input_number.llv_picture_wall_count
+    capture_camera_stream:
+      selector:
+        target:
+          entity:
+            domain: camera
+      name: Camera Stream
+      default:
+        entity_id: camera.camera_1_q5_profile1
+      required: true
+notification_dispatcher_v2:
+  alias: Notification Dispatcher v2
+  sequence:
+  - variables:
+      critical: '{% if bool_critical == ''ON'' %}1{% else %}0{% endif %}'
+  - alias: If sms selected
+    if:
     - condition: template
-      value_template: '{% if llm_response.response_text | is_number %}true{% else
+      value_template: '{% if ''sms'' in notification_channel %}true{% else %}false{%
+        endif %}'
+      alias: 'note: sms does not have a title so it inserts it before message'
+    then:
+    - action: notify.gbtunney_gmail_com
+      metadata: {}
+      data:
+        message: '{% if bool_critical == ''ON'' %}CRITICAL {% else %}{% endif %}Notification
+          from Homeassistant: {% if title is defined %}{{ title }} :{% else %}{% endif
+          %}{{ message }}'
+        title: '{{ title }}'
+        target: '{{ sms_targets }}'
+    enabled: true
+  - alias: If email selected
+    if:
+    - alias: 'note:  email title == subject. Inserts critical warning in subject'
+      condition: template
+      value_template: '{% if ''email'' in notification_channel %}true{% else %}false{%
+        endif %}'
+    then:
+    - action: notify.gbtunney_gmail_com
+      metadata: {}
+      data:
+        message: '{{message}}'
+        title: '{% if bool_critical == ''ON'' %}CRITICAL {% else %}{% endif %}Notification
+          from Homeassistant{% if title is defined %}: {{ title }}{% else %}{% endif
+          %}'
+        target: '{{ email_targets }}'
+    enabled: true
+  - alias: If alexa selected
+    if:
+    - condition: template
+      value_template: '{% if ''alexa'' in notification_channel %}true{% else %}false{%
+        endif %}'
+    then:
+    - action: notify.alexa_media_alexa_s_baby
+      metadata: {}
+      data:
+        message: '{{ message }}'
+        title: '{{ title }}'
+    enabled: true
+  - alias: If persistant selected
+    if:
+    - condition: template
+      value_template: '{% if ''persistant'' in notification_channel %}true{% else
         %}false{% endif %}'
     then:
-    - action: input_number.set_value
-      metadata: {}
-      data:
-        value: '{{  llm_response.response_text | float}}'
-      target:
-        entity_id: input_number.llv_picture_wall_count
     - action: persistent_notification.create
       metadata: {}
       data:
-        message: 'Pictures on the wall were counted.  COUNT: {{  states(''input_number.llv_picture_wall_count'')
-          | int }}'
-    else:
-    - action: persistent_notification.create
+        message: '{{message}}'
+        title: '{% if bool_critical == ''ON'' %}CRITICAL : {% else %}{% endif %}{%
+          if title is defined %}{{ title }}{% else %}{% endif %}'
+    enabled: true
+  - alias: If iPhone selected
+    if:
+    - condition: template
+      value_template: '{% if ''iPhone'' in notification_channel %}true{% else %}false{%
+        endif %}'
+    then:
+    - action: notify.mobile_app_iphone
       metadata: {}
       data:
-        title: FAILURE!
-        message: 'FAILURE! Pictures on the wall were NOT COUNTED> .  RESPONSE: {{  llm_response
-          }}'
-  description: ddd
-  icon: mdi:panorama-variant-outline
+        message: '{{ message }}'
+        title: '{{ title }}'
+        data:
+          push:
+            sound:
+              name: '{{ sound | default(''default'') }}'
+              critical: '{{ critical | int }}'
+    enabled: true
+  - alias: If iPad selected
+    if:
+    - condition: template
+      value_template: '{% if ''iPad'' in notification_channel %}true{% else %}false{%
+        endif %}'
+    then:
+    - action: notify.mobile_app_gillians_ipad
+      metadata: {}
+      data:
+        message: '{{ message }}'
+        title: '{{ title }}'
+        data:
+          push:
+            sound:
+              name: '{{ sound | default(''default'') }}'
+              critical: '{{ critical | int }}'
+    enabled: true
+  - alias: If macBook selected
+    if:
+    - condition: template
+      value_template: '{% if ''macBook'' in notification_channel %}true{% else %}false{%
+        endif %}'
+    then:
+    - action: notify.mobile_app_gillians_macbook_pro_624
+      metadata: {}
+      data:
+        message: '{{ message }}'
+        title: '{{ title }}'
+        data:
+          push:
+            sound:
+              name: '{{ sound | default(''default'') }}'
+              critical: '{{ critical | int }}'
+    enabled: true
+  description: ''
+  icon: mdi:bullhorn-variant-outline
+  fields:
+    message:
+      selector:
+        text:
+      name: Message
+      required: true
+      description: Required!
+      default: no message set
+    notification_channel:
+      selector:
+        select:
+          options:
+          - iPhone
+          - iPad
+          - macBook
+          - persistant
+          - sms
+          - email
+          - alexa
+          multiple: true
+      name: Notification Channel
+      required: true
+      default:
+      - iPhone
+      - iPad
+      - macBook
+      - persistant
+    title:
+      selector:
+        text:
+      name: Title
+      required: false
+    bool_critical:
+      selector:
+        select:
+          options:
+          - 'ON'
+          - 'OFF'
+      name: Critical
+      default: 'OFF'
+      required: true
+    sound:
+      selector:
+        text:
+      name: Sound
+      description: 'To get sound: go to settings > companion app > notification >
+        system and click copy.'
+      required: true
+      default: default
+    sms_targets:
+      selector:
+        text:
+          multiple: true
+      name: SMS Targets
+      default:
+      - 7188138156@mms.att.net
+      description: This is only used if sms notification target is selected!
+      required: true
+    email_targets:
+      selector:
+        text:
+          multiple: true
+      name: Email Targets
+      description: This is only used if email notification target is selected!
+      default:
+      - gbtunney@mac.com
+      required: true
