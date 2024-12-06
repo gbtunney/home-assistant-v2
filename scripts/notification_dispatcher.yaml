@@ -103,3 +103,197 @@ notification_dispatcher:
             critical: "{{ bool( critical , dispatcher_defaults.critical ) }}"
   description: Send to multiple notification types
   icon: mdi:bell-outline
+
+notification_dispatcher_v2:
+  alias: Notification Dispatcher v2
+  sequence:
+    - variables:
+        critical: "{% if bool_critical == 'ON' %}1{% else %}0{% endif %}"
+    - alias: If sms selected
+      if:
+        - condition: template
+          value_template:
+            "{% if 'sms' in notification_channel %}true{% else %}false{%
+            endif %}"
+          alias: "note: sms does not have a title so it inserts it before message"
+      then:
+        - action: notify.gbtunney_gmail_com
+          metadata: {}
+          data:
+            message:
+              "{% if bool_critical == 'ON' %}CRITICAL {% else %}{% endif %}Notification
+              from Homeassistant: {% if title is defined %}{{ title }} :{% else %}{% endif
+              %}{{ message }}"
+            title: "{{ title }}"
+            target: "{{ sms_targets }}"
+      enabled: true
+    - alias: If email selected
+      if:
+        - alias: "note:  email title == subject. Inserts critical warning in subject"
+          condition: template
+          value_template:
+            "{% if 'email' in notification_channel %}true{% else %}false{%
+            endif %}"
+      then:
+        - action: notify.gbtunney_gmail_com
+          metadata: {}
+          data:
+            message: "{{message}}"
+            title:
+              "{% if bool_critical == 'ON' %}CRITICAL {% else %}{% endif %}Notification
+              from Homeassistant{% if title is defined %}: {{ title }}{% else %}{% endif
+              %}"
+            target: "{{ email_targets }}"
+      enabled: true
+    - alias: If alexa selected
+      if:
+        - condition: template
+          value_template:
+            "{% if 'alexa' in notification_channel %}true{% else %}false{%
+            endif %}"
+      then:
+        - action: notify.alexa_media_alexa_s_baby
+          metadata: {}
+          data:
+            message: "{{ message }}"
+            title: "{{ title }}"
+      enabled: true
+    - alias: If persistant selected
+      if:
+        - condition: template
+          value_template:
+            "{% if 'persistant' in notification_channel %}true{% else
+            %}false{% endif %}"
+      then:
+        - action: persistent_notification.create
+          metadata: {}
+          data:
+            message: "{{message}}"
+            title:
+              "{% if bool_critical == 'ON' %}CRITICAL : {% else %}{% endif %}{%
+              if title is defined %}{{ title }}{% else %}{% endif %}"
+      enabled: true
+    - alias: If iPhone selected
+      if:
+        - condition: template
+          value_template:
+            "{% if 'iPhone' in notification_channel %}true{% else %}false{%
+            endif %}"
+      then:
+        - action: notify.mobile_app_iphone
+          metadata: {}
+          data:
+            message: "{{ message }}"
+            title: "{{ title }}"
+            data:
+              push:
+                sound:
+                  name: "{{ sound | default('default') }}"
+                  critical: "{{ critical | int }}"
+      enabled: true
+    - alias: If iPad selected
+      if:
+        - condition: template
+          value_template:
+            "{% if 'iPad' in notification_channel %}true{% else %}false{%
+            endif %}"
+      then:
+        - action: notify.mobile_app_gillians_ipad
+          metadata: {}
+          data:
+            message: "{{ message }}"
+            title: "{{ title }}"
+            data:
+              push:
+                sound:
+                  name: "{{ sound | default('default') }}"
+                  critical: "{{ critical | int }}"
+      enabled: true
+    - alias: If macBook selected
+      if:
+        - condition: template
+          value_template:
+            "{% if 'macBook' in notification_channel %}true{% else %}false{%
+            endif %}"
+      then:
+        - action: notify.mobile_app_gillians_macbook_pro_624
+          metadata: {}
+          data:
+            message: "{{ message }}"
+            title: "{{ title }}"
+            data:
+              push:
+                sound:
+                  name: "{{ sound | default('default') }}"
+                  critical: "{{ critical | int }}"
+      enabled: true
+  description: ""
+  icon: mdi:bullhorn-variant-outline
+  fields:
+    message:
+      selector:
+        text:
+      name: Message
+      required: true
+      description: Required!
+      default: no message set
+    notification_channel:
+      selector:
+        select:
+          options:
+            - iPhone
+            - iPad
+            - macBook
+            - persistant
+            - sms
+            - email
+            - alexa
+          multiple: true
+      name: Notification Channel
+      required: true
+      default:
+        - iPhone
+        - iPad
+        - macBook
+        - persistant
+    title:
+      selector:
+        text:
+      name: Title
+      required: false
+    bool_critical:
+      selector:
+        select:
+          options:
+            - "ON"
+            - "OFF"
+      name: Critical
+      default: "OFF"
+      required: true
+    sound:
+      selector:
+        text:
+      name: Sound
+      description:
+        "To get sound: go to settings > companion app > notification >
+        system and click copy."
+      required: true
+      default: default
+    sms_targets:
+      selector:
+        text:
+          multiple: true
+      name: SMS Targets
+      default:
+        - 7188138156@mms.att.net
+      description: This is only used if sms notification target is selected!
+      required: true
+    email_targets:
+      selector:
+        text:
+          multiple: true
+      name: Email Targets
+      description: This is only used if email notification target is selected!
+      default:
+        - gbtunney@mac.com
+      required: true
