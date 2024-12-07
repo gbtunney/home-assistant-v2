@@ -212,3 +212,53 @@ llv_numeric_question:
       default:
         entity_id: camera.camera_1_q5_profile1
       required: true
+turn_switch_off_for_delay:
+  alias: Turn Switch off for Delay
+  sequence:
+  - variables:
+      inverted_state: '{% if initial_state == "ON" %}OFF{% else %}ON{% endif %}'
+  - action: switch.turn_{{ initial_state | lower }}
+    metadata: {}
+    data: {}
+    target:
+      entity_id: '{{ target_switch.entity_id }}
+
+        '
+  - delay:
+      hours: 0
+      minutes: '{{ delay_minutes|int }}'
+      seconds: 0
+      milliseconds: 0
+  - action: switch.turn_{{ inverted_state | lower }}
+    metadata: {}
+    data: {}
+    target:
+      entity_id: '{{ target_switch.entity_id }}
+
+        '
+  description: ''
+  fields:
+    target_switch:
+      selector:
+        target:
+          entity:
+            domain: switch
+      name: Target Switch
+      required: true
+    delay_minutes:
+      selector:
+        number:
+          min: 1
+          max: 238
+      name: Delay Minutes
+      default: 10
+      required: true
+    initial_state:
+      selector:
+        select:
+          options:
+          - 'ON'
+          - 'OFF'
+      required: true
+      name: Initial State
+      default: 'ON'
