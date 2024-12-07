@@ -1,56 +1,90 @@
-- id: "1730622599095"
+- id: '1730622599095'
   alias: Leak Alert (Unlocated)
-  description: "todo: fix"
+  description: 'todo: fix'
   triggers:
-    - trigger: state
-      entity_id:
-        - binary_sensor.leak_detector_moisture
-      from: "off"
-      to: "on"
+  - trigger: state
+    entity_id:
+    - binary_sensor.leak_detector_moisture
+    from: 'off'
+    to: 'on'
   conditions: []
   actions:
-    - action: notify.notify
-      metadata: {}
-      data:
-        message: Flood Detector is WET :(
+  - action: notify.notify
+    metadata: {}
+    data:
+      message: Flood Detector is WET :(
   mode: single
-- id: "1733535410225"
+- id: '1733535410225'
   alias: Temperature Alert
-  description: "Alerts if temperature is below 65 or above 85"
+  description: Alerts if temperature is below 65 or above 85
   triggers:
-    - trigger: numeric_state
-      entity_id:
-        - input_number.dummy_thermometer
-        - sensor.hygrometer_temperature
-      below: 65
-    - trigger: numeric_state
-      entity_id:
-        - input_number.dummy_thermometer
-        - sensor.hygrometer_temperature
-      above: 85
+  - trigger: numeric_state
+    entity_id:
+    - input_number.dummy_thermometer
+    - sensor.hygrometer_temperature
+    below: 65
+  - trigger: numeric_state
+    entity_id:
+    - input_number.dummy_thermometer
+    - sensor.hygrometer_temperature
+    above: 85
   conditions: []
   actions:
-    - action: script.notification_dispatcher_v2
+  - action: script.notification_dispatcher_v2
+    metadata: {}
+    data:
+      message: '"{% set entity = trigger.entity_id  %}ALERT! {% if trigger.above ==
+        none %}Low {% else %}High {% endif %} temperature! Device: {{ trigger.to_state.name
+        }} is registering temp of {{ trigger.to_state.state }}F in Area: {{ area_name(trigger.entity_id)
+        }} :: Please fix!!"
+
+        '
+      notification_channel:
+      - iPhone
+      - iPad
+      - macBook
+      - persistant
+      - alexa
+      - sms
+      bool_critical: 'OFF'
+      sound: default
+      sms_targets:
+      - 7188138156@mms.att.net
+      email_targets:
+      - gbtunney@mac.com
+  mode: single
+- id: '1733554565177'
+  alias: Motion Capture
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.ffmpeg_motion_detection_camera_1
+    from: 'on'
+  conditions: []
+  actions:
+  - if:
+    - condition: state
+      entity_id: binary_sensor.ffmpeg_motion_detection_camera_1
+      state: 'on'
+    then:
+    - action: light.turn_on
       metadata: {}
       data:
-        message:
-          '"{% set entity = trigger.entity_id  %}ALERT! {% if trigger.above ==
-          none %}Low {% else %}High {% endif %} temperature! Device: {{ trigger.to_state.name
-          }} is registering temp of {{ trigger.to_state.state }}F in Area: {{ area_name(trigger.entity_id)
-          }} :: Please fix!!"
-
-          '
-        notification_channel:
-          - iPhone
-          - iPad
-          - macBook
-          - persistant
-          - alexa
-          - sms
-        bool_critical: "OFF"
-        sound: default
-        sms_targets:
-          - 7188138156@mms.att.net
-        email_targets:
-          - gbtunney@mac.com
+        rgb_color:
+        - 44
+        - 114
+        - 39
+      target:
+        entity_id: light.led_strip_color
+    else:
+    - action: light.turn_on
+      metadata: {}
+      data:
+        rgb_color:
+        - 246
+        - 26
+        - 25
+      target:
+        entity_id: light.led_strip_color
   mode: single
