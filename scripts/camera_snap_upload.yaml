@@ -14,7 +14,7 @@ camera_snapshot_and_upload:
         file_path:
           id: "{{- file_path_id -}}"
           media_rel: /media/camera_media/{{- file_path_id -}}
-          media_source: media-source://media_source/local/{{- file_path_id -}}
+          media_source: media-source://media_source/local/camera_media/{{- file_path_id -}}
           text_entity: >-
             {% if file_path_save_target is defined %}{{
             file_path_save_target.entity_id }}{% else %}undefined{% endif %}

@@ -14,3 +14,43 @@
       data:
         message: Flood Detector is WET :(
   mode: single
+- id: "1733535410225"
+  alias: Temperature Alert
+  description: "Alerts if temperature is below 65 or above 85"
+  triggers:
+    - trigger: numeric_state
+      entity_id:
+        - input_number.dummy_thermometer
+        - sensor.hygrometer_temperature
+      below: 65
+    - trigger: numeric_state
+      entity_id:
+        - input_number.dummy_thermometer
+        - sensor.hygrometer_temperature
+      above: 85
+  conditions: []
+  actions:
+    - action: script.notification_dispatcher_v2
+      metadata: {}
+      data:
+        message:
+          '"{% set entity = trigger.entity_id  %}ALERT! {% if trigger.above ==
+          none %}Low {% else %}High {% endif %} temperature! Device: {{ trigger.to_state.name
+          }} is registering temp of {{ trigger.to_state.state }}F in Area: {{ area_name(trigger.entity_id)
+          }} :: Please fix!!"
+
+          '
+        notification_channel:
+          - iPhone
+          - iPad
+          - macBook
+          - persistant
+          - alexa
+          - sms
+        bool_critical: "OFF"
+        sound: default
+        sms_targets:
+          - 7188138156@mms.att.net
+        email_targets:
+          - gbtunney@mac.com
+  mode: single

@@ -11,19 +11,19 @@
   entity_namespace: "ffmpeg_"
   name: "Motion Detection Camera #1"
   input: !secret camera_feed_1
-  # changes: 2
-  # repeat: 2
-  # repeat_time: 3
+  changes: 2
+  repeat: 2
+  repeat_time: 3
 
 #####
 # FFmpeg Motion Detection
 # Camera #2
 # IP: xxx.xxx.x.23
 #####
-- platform: ffmpeg_motion
-  entity_namespace: "ffmpeg_"
-  name: "Motion Detection Camera #2"
-  input: !secret camera_feed_2
+#- platform: ffmpeg_motion
+# entity_namespace: "ffmpeg_"
+# name: "Motion Detection Camera #2"
+#input: !secret camera_feed_2
 
 # times of day sensor
 - platform: tod

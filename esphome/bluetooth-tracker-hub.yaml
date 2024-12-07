@@ -1,3 +1,5 @@
+substitutions:
+  id: bluetooth_tracker_hub
 esphome:
   name: bluetooth-tracker-hub
   friendly_name: Bluetooth Tracker Hub
@@ -38,3 +40,16 @@ esp32_ble_tracker:
 
 bluetooth_proxy:
   active: true
+
+sensor:
+  - platform: wifi_signal # Reports the WiFi signal strength/RSSI in dB
+    name: "WiFi Signal dB"
+    id: wifi_signal_db
+    update_interval: 360s
+    entity_category: "diagnostic"
+
+binary_sensor:
+  - platform: status
+    name: "Status"
+    id: signal_status
+    entity_category: "diagnostic"

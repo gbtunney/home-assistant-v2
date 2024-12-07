@@ -1,111 +1,8 @@
 #####
 # SCRIPTS: Notification Dispatcher
 #####
-
 notification_dispatcher:
   alias: Notification Dispatcher
-  sequence:
-    - variables:
-        dispatcher_defaults:
-          message: "ERROR: Dispatcher Message Not Set"
-          critical: false
-          sms: false
-          persistant: true
-          iPad: false
-          macBook: true
-          iPhone: true
-          alexa: false
-          title_topic: false
-          entity_targets:
-            - 7188138156@mms.att.net
-            - gbtunney@mac.com
-      enabled: true
-    - alias: If SMS
-      if:
-        - condition: template
-          value_template: "{{ bool( sms , dispatcher_defaults.sms ) }}"
-      then:
-        - action: script.sms_notification
-          metadata: {}
-          data:
-            entity_targets:
-              "{{ entity_targets | default(dispatcher_defaults.entity_targets)
-              }}"
-            message: "{{ message | default( dispatcher_defaults.message )  }}"
-    - alias: "If Persistant app "
-      if:
-        - condition: template
-          value_template: "{{ bool( persistant , dispatcher_defaults.persistant ) }}"
-      then:
-        - action: script.ha_persistant_notification
-          metadata: {}
-          data:
-            title: "{{ title_topic | default( dispatcher_defaults.title_topic ) }}"
-            message: "{{ message | default( dispatcher_defaults.message )  }}"
-    - alias: If iPhone
-      if:
-        - condition: template
-          value_template: "{{ bool( iPhone , dispatcher_defaults.iPhone ) }}"
-      then:
-        - action: notify.mobile_app_iphone
-          metadata: {}
-          data:
-            message: "{{ message | default( dispatcher_defaults.message )  }}"
-            data:
-              push:
-                sound:
-                  name: default
-                  critical:
-                    "{% if bool( critical , dispatcher_defaults.critical )  ==
-                    true %}1{% else %}0{% endif %}"
-      enabled: true
-    - alias: If pad
-      if:
-        - condition: template
-          value_template: "{{ bool( iPad , dispatcher_defaults.iPad ) }}"
-      then:
-        - action: notify.mobile_app_gillians_ipad
-          metadata: {}
-          data:
-            message: "{{ message | default( dispatcher_defaults.message )  }}"
-            data:
-              push:
-                sound:
-                  name: default
-                  critical:
-                    "{% if bool( critical , dispatcher_defaults.critical )  ==
-                    true %}1{% else %}0{% endif %}"
-    - alias: "If MacBook "
-      if:
-        - condition: template
-          value_template: "{{ bool( macBook , dispatcher_defaults.macBook ) }}"
-      then:
-        - action: notify.mobile_app_gillians_macbook_pro_624
-          metadata: {}
-          data:
-            message: "{{ message | default( dispatcher_defaults.message )  }}"
-            data:
-              push:
-                sound:
-                  name: default
-                  critical:
-                    "{% if bool( critical , dispatcher_defaults.critical )  ==
-                    true %}1{% else %}0{% endif %}"
-    - alias: if Alexa
-      if:
-        - condition: template
-          value_template: "{{ bool(alexa,false ) }}"
-      then:
-        - action: script.alexa_notification
-          metadata: {}
-          data:
-            message: "{{ message | default( dispatcher_defaults.message )  }}"
-            critical: "{{ bool( critical , dispatcher_defaults.critical ) }}"
-  description: Send to multiple notification types
-  icon: mdi:bell-outline
-
-notification_dispatcher_v2:
-  alias: Notification Dispatcher v2
   sequence:
     - variables:
         critical: "{% if bool_critical == 'ON' %}1{% else %}0{% endif %}"
@@ -227,7 +124,7 @@ notification_dispatcher_v2:
                   name: "{{ sound | default('default') }}"
                   critical: "{{ critical | int }}"
       enabled: true
-  description: ""
+  description: "Send to multiple notification types"
   icon: mdi:bullhorn-variant-outline
   fields:
     message:
