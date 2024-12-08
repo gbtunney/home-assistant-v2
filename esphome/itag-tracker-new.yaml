@@ -13,6 +13,7 @@ esp32:
 
 # Enable logging
 logger:
+  level: VERY_VERBOSE
 
 # Enable Home Assistant API
 api:
@@ -35,6 +36,8 @@ wifi:
 captive_portal:
 
 esp32_ble_tracker:
+    on_ble_advertise:
+    - then:
 
 bluetooth_proxy:
   active: true
@@ -45,34 +48,14 @@ binary_sensor:
     id: signal_status
     entity_category: "diagnostic"
 
-ble_client:
-  - mac_address: 5B:09:83:FC:69:4C
-    id: ${itag_id}
-    auto_connect: true
-    on_connect:
-      then:
-        - logger.log: "THE ITAG IS Connected"
-
+  # Presence based on MAC address
+  - platform: ble_presence
+    mac_address: 5B:09:83:FC:69:4C
+    name: "ESP32 BLE Tracker Google Home Mini"
+    min_rssi: -80dB
 sensor:
   - platform: wifi_signal # Reports the WiFi signal strength/RSSI in dB\
     name: "WiFi Signal dB"
     id: wifi_signal_db
     update_interval: 360s
     entity_category: "diagnostic"
-
-
-  - platform: ble_client
-    type: characteristic
-    ble_client_id: ${itag_id}
-    name: "battery level"
-    id: battery_level
-    service_uuid: '180f'
-    characteristic_uuid: '2a19'
-    icon: 'mdi:battery'
-    unit_of_measurement: '%'
-
-  - platform: ble_client
-    type: rssi
-    id: rssi
-    ble_client_id: ${itag_id}
-    name: "iTag RSSI"
