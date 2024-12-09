@@ -35,27 +35,158 @@ wifi:
 
 captive_portal:
 
+
 esp32_ble_tracker:
-    on_ble_advertise:
-    - then:
-
-bluetooth_proxy:
-  active: true
-
+  
+ble_client:
+  - mac_address: 5B:09:83:FC:69:4C #REPLACE WITH FOB'S MAC ADDRESS
+    id: itag_green_1
+    on_connect:
+      then:
+      - logger.log: "the log is  being called connect!!"
+  
 binary_sensor:
-  - platform: status
-    name: "Status"
-    id: signal_status
-    entity_category: "diagnostic"
 
-  # Presence based on MAC address
-  - platform: ble_presence
-    mac_address: 5B:09:83:FC:69:4C
-    name: "ESP32 BLE Tracker Google Home Mini"
-    min_rssi: -80dB
+# Itag green sensors to have a doubleclick tetection as well as single click
+# An unexposed helper will give a 500ms period in which two or more consecutive notifications of
+# the button press can occur. Each button press extends the period of time by another 500ms. THat way
+# even ten consecutive button presses will lead to only one double click event.
+# The double click event sensor is configured to delay the off state by 1000ms. By keeping that delay
+# longer than the off delay for the helper, we can ensure that the doubleclick event is still present when
+# the helper state changes to off. We hook up to the helper state change to off and do nothing when a double
+# click state is still present. If that is not the case, we know for sure that a single button click has 
+# occurred. We then signal the single button.
+  - platform: template
+    id: itag_button_state_helper
+    filters:
+      delayed_off: 500ms
+    on_release:
+      then:
+        - if:
+            condition:
+              lambda: 'return !id(itag_green_1_button_doubleclick).state;'
+            then:
+              - logger.log: "Single button press detected!"
+              - binary_sensor.template.publish:
+                  id: itag_green_1_button
+                  state: ON
+              - binary_sensor.template.publish:
+                  id: itag_green_1_button
+                  state: OFF
+
+  - platform: template
+    id: itag_green_1_button
+    name: "iTag green 1 button"
+    filters:
+      delayed_off: 200ms
+
+  - platform: template
+    id: itag_green_1_button_doubleclick
+    name: "iTag green 1 button doubleclick"
+    filters:
+      delayed_off: 1000ms
+
+# disconnect from the tag via a switch in homeassistant
+switch:
+  - platform: ble_client
+    ble_client_id: itag_green_1
+    name: "Connect iTag green 1"
+
+### keep for documentation. link loss alert disabling almost never works
+### https://shinglyu.com/web/2023/06/03/disabling-the-link-lost-alarm-on-itag-ble-tracker.html
+### https://t-shaped.nl/2023/using-cheap-bluetooth-key-finder-fobs-with-esphome-and-home-assistant
+#  - platform: template
+#    name: "iTag green 1 link loss alert"
+#    lambda: |-
+#      return (id(itag_green_1_link_loss).state != 255);
+#    turn_on_action:
+#      - ble_client.ble_write:
+#          id: itag_green_1
+##          service_uuid: "1803"
+##          characteristic_uuid: "2a06"
+#          service_uuid: "ffe0"
+#          characteristic_uuid: "ffe2"
+#          value: [0x00]
+#    turn_off_action:
+#      - ble_client.ble_write:
+#          id: itag_green_1
+##          service_uuid: "1803"
+##          characteristic_uuid: "2a06"
+#          service_uuid: "ffe0"
+#          characteristic_uuid: "ffe2"
+#          value: [0x01]
+
+# A button in homeassistant that can be used to trigger the alarm
+button:
+  - platform: template
+    name: "iTag green 1 alert"
+    on_press:
+      - ble_client.ble_write:
+          id: itag_green_1
+          service_uuid: "1802"
+          characteristic_uuid: "2a06"
+          value: [0x01]
+      - delay: 10s
+      - ble_client.ble_write:
+          id: itag_green_1
+          service_uuid: "1802"
+          characteristic_uuid: "2a06"
+          value: [0x00]
+
 sensor:
-  - platform: wifi_signal # Reports the WiFi signal strength/RSSI in dB\
-    name: "WiFi Signal dB"
-    id: wifi_signal_db
-    update_interval: 360s
-    entity_category: "diagnostic"
+
+  - platform: ble_client
+    id: itag_green_1_ble_button_logic
+    type: characteristic
+    ble_client_id: itag_green_1
+# without a name, it won't show up in homeassistant. It is not necessary anyway because
+# it is only the ble automation. No need to display its state in ha
+#    name: "iTag green 1 button"
+    service_uuid: "ffe0"
+    characteristic_uuid: "ffe1"
+    notify: true
+    update_interval: never
+    on_notify:
+# the logic as described above to recognise double and single click events
+      then:
+#        - logger.log: "Button press notification"
+        - if:
+            condition:
+              lambda: 'return !id(itag_button_state_helper).state;'
+            then:
+#              - logger.log: "Button helper is not on yet, switching button helper on!"
+              - binary_sensor.template.publish:
+                  id: itag_button_state_helper
+                  state: ON
+              - binary_sensor.template.publish:
+                  id: itag_button_state_helper
+                  state: OFF
+            else:
+#              - logger.log: "Helper state is already on -> double click detected "
+              - binary_sensor.template.publish:
+                  id: itag_green_1_button_doubleclick
+                  state: ON
+              - binary_sensor.template.publish:
+                  id: itag_green_1_button_doubleclick
+                  state: OFF
+
+#        - binary_sensor.template.publish:
+#            id: itag_green_1_button
+#            state: ON
+#        - binary_sensor.template.publish:
+#            id: itag_green_1_button
+#            state: OFF
+
+  - platform: ble_client
+    type: characteristic
+    ble_client_id: itag_green_1
+    name: "iTag green 1 Battery"
+    service_uuid: "180f"
+    characteristic_uuid: "2a19"
+    icon: "mdi:battery"
+    unit_of_measurement: "%"
+
+  - platform: ble_client
+    type: rssi
+    ble_client_id: itag_green_1
+    name: "iTag green 1 RSSI"
