@@ -30,7 +30,7 @@
     above: 85
   conditions: []
   actions:
-  - action: script.notification_dispatcher_v2
+  - action: script.notification_dispatcher
     metadata: {}
     data:
       message: '"{% set entity = trigger.entity_id  %}ALERT! {% if trigger.above ==
@@ -60,13 +60,21 @@
   - trigger: state
     entity_id:
     - binary_sensor.ffmpeg_motion_detection_camera_1
-    from: 'on'
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 30
+    to:
   conditions: []
   actions:
   - if:
     - condition: state
       entity_id: binary_sensor.ffmpeg_motion_detection_camera_1
       state: 'on'
+      for:
+        hours: 0
+        minutes: 0
+        seconds: 30
     then:
     - action: light.turn_on
       metadata: {}
@@ -77,6 +85,33 @@
         - 39
       target:
         entity_id: light.led_strip_color
+    - action: script.notification_dispatcher
+      metadata: {}
+      data:
+        notification_channel:
+        - iPhone
+        - persistant
+        bool_critical: 'OFF'
+        sound: default
+        sms_targets:
+        - 7188138156@mms.att.net
+        email_targets:
+        - gbtunney@mac.com
+        message: Motion detected - green
+    - action: script.notification_dispatcher
+      metadata: {}
+      data:
+        notification_channel:
+        - iPhone
+        - persistant
+        bool_critical: 'OFF'
+        sound: default
+        sms_targets:
+        - 7188138156@mms.att.net
+        email_targets:
+        - gbtunney@mac.com
+        message: Motion detected
+      enabled: false
     else:
     - action: light.turn_on
       metadata: {}
@@ -87,4 +122,363 @@
         - 25
       target:
         entity_id: light.led_strip_color
+    - action: script.notification_dispatcher
+      metadata: {}
+      data:
+        notification_channel:
+        - iPhone
+        - persistant
+        bool_critical: 'OFF'
+        sound: default
+        sms_targets:
+        - 7188138156@mms.att.net
+        email_targets:
+        - gbtunney@mac.com
+        message: Motion NOT DETECTED BACM TO RED
+  mode: single
+- id: '1733562107777'
+  alias: Cat Fountain Water is Low
+  description: ''
+  triggers:
+  - trigger: numeric_state
+    entity_id:
+    - sensor.cat_fountain_remaining_water
+    below: 40
+    for:
+      hours: 0
+      minutes: 5
+      seconds: 0
+  conditions: []
+  actions:
+  - if:
+    - condition: numeric_state
+      entity_id: sensor.cat_fountain_remaining_water
+      below: 28
+    then:
+    - action: script.notification_dispatcher
+      metadata: {}
+      data:
+        message: 'Cat water is at {{ trigger.to_state.state }}% in Area: {{ area_name(trigger.entity_id)
+          }} :: Please fill immediately!!'
+        notification_channel:
+        - iPhone
+        - iPad
+        - macBook
+        - persistant
+        - sms
+        - alexa
+        bool_critical: 'ON'
+        sound: default
+        sms_targets:
+        - 7188138156@mms.att.net
+        email_targets:
+        - gbtunney@mac.com
+    else:
+    - action: script.notification_dispatcher
+      metadata: {}
+      data:
+        message: 'Cat water is at {{ trigger.to_state.state }}% in Area: {{ area_name(trigger.entity_id)
+          }} :: Please fill!!'
+        notification_channel:
+        - iPhone
+        - iPad
+        - macBook
+        - persistant
+        bool_critical: 'OFF'
+        sound: default
+        sms_targets:
+        - 7188138156@mms.att.net
+        email_targets:
+        - gbtunney@mac.com
+  mode: single
+- id: '1733563292567'
+  alias: Device Unavailable
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.cat_fountain_wi_fi
+    - binary_sensor.goblins_smart_feeder_wi_fi
+    - binary_sensor.itag_tracking_hub_status
+    - binary_sensor.hygrometer_status
+    for:
+      hours: 0
+      minutes: 6
+      seconds: 0
+    to:
+    - 'off'
+    - unknown
+    - unavailable
+  conditions:
+  - condition: state
+    entity_id: alarm_control_panel.home_alarm
+    state: armed_home
+  actions:
+  - action: script.notification_dispatcher
+    metadata: {}
+    data:
+      notification_channel:
+      - iPhone
+      - iPad
+      - macBook
+      - persistant
+      - alexa
+      bool_critical: 'OFF'
+      sound: default
+      sms_targets:
+      - 7188138156@mms.att.net
+      email_targets:
+      - gbtunney@mac.com
+      message: "Device {{ trigger.to_state.name    }} in Area: {{\n area_name(trigger.entity_id)
+        }} is disconnected. Please fix immediately!!"
+  mode: single
+- id: '1733605050618'
+  alias: Lighting Connectivity Warning
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.hallway_light_status
+    - binary_sensor.living_room_light_status
+    - binary_sensor.bedroom_light_status
+    - binary_sensor.bathroom_light_status
+    - binary_sensor.seafoam_light_status
+    - binary_sensor.dorn_lighting_status
+    to: 'off'
+    for:
+      hours: 0
+      minutes: 5
+      seconds: 0
+  conditions:
+  - condition: state
+    entity_id: alarm_control_panel.home_alarm
+    state: armed_home
+  actions:
+  - action: script.notification_dispatcher
+    metadata: {}
+    data:
+      message: 'Device: {{ device_attr(trigger.entity_id, ''name'')  }} in Area: {{
+        area_name(trigger.entity_id) }} is disconnected.  Please fix immediately!!'
+      notification_channel:
+      - iPhone
+      - iPad
+      - macBook
+      - persistant
+      - alexa
+      bool_critical: 'OFF'
+      sound: default
+      sms_targets:
+      - 7188138156@mms.att.net
+      email_targets:
+      - gbtunney@mac.com
+  mode: single
+- id: '1733608231107'
+  alias: Reptile Lighting Schedule
+  description: Uses Time of day sensor now
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.reptile_lighting_schedule
+    enabled: true
+    attribute: next_update
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.to_state.state in [''on'', ''off''] }}'
+  actions:
+  - action: script.trigger_switch
+    data:
+      select_state: Unknown
+      target_entity_set:
+        entity_id: light.reptile_lights
+      entity_trigger: entity_id:'{{trigger.entity_id}}'
+  - action: script.notification_dispatcher
+    metadata: {}
+    data:
+      message: The reptile lighting schedule has been triggered, they should hopefully
+        be {{trigger.to_state.state}}
+      notification_channel:
+      - iPhone
+      - iPad
+      - macBook
+      - alexa
+      - persistant
+      bool_critical: 'OFF'
+      sound: default
+      sms_targets:
+      - 7188138156@mms.att.net
+      email_targets:
+      - gbtunney@mac.com
+  mode: single
+- id: '1733711998590'
+  alias: Reptile Room Motion Light
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.ffmpeg_motion_detection_camera_2
+    from: 'off'
+    to: 'on'
+  conditions: []
+  actions:
+  - action: light.turn_on
+    metadata: {}
+    data:
+      rgb_color:
+      - 129
+      - 255
+      - 26
+    target:
+      entity_id: light.led_strip_color
+  - action: notify.mobile_app_iphone
+    metadata: {}
+    data:
+      message: motion was detected
+  mode: single
+- id: '1733720729443'
+  alias: Aquarium Lights Scheduled On/Off UI
+  description: Aquarium CO2 Scheduled On/Off according to a schedule
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.aquarium_lighting_schedule
+    attribute: next_update
+    enabled: true
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.to_state.state in [''on'', ''off''] }}'
+    enabled: true
+  actions:
+  - variables:
+      trigger_data: '{{ trigger.to_state.state}}'
+      myentity: '{{trigger.entity_id}}'
+      alt_state: '{{ states(trigger.entity_id )| bool }}'
+      schedule_state: '{{ states(''binary_sensor.the_tod_tester'' )|bool }}'
+  - action: light.turn_{{ trigger.to_state.state }}
+    metadata: {}
+    data: {}
+    target:
+      entity_id:
+      - light.fish_lights_v2
+    enabled: true
+  - action: script.notification_dispatcher
+    metadata: {}
+    data:
+      notification_channel:
+      - iPhone
+      - persistant
+      - alexa
+      bool_critical: 'OFF'
+      sound: default
+      sms_targets:
+      - 7188138156@mms.att.net
+      email_targets:
+      - gbtunney@mac.com
+      message: Aquarium Lights turned {{ trigger.to_state.state}}. TEST MESSAGE!!
+  mode: single
+- id: '1733723752388'
+  alias: Aquarium CO2 Scheduled On/Off UI
+  description: CO2 Toggle Schedule for Aquariums
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.aquarium_co2_schedule
+    attribute: next_update
+    enabled: true
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.to_state.state in [''on'', ''off''] }}'
+    enabled: true
+  actions:
+  - action: switch.turn_{{ trigger.to_state.state }}
+    metadata: {}
+    data: {}
+    target:
+      entity_id:
+      - switch.20_gallon_long_socket_3
+    enabled: true
+  - action: script.notification_dispatcher
+    metadata: {}
+    data:
+      notification_channel:
+      - iPhone
+      - persistant
+      - alexa
+      bool_critical: 'OFF'
+      sound: default
+      sms_targets:
+      - 7188138156@mms.att.net
+      email_targets:
+      - gbtunney@mac.com
+      message: CO2 turned {{ trigger.to_state.state}}. TEST MESSAGE!!
+  mode: single
+- id: '1733724698026'
+  alias: iTag Light Color Test
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.itag_tracking_hub_itag_1_button
+    - binary_sensor.itag_tracking_hub_itag_1_button_doubleclick
+    - binary_sensor.itag_tracking_hub_itag_2_button
+    - binary_sensor.itag_tracking_hub_itag_2_button_doubleclick
+    from: 'on'
+    to: 'off'
+  conditions: []
+  actions:
+  - if:
+    - condition: template
+      value_template: '{% if trigger.entity_id == ''binary_sensor.itag_tracking_hub_itag_1_button''
+        %}true{%else%}false{%endif%}'
+    then:
+    - action: light.turn_on
+      metadata: {}
+      data:
+        rgb_color:
+        - 1
+        - 208
+        - 80
+      target:
+        entity_id: light.smart_bulb_1
+  - if:
+    - condition: template
+      value_template: '{% if trigger.entity_id == ''binary_sensor.itag_tracking_hub_itag_1_button_doubleclick''
+        %}true{%else%}false{%endif%}'
+    then:
+    - action: light.turn_on
+      metadata: {}
+      data:
+        rgb_color:
+        - 36
+        - 80
+        - 255
+      target:
+        entity_id: light.smart_bulb_1
+  - if:
+    - condition: template
+      value_template: '{% if trigger.entity_id == ''binary_sensor.itag_tracking_hub_itag_2_button''
+        %}true{%else%}false{%endif%}'
+    then:
+    - action: light.turn_on
+      metadata: {}
+      data:
+        rgb_color:
+        - 251
+        - 0
+        - 255
+      target:
+        entity_id: light.smart_bulb_1
+  - if:
+    - condition: template
+      value_template: '{% if trigger.entity_id ==''binary_sensor.itag_tracking_hub_itag_2_button_doubleclick''
+        %}true{%else%}false{%endif%}'
+    then:
+    - action: light.turn_on
+      metadata: {}
+      data:
+        rgb_color:
+        - 255
+        - 0
+        - 89
+      target:
+        entity_id: light.smart_bulb_1
   mode: single
