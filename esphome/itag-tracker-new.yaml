@@ -1,6 +1,10 @@
 substitutions:
-  itag_id: white_itag_1
-  itag_friendly_name: "White iTag 1"
+  itag1_id: white_itag_1
+  itag1_friendly_name: "iTag 1"
+
+  # Tag 2
+  itag2_id: white_itag_2
+  itag2_friendly_name: "iTag 2"
 
 esphome:
   name: itag-tracking-hub
@@ -37,16 +41,25 @@ captive_portal:
 
 esp32_ble_tracker:
 
-# other tag 5B:D7:68:44:2E:09
 ble_client:
+  ### ===== iTag 1 BLE CLIENT ===== ###
   - mac_address: 5B:09:83:FC:69:4C #REPLACE WITH FOB'S MAC ADDRESS
-    id: ${itag_id}
+    id: ${itag1_id}
     on_connect:
       then:
-        - logger.log: "the log is  being called connect!!"
+        - logger.log: "${itag1_friendly_name} is connected"
+
+  ### ===== iTag 2 BLE CLIENT ===== ###
+  - mac_address: 5B:D7:68:44:2E:09 #REPLACE WITH FOB'S MAC ADDRESS
+    id: ${itag2_id}
+    on_connect:
+      then:
+        - logger.log: "${itag2_friendly_name} is connected"
+
+### ================================================================= ###
 
 binary_sensor:
-  # ESP Connection Diagnostics
+  ### ===== ESP32 BLE Tracker Connection Diagnostics ===== ###
   - platform: status
     name: "Status"
     id: signal_status
@@ -61,41 +74,85 @@ binary_sensor:
   # the helper state changes to off. We hook up to the helper state change to off and do nothing when a double
   # click state is still present. If that is not the case, we know for sure that a single button click has
   # occurred. We then signal the single btn.
+
+  ### ===== iTag 1 Button Sensors/Helpers ===== ###
   - platform: template
-    id: itag_btn_state_helper
+    id: ${itag1_id}_btn_state_helper
     filters:
       delayed_off: 500ms
     on_release:
       then:
         - if:
             condition:
-              lambda: "return !id(${itag_id}_btn_doubleclick).state;"
+              lambda: "return !id(${itag1_id}_btn_doubleclick).state;"
             then:
-              - logger.log: "Single button press detected!"
+              - logger.log: "${itag1_friendly_name} button click (single) detected"
               - binary_sensor.template.publish:
-                  id: ${itag_id}_btn
+                  id: ${itag1_id}_btn
                   state: ON
               - binary_sensor.template.publish:
-                  id: ${itag_id}_btn
+                  id: ${itag1_id}_btn
                   state: OFF
 
   - platform: template
-    id: ${itag_id}_btn
-    name: "${itag_friendly_name} Button"
+    id: ${itag1_id}_btn
+    name: "${itag1_friendly_name} Button"
+    icon: "mdi:radiobox-indeterminate-variant"
     filters:
       delayed_off: 200ms
 
   - platform: template
-    id: ${itag_id}_btn_doubleclick
-    name: "${itag_friendly_name} Button (doubleclick)"
+    id: ${itag1_id}_btn_doubleclick
+    name: "${itag1_friendly_name} Button (doubleclick)"
+    icon: "mdi:radiobox-indeterminate-variant"
     filters:
       delayed_off: 1000ms
 
-# disconnect from the tag via a switch in homeassistant
+  ### ===== iTag 2 Button Sensors/Helpers ===== ###
+  - platform: template
+    id: ${itag2_id}_btn_state_helper
+    filters:
+      delayed_off: 500ms
+    on_release:
+      then:
+        - if:
+            condition:
+              lambda: "return !id(${itag2_id}_btn_doubleclick).state;"
+            then:
+              - logger.log: "${itag2_friendly_name} button click (single) detected"
+              - binary_sensor.template.publish:
+                  id: ${itag2_id}_btn
+                  state: ON
+              - binary_sensor.template.publish:
+                  id: ${itag2_id}_btn
+                  state: OFF
+
+  - platform: template
+    id: ${itag2_id}_btn
+    name: "${itag2_friendly_name} Button"
+    icon: "mdi:radiobox-indeterminate-variant"
+    filters:
+      delayed_off: 200ms
+
+  - platform: template
+    id: ${itag2_id}_btn_doubleclick
+    name: "${itag2_friendly_name} Button (doubleclick)"
+    icon: "mdi:radiobox-indeterminate-variant"
+    filters:
+      delayed_off: 1000ms
+
+### ================================================================= ###
+
+### ===== Disconnect switch in homeassistant ===== ###
+
 switch:
   - platform: ble_client
-    ble_client_id: ${itag_id}
-    name: "Connect ${itag_friendly_name}"
+    ble_client_id: ${itag1_id}
+    name: "Connect ${itag1_friendly_name}"
+
+  - platform: ble_client
+    ble_client_id: ${itag2_id}
+    name: "Connect ${itag2_friendly_name}"
 
 ### keep for documentation. link loss alert disabling almost never works
 ### https://shinglyu.com/web/2023/06/03/disabling-the-link-lost-alarm-on-itag-ble-tracker.html
@@ -121,28 +178,44 @@ switch:
 #          characteristic_uuid: "ffe2"
 #          value: [0x01]
 
-# A btn in homeassistant that can be used to trigger the alarm
+### ===== Alarm Button in homeassistant (trigger beeping) ===== ###
 button:
   - platform: template
-    name: "${itag_friendly_name} Alert"
+    name: "${itag1_friendly_name} Alert"
     on_press:
       - ble_client.ble_write:
-          id: ${itag_id}
+          id: ${itag1_id}
           service_uuid: "1802"
           characteristic_uuid: "2a06"
           value: [0x01]
       - delay: 10s
       - ble_client.ble_write:
-          id: ${itag_id}
+          id: ${itag1_id}
+          service_uuid: "1802"
+          characteristic_uuid: "2a06"
+          value: [0x00]
+
+  - platform: template
+    name: "${itag2_friendly_name} Alert"
+    on_press:
+      - ble_client.ble_write:
+          id: ${itag2_id}
+          service_uuid: "1802"
+          characteristic_uuid: "2a06"
+          value: [0x01]
+      - delay: 10s
+      - ble_client.ble_write:
+          id: ${itag2_id}
           service_uuid: "1802"
           characteristic_uuid: "2a06"
           value: [0x00]
 
 sensor:
+  ### ===== Button Logic to recognize double and single click events===== ###
   - platform: ble_client
-    id: ${itag_id}_ble_btn_logic
+    id: ${itag1_id}_ble_btn_logic
     type: characteristic
-    ble_client_id: ${itag_id}
+    ble_client_id: ${itag1_id}
     # without a name, it won't show up in homeassistant. It is not necessary anyway because
     # it is only the ble automation. No need to display its state in ha
     #    name: "iTag green 1 button"
@@ -151,44 +224,92 @@ sensor:
     notify: true
     update_interval: never
     on_notify:
-      # the logic as described above to recognise double and single click events
       then:
-        #        - logger.log: "Button press notification"
+        #- logger.log: "Button press notification"
         - if:
             condition:
-              lambda: "return !id(itag_btn_state_helper).state;"
+              lambda: "return !id(${itag1_id}_btn_state_helper).state;"
             then:
-              #              - logger.log: "Button helper is not on yet, switching button helper on!"
+              #- logger.log: "Button helper is not on yet, switching button helper on!"
               - binary_sensor.template.publish:
-                  id: itag_btn_state_helper
+                  id: ${itag1_id}_btn_state_helper
                   state: ON
               - binary_sensor.template.publish:
-                  id: itag_btn_state_helper
+                  id: ${itag1_id}_btn_state_helper
                   state: OFF
             else:
-              #              - logger.log: "Helper state is already on -> double click detected "
+              #- logger.log: "Helper state is already on -> double click detected "
               - binary_sensor.template.publish:
-                  id: ${itag_id}_btn_doubleclick
+                  id: ${itag1_id}_btn_doubleclick
                   state: ON
               - binary_sensor.template.publish:
-                  id: ${itag_id}_btn_doubleclick
+                  id: ${itag1_id}_btn_doubleclick
                   state: OFF
 
   - platform: ble_client
+    id: ${itag2_id}_ble_btn_logic
     type: characteristic
-    ble_client_id: ${itag_id}
-    name: "${itag_friendly_name} Battery"
+    ble_client_id: ${itag2_id}
+    service_uuid: "ffe0"
+    characteristic_uuid: "ffe1"
+    notify: true
+    update_interval: never
+    on_notify:
+      then:
+        #- logger.log: "Button press notification"
+        - if:
+            condition:
+              lambda: "return !id(${itag2_id}_btn_state_helper).state;"
+            then:
+              #- logger.log: "Button helper is not on yet, switching button helper on!"
+              - binary_sensor.template.publish:
+                  id: ${itag2_id}_btn_state_helper
+                  state: ON
+              - binary_sensor.template.publish:
+                  id: ${itag2_id}_btn_state_helper
+                  state: OFF
+            else:
+              #- logger.log: "Helper state is already on -> double click detected "
+              - binary_sensor.template.publish:
+                  id: ${itag2_id}_btn_doubleclick
+                  state: ON
+              - binary_sensor.template.publish:
+                  id: ${itag2_id}_btn_doubleclick
+                  state: OFF
+
+  ### ===== Battery Level Sensors ===== ###
+  - platform: ble_client
+    type: characteristic
+    ble_client_id: ${itag1_id}
+    name: "${itag1_friendly_name} Battery"
     service_uuid: "180f"
     characteristic_uuid: "2a19"
-    icon: "mdi:battery"
+    icon: "mdi:battery-bluetooth-variant"
     unit_of_measurement: "%"
 
   - platform: ble_client
-    type: rssi
-    ble_client_id: ${itag_id}
-    name: "${itag_friendly_name} RSSI"
+    type: characteristic
+    ble_client_id: ${itag2_id}
+    name: "${itag2_friendly_name} Battery"
+    service_uuid: "180f"
+    characteristic_uuid: "2a19"
+    icon: "mdi:battery-bluetooth-variant"
+    unit_of_measurement: "%"
 
-  # Reports the WiFi signal strength for the ESP BOARD
+  ### ===== Bluetooth RSSI Signal ===== ###
+  - platform: ble_client
+    type: rssi
+    ble_client_id: ${itag1_id}
+    name: "${itag1_friendly_name} RSSI"
+    entity_category: "diagnostic"
+
+  - platform: ble_client
+    type: rssi
+    ble_client_id: ${itag2_id}
+    name: "${itag2_friendly_name} RSSI"
+    entity_category: "diagnostic"
+
+  ### =====ESP32 BLE Tracker Wifi Signal Strength===== ###
   - platform: wifi_signal # Reports the WiFi signal strength/RSSI in dB\
     name: "WiFi Signal dB"
     id: wifi_signal_db
