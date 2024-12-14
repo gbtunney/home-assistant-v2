@@ -5,7 +5,8 @@
 
 logger:
   default: warn
-#  logs:
+  logs:
+    custom_components.tuya_local: debug
 #    homeassistant.components.cast: debug
 #    homeassistant.components.cast.media_player: debug
 #    custom_components.youtube: debug

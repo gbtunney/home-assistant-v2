@@ -7,12 +7,29 @@
     - binary_sensor.leak_detector_moisture
     from: 'off'
     to: 'on'
+    for:
+      hours: 0
+      minutes: 1
+      seconds: 0
   conditions: []
   actions:
-  - action: notify.notify
+  - action: script.notification_dispatcher
     metadata: {}
     data:
-      message: Flood Detector is WET :(
+      notification_channel:
+      - iPhone
+      - iPad
+      - macBook
+      - persistant
+      - alexa
+      - sms
+      bool_critical: 'ON'
+      sound: default
+      sms_targets:
+      - 7188138156@mms.att.net
+      email_targets:
+      - gbtunney@mac.com
+      message: 'Leak detector (todo: rename) is Wet!'
   mode: single
 - id: '1733535410225'
   alias: Temperature Alert
@@ -148,7 +165,10 @@
       hours: 0
       minutes: 5
       seconds: 0
-  conditions: []
+  conditions:
+  - condition: template
+    value_template: '{{  states(''binary_sensor.cat_fountain_water_tank_status'')
+      != ''disconnected'' }}'
   actions:
   - if:
     - condition: numeric_state
@@ -209,6 +229,14 @@
     - 'off'
     - unknown
     - unavailable
+  - trigger: state
+    entity_id:
+    - binary_sensor.cat_fountain_water_tank_status
+    to: 'off'
+    for:
+      hours: 0
+      minutes: 2
+      seconds: 0
   conditions:
   - condition: state
     entity_id: alarm_control_panel.home_alarm
@@ -233,7 +261,7 @@
         }} is disconnected. Please fix immediately!!"
   mode: single
 - id: '1733605050618'
-  alias: Lighting Connectivity Warning
+  alias: Lighting & Powerstrip Connectivity Warning
   description: ''
   triggers:
   - trigger: state
@@ -244,6 +272,10 @@
     - binary_sensor.bathroom_light_status
     - binary_sensor.seafoam_light_status
     - binary_sensor.dorn_lighting_status
+    - binary_sensor.10g_m_powerstrip_status
+    - binary_sensor.120g_powerstrip_status
+    - binary_sensor.20g_powerstrip_status
+    - binary_sensor.55g_powerstrip_status
     to: 'off'
     for:
       hours: 0
@@ -285,12 +317,13 @@
   - condition: template
     value_template: '{{ trigger.to_state.state in [''on'', ''off''] }}'
   actions:
-  - action: script.trigger_switch
+  - action: script.toggle_switch_or_light
     data:
       select_state: Unknown
       target_entity_set:
         entity_id: light.reptile_lights
-      entity_trigger: entity_id:'{{trigger.entity_id}}'
+      entity_trigger:
+        entity_id: '{{trigger.entity_id}}'
   - action: script.notification_dispatcher
     metadata: {}
     data:
@@ -335,7 +368,7 @@
       message: motion was detected
   mode: single
 - id: '1733720729443'
-  alias: Aquarium Lights Scheduled On/Off UI
+  alias: Aquarium Lighting Scheduled On/Off UI
   description: Aquarium CO2 Scheduled On/Off according to a schedule
   triggers:
   - trigger: state
@@ -348,18 +381,13 @@
     value_template: '{{ trigger.to_state.state in [''on'', ''off''] }}'
     enabled: true
   actions:
-  - variables:
-      trigger_data: '{{ trigger.to_state.state}}'
-      myentity: '{{trigger.entity_id}}'
-      alt_state: '{{ states(trigger.entity_id )| bool }}'
-      schedule_state: '{{ states(''binary_sensor.the_tod_tester'' )|bool }}'
-  - action: light.turn_{{ trigger.to_state.state }}
-    metadata: {}
-    data: {}
-    target:
-      entity_id:
-      - light.fish_lights_v2
-    enabled: true
+  - action: script.toggle_switch_or_light
+    data:
+      select_state: Unknown
+      target_entity_set:
+        entity_id: light.fish_lighting
+      entity_trigger:
+        entity_id: '{{trigger.entity_id}}'
   - action: script.notification_dispatcher
     metadata: {}
     data:
@@ -389,13 +417,13 @@
     value_template: '{{ trigger.to_state.state in [''on'', ''off''] }}'
     enabled: true
   actions:
-  - action: switch.turn_{{ trigger.to_state.state }}
-    metadata: {}
-    data: {}
-    target:
-      entity_id:
-      - switch.20_gallon_long_socket_3
-    enabled: true
+  - action: script.toggle_switch_or_light
+    data:
+      select_state: Unknown
+      target_entity_set:
+        entity_id: switch.20g_rack_co2
+      entity_trigger:
+        entity_id: '{{trigger.entity_id}}'
   - action: script.notification_dispatcher
     metadata: {}
     data:
