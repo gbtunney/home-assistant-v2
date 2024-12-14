@@ -13,3 +13,19 @@
 - platform: ffmpeg
   name: "Camera #2 RTSP Stream"
   input: !secret camera_feed_2
+
+  #####
+# FFMpeg Cameras
+# Camera 3
+#####
+- platform: ffmpeg
+  name: "Camera #3 RTSP Stream"
+  input: !secret camera_feed_3
+
+  #####
+# FFMpeg Cameras
+# Camera 3
+#####
+- platform: ffmpeg
+  name: "Camera #4 RTSP Stream"
+  input: !secret camera_feed_4
