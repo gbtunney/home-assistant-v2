@@ -267,3 +267,87 @@ turn_switch_off_for_delay:
       required: true
       name: Initial State
       default: "ON"
+aquarium_light_on_w_delay_ui:
+  alias: Aquarium Light On w Delay UI
+  sequence:
+    - action: script.set_state_switch_light
+      metadata: {}
+      data:
+        select_state: "On"
+        target_entity_set:
+          entity_id: light.fish_lighting
+    - delay:
+        hours: 0
+        minutes: "{{ delay_minutes|int }}"
+        seconds: 0
+        milliseconds: 0
+    - action: script.set_state_switch_light
+      metadata: {}
+      data:
+        select_state: "Off"
+        target_entity_set:
+          entity_id: light.fish_lighting
+        entity_trigger:
+          entity_id: binary_sensor.aquarium_lighting_schedule
+  description: ""
+  fields:
+    delay_minutes:
+      selector:
+        number:
+          min: 1
+          max: 238
+      name: Delay Minutes
+      default: 15
+      required: true
+  icon: mdi:timer
+pump_rest:
+  alias: Pump Rest
+  sequence:
+    - action: script.set_state_switch_light
+      metadata: {}
+      data:
+        select_state: "Off"
+        target_entity_set:
+          entity_id: switch.20g_pumps_heaters
+      alias: Turn off pumps
+    - alias: Turn off CO2
+      action: script.set_state_switch_light
+      metadata: {}
+      data:
+        select_state: "Off"
+        target_entity_set:
+          entity_id: switch.20g_rack_co2
+    - delay:
+        hours: 0
+        minutes: "{{ delay_minutes|int }}"
+        seconds: 0
+        milliseconds: 0
+    - action: script.set_state_switch_light
+      metadata: {}
+      data:
+        select_state: "Off"
+        target_entity_set:
+          entity_id: light.fish_lighting
+        entity_trigger:
+          entity_id: binary_sensor.aquarium_lighting_schedule
+      alias: Turn on pumps
+    - alias: Turn off CO2 if scheduled
+      action: script.set_state_switch_light
+      metadata: {}
+      data:
+        select_state: "Off"
+        target_entity_set:
+          entity_id: switch.20g_rack_co2
+        entity_trigger:
+          entity_id: binary_sensor.aquarium_co2_schedule
+  description: ""
+  fields:
+    delay_minutes:
+      selector:
+        number:
+          min: 15
+          max: 238
+      name: Delay Minutes
+      default: 45
+      required: true
+  icon: mdi:timer

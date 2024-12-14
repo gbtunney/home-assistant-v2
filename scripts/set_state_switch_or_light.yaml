@@ -1,13 +1,14 @@
 #####
-# SCRIPTS: Toggle Switch or Light
+# SCRIPTS: Set State Switch or Light
 #####
 
-toggle_switch_or_light:
-  alias: Toggle Switch/Light
+set_state_switch_light:
+  alias: Set State Switch/Light
   sequence:
     - variables:
         use_trigger: "{{ bool( entity_trigger is defined , false ) }}"
         use_target: "{{ bool( target_entity_set is defined , false ) }}"
+        bool_invert: "{{ bool(bool_invert_state,false) }}"
         valid_trigger_value:
           "{{-  bool(use_trigger, false )  and bool(states( entity_trigger.entity_id
           ) in ['on','off' ], false )  -}}"
@@ -32,16 +33,21 @@ toggle_switch_or_light:
           trigger_state: undefined
           trigger_entity_id: undefined
           target_entity_id: undefined
+          invert: "{{bool(bool_invert,false)}}"
     - alias: if executing the script
       if:
         - condition: template
           value_template: "{{ bool ( exec_rest,false )}}"
       then:
         - variables:
-            the_state:
+            pre_state:
               "{%- if bool(use_trigger, false ) -%}\n  {%- if bool(states( entity_trigger.entity_id
               ) in ['on' ], false ) -%}on{%- else -%}off{%- endif -%}\n{%- else -%}{{-
               select_state | lower -}}{%- endif  -%}"
+            the_state:
+              "{%- if bool(bool_invert, false ) -%}\n  {%- if bool( pre_state
+              \ in ['on' ], false ) -%}off{%- else -%}on{%- endif -%}\n{%- else -%}{{pre_state}}{%-
+              endif  -%}"
             action: "{{- domain }}.turn_{{- the_state }}"
             logbook_message:
               '''{% if use_target %}Going to call action {{ action }} on
@@ -174,5 +180,15 @@ toggle_switch_or_light:
         selected (like time of day sensor, schedule)
       required: true
       default: "Off"
+    bool_invert_state:
+      selector:
+        select:
+          options:
+            - "On"
+            - "Off"
+      name: Invert State
+      description: Negates on and off states to toggle
+      default: "Off"
+      required: true
   description: Target to turn on or off (setting the state)
   icon: mdi:toggle-switch-off

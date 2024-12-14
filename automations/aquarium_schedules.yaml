@@ -17,7 +17,7 @@
       value_template: "{{ trigger.to_state.state in ['on', 'off'] }}"
       enabled: true
   actions:
-    - action: script.toggle_switch_or_light
+    - action: script.set_state_switch_light
       data:
         select_state: Unknown
         target_entity_set:
@@ -54,7 +54,7 @@
       value_template: "{{ trigger.to_state.state in ['on', 'off'] }}"
       enabled: true
   actions:
-    - action: script.toggle_switch_or_light
+    - action: script.set_state_switch_light
       data:
         select_state: Unknown
         target_entity_set:
