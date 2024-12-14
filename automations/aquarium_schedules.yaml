@@ -4,7 +4,7 @@
 #####
 
 - id: "1733720729443"
-  alias: Aquarium Lighting Scheduled On/Off UI
+  alias: Aquarium Lighting Scheduled On/Off
   description: Aquarium CO2 Scheduled On/Off according to a schedule
   triggers:
     - trigger: state
@@ -41,7 +41,7 @@
   mode: single
 
 - id: "1733723752388"
-  alias: Aquarium CO2 Scheduled On/Off UI
+  alias: Aquarium CO2 Scheduled On/Off
   description: CO2 Toggle Schedule for Aquariums
   triggers:
     - trigger: state

@@ -262,8 +262,8 @@
         email_targets:
           - gbtunney@mac.com
         message:
-          "Device {{ trigger.to_state.name    }} in Area: {{\n area_name(trigger.entity_id)
-          }} is disconnected. Please fix immediately!!"
+          "Device {{ state_attr(trigger.entity_id,'friendly_name' )  }} in Area:
+          {{\n area_name(trigger.entity_id) }} is disconnected. Please fix immediately!!"
   mode: single
 - id: "1733605050618"
   alias: Lighting & Powerstrip Connectivity Warning
@@ -310,7 +310,6 @@
         email_targets:
           - gbtunney@mac.com
   mode: single
-
 - id: "1733711998590"
   alias: Reptile Room Motion Light
   description: ""
@@ -336,7 +335,6 @@
       data:
         message: motion was detected
   mode: single
-
 - id: "1733724698026"
   alias: iTag Light Color Test
   description: ""
