@@ -3,42 +3,76 @@
 # todo: switch to times of day sensor instead
 #####
 
-- id: "1731283746026"
-  alias: "Aquarium Lights Scheduled On/Off"
-  description: "Aquarium CO2 Scheduled On/Off according to a schedule"
+- id: "1733720729443"
+  alias: Aquarium Lighting Scheduled On/Off UI
+  description: Aquarium CO2 Scheduled On/Off according to a schedule
   triggers:
     - trigger: state
       entity_id:
-        - schedule.fish_lights_schedule
-      attribute: next_event
+        - binary_sensor.aquarium_lighting_schedule
+      attribute: next_update
       enabled: true
   conditions:
     - condition: template
       value_template: "{{ trigger.to_state.state in ['on', 'off'] }}"
+      enabled: true
   actions:
-    - action: switch.turn_{{ trigger.to_state.state }}
+    - action: script.toggle_switch_or_light
+      data:
+        select_state: Unknown
+        target_entity_set:
+          entity_id: light.fish_lighting
+        entity_trigger:
+          entity_id: "{{trigger.entity_id}}"
+    - action: script.notification_dispatcher
       metadata: {}
-      data: {}
-      target:
-        entity_id:
-          - switch.fish_lights
+      data:
+        notification_channel:
+          - iPhone
+          - persistant
+          - alexa
+        bool_critical: "OFF"
+        sound: default
+        sms_targets:
+          - 7188138156@mms.att.net
+        email_targets:
+          - gbtunney@mac.com
+        message: Aquarium Lights turned {{ trigger.to_state.state}}. TEST MESSAGE!!
   mode: single
-- id: "1731300280308"
-  alias: "Aquarium CO2 Scheduled On/Off"
-  description: "CO2 Toggle Schedule for Aquariums"
+
+- id: "1733723752388"
+  alias: Aquarium CO2 Scheduled On/Off UI
+  description: CO2 Toggle Schedule for Aquariums
   triggers:
     - trigger: state
       entity_id:
-        - schedule.fish_co2_schedule
-      attribute: next_event
+        - binary_sensor.aquarium_co2_schedule
+      attribute: next_update
+      enabled: true
   conditions:
     - condition: template
       value_template: "{{ trigger.to_state.state in ['on', 'off'] }}"
+      enabled: true
   actions:
-    - action: switch.turn_{{ trigger.to_state.state }}
+    - action: script.toggle_switch_or_light
+      data:
+        select_state: Unknown
+        target_entity_set:
+          entity_id: switch.20g_rack_co2
+        entity_trigger:
+          entity_id: "{{trigger.entity_id}}"
+    - action: script.notification_dispatcher
       metadata: {}
-      data: {}
-      target:
-        entity_id:
-          - switch.20_gallon_long_socket_3
+      data:
+        notification_channel:
+          - iPhone
+          - persistant
+          - alexa
+        bool_critical: "OFF"
+        sound: default
+        sms_targets:
+          - 7188138156@mms.att.net
+        email_targets:
+          - gbtunney@mac.com
+        message: CO2 turned {{ trigger.to_state.state}}. TEST MESSAGE!!
   mode: single

@@ -3,38 +3,42 @@
 # todo: make a single sensor to toggle like aquariums?
 #####
 
-#####
-# Reptiles Scheduled ( ON )
-#####
-- id: "1731300678056"
-  alias: "Reptile Lights Scheduled: ON"
-  description: Lights turn on 2 hrs after sunrise
+- id: "1733608231107"
+  alias: Reptile Lighting Schedule
+  description: Uses Time of day sensor now
   triggers:
-    - trigger: sun
-      event: sunrise
-      offset: 02:00:00
+    - trigger: state
+      entity_id:
+        - binary_sensor.reptile_lighting_schedule
+      enabled: true
+      attribute: next_update
+  conditions:
+    - condition: template
+      value_template: "{{ trigger.to_state.state in ['on', 'off'] }}"
   actions:
-    - action: switch.turn_on
-      target:
-        entity_id:
-          - switch.dorn_and_marceline_socket_1
-          - switch.seafoam_styx_socket_1
-  mode: single
-
-#####
-# Reptiles Scheduled ( OFF )
-#####
-- id: "1731300893649"
-  alias: "Reptile Lights Scheduled: OFF"
-  description: Lights turn off 45 min after sunset
-  triggers:
-    - trigger: sun
-      event: sunset
-      offset: 00:45:00
-  actions:
-    - action: switch.turn_off
-      target:
-        entity_id:
-          - switch.dorn_and_marceline_socket_1
-          - switch.seafoam_styx_socket_1
+    - action: script.toggle_switch_or_light
+      data:
+        select_state: Unknown
+        target_entity_set:
+          entity_id: light.reptile_lights
+        entity_trigger:
+          entity_id: "{{trigger.entity_id}}"
+    - action: script.notification_dispatcher
+      metadata: {}
+      data:
+        message:
+          The reptile lighting schedule has been triggered, they should hopefully
+          be {{trigger.to_state.state}}
+        notification_channel:
+          - iPhone
+          - iPad
+          - macBook
+          - alexa
+          - persistant
+        bool_critical: "OFF"
+        sound: default
+        sms_targets:
+          - 7188138156@mms.att.net
+        email_targets:
+          - gbtunney@mac.com
   mode: single
