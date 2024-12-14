@@ -1,0 +1,67 @@
+
+substitutions:
+  itag1_id: white_itag_1
+  itag1_friendly_name: "iTag 1"
+
+  # Tag 2
+  itag2_id: white_itag_2
+  itag2_friendly_name: "iTag 2"
+
+  atc_1_id: atc_hygrometer_1
+  atc_1_friendly_name: "ATC Hygrometer 1"
+
+
+esphome:
+  name: bluetooth-hub-1
+  friendly_name: Bluetooth Hub 1
+
+esp32:
+  board: esp32doit-devkit-v1
+  framework:
+    type: arduino
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "TY06fJEENNhrxiorSBZcqj+LASCLAyGxjMjuZkix6a4="
+
+ota:
+  - platform: esphome
+    password: "408cc526ee52e9954ed36c508fb16c0e"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Bluetooth-Hub-1 Fallback Hotspot"
+    password: "CroGZnM0HCVK"
+
+captive_portal:
+
+  
+  
+
+esp32_ble_tracker:
+
+ble_client:
+    
+ ### ===== ATC BLE CLIENT ===== ###
+  - mac_address: 5B:09:83:FC:69:4C #REPLACE WITH FOB'S MAC ADDRESS
+    id: ${atc_1_id}
+    on_connect:
+      then:
+        - logger.log: "${atc_1_friendly_name} is connected!!"
+
+
+sensor:
+  - platform: ble_client
+    type: rssi
+    ble_client_id: ${atc_1_id}
+    name: "${atc_1_friendly_name} RSSI"
+    entity_category: "diagnostic"
+
+
