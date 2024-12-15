@@ -61,11 +61,9 @@ aquarium_20g_pump_off_timer:
     - action: script.set_state_switch_light
       metadata: {}
       data:
-        select_state: "Off"
+        select_state: "On"
         target_entity_set:
-          entity_id: light.fish_lighting
-        entity_trigger:
-          entity_id: binary_sensor.aquarium_lighting_schedule
+          entity_id: switch.20g_pumps_heaters
       alias: Turn on pumps
     - alias: Turn on CO2 if scheduled
       action: script.set_state_switch_light

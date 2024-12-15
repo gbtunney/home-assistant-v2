@@ -6,42 +6,6 @@ notification_dispatcher:
   sequence:
     - variables:
         critical: "{% if bool_critical == 'ON' %}1{% else %}0{% endif %}"
-    - alias: If sms selected
-      if:
-        - condition: template
-          value_template:
-            "{% if 'sms' in notification_channel %}true{% else %}false{%
-            endif %}"
-          alias: "note: sms does not have a title so it inserts it before message"
-      then:
-        - action: notify.gbtunney_gmail_com
-          metadata: {}
-          data:
-            message:
-              "{% if bool_critical == 'ON' %}CRITICAL {% else %}{% endif %}Notification
-              from Homeassistant: {% if title is defined %}{{ title }} :{% else %}{% endif
-              %}{{ message }}"
-            title: "{{ title }}"
-            target: "{{ sms_targets }}"
-      enabled: true
-    - alias: If email selected
-      if:
-        - alias: "note:  email title == subject. Inserts critical warning in subject"
-          condition: template
-          value_template:
-            "{% if 'email' in notification_channel %}true{% else %}false{%
-            endif %}"
-      then:
-        - action: notify.gbtunney_gmail_com
-          metadata: {}
-          data:
-            message: "{{message}}"
-            title:
-              "{% if bool_critical == 'ON' %}CRITICAL {% else %}{% endif %}Notification
-              from Homeassistant{% if title is defined %}: {{ title }}{% else %}{% endif
-              %}"
-            target: "{{ email_targets }}"
-      enabled: true
     - alias: If alexa selected
       if:
         - condition: template
@@ -124,7 +88,43 @@ notification_dispatcher:
                   name: "{{ sound | default('default') }}"
                   critical: "{{ critical | int }}"
       enabled: true
-  description: "Send to multiple notification types"
+    - alias: If email selected
+      if:
+        - alias: "note:  email title == subject. Inserts critical warning in subject"
+          condition: template
+          value_template:
+            "{% if 'email' in notification_channel %}true{% else %}false{%
+            endif %}"
+      then:
+        - action: notify.gbtunney_gmail_com
+          metadata: {}
+          data:
+            message: "{{message}}"
+            title:
+              "{% if bool_critical == 'ON' %}CRITICAL {% else %}{% endif %}Notification
+              from Homeassistant{% if title is defined %}: {{ title }}{% else %}{% endif
+              %}"
+            target: "{{ email_targets }}"
+      enabled: true
+    - alias: If sms selected
+      if:
+        - condition: template
+          value_template:
+            "{% if 'sms' in notification_channel %}true{% else %}false{%
+            endif %}"
+          alias: "note: sms does not have a title so it inserts it before message"
+      then:
+        - action: notify.gbtunney_gmail_com
+          metadata: {}
+          data:
+            message:
+              "{% if bool_critical == 'ON' %}CRITICAL {% else %}{% endif %}Notification
+              from Homeassistant: {% if title is defined %}{{ title }} :{% else %}{% endif
+              %}{{ message }}"
+            title: "{{ title }}"
+            target: "{{ sms_targets }}"
+      enabled: true
+  description: Send to multiple notification types
   icon: mdi:bullhorn-variant-outline
   fields:
     message:

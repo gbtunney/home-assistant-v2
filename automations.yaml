@@ -9,8 +9,8 @@
       to: "on"
       for:
         hours: 0
-        minutes: 1
-        seconds: 0
+        minutes: 0
+        seconds: 30
   conditions: []
   actions:
     - action: script.notification_dispatcher
@@ -29,7 +29,10 @@
           - 7188138156@mms.att.net
         email_targets:
           - gbtunney@mac.com
-        message: "Leak detector (todo: rename) is Wet!"
+        message:
+          "Device {{ state_attr(trigger.entity_id,'friendly_name' )  }} in
+          Area: {{ area_name(trigger.entity_id) }} is detecting moisture. Please fix
+          immediately!!"
   mode: single
 - id: "1733535410225"
   alias: Temperature Alert
@@ -169,8 +172,8 @@
   conditions:
     - condition: template
       value_template:
-        "{{  states('binary_sensor.cat_fountain_water_tank_status')
-        != 'disconnected' }}"
+        "{{ bool( states('binary_sensor.cat_fountain_water_tank_status'),false
+        )and bool( states('binary_sensor.cat_fountain_wi_fi'),false ) }}"
   actions:
     - if:
         - condition: numeric_state
@@ -221,9 +224,16 @@
   triggers:
     - trigger: state
       entity_id:
+        - binary_sensor.cat_fountain_water_tank_status
+      to: "off"
+      for:
+        hours: 0
+        minutes: 8
+        seconds: 0
+    - trigger: state
+      entity_id:
         - binary_sensor.cat_fountain_wi_fi
         - binary_sensor.goblins_smart_feeder_wi_fi
-        - binary_sensor.itag_tracking_hub_status
         - binary_sensor.hygrometer_status
       for:
         hours: 0
@@ -233,14 +243,6 @@
         - "off"
         - unknown
         - unavailable
-    - trigger: state
-      entity_id:
-        - binary_sensor.cat_fountain_water_tank_status
-      to: "off"
-      for:
-        hours: 0
-        minutes: 2
-        seconds: 0
   conditions:
     - condition: state
       entity_id: alarm_control_panel.home_alarm
@@ -303,6 +305,7 @@
           - macBook
           - persistant
           - alexa
+          - sms
         bool_critical: "OFF"
         sound: default
         sms_targets:
