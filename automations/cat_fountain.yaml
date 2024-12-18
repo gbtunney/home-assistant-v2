@@ -1,6 +1,6 @@
 #####
 # Cat Fountain Automations
-# todo: move sensor one
+# todo: workout a way of using dummy to test
 #####
 
 - id: "1733562107777"
@@ -90,4 +90,41 @@
               - gbtunney@mac.com
           alias: Cat Fountain Disconnected Notification
       alias: Notification Conditional
+  mode: single
+
+- id: "1734249603918"
+  alias: "Sensor: Cat Fountain Water Level"
+  description:
+    'Sets an accurate remaining water level (as in, no zeros when tank
+    disconnected) "the true " value without the 0''s. \nTODO: will trigger log for
+    "filled" tank'
+  triggers:
+    - trigger: numeric_state
+      entity_id:
+        - sensor.cat_fountain_remaining_water
+      below: 100
+      above: 0
+      enabled: true
+      for:
+        hours: 0
+        minutes: 3
+        seconds: 0
+  conditions:
+    - condition: template
+      value_template:
+        "{{ bool( states('binary_sensor.cat_fountain_water_tank_status'),false
+        )and bool( states('binary_sensor.cat_fountain_wi_fi'),false ) }}"
+      alias: only run if tank  and wifi are properly connected
+      enabled: true
+  actions:
+    - alias: Set "true" value variable which eliminates all the 0's
+      sequence:
+        - action: input_number.set_value
+          metadata: {}
+          data:
+            value: "{{ states('sensor.cat_fountain_remaining_water') | int (999) }}"
+          target:
+            entity_id: input_number.cat_fountain_water_volume_input
+          enabled: true
+          alias: Set the input variable, which triggers sensor
   mode: single

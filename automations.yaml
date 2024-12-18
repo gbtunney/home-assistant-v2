@@ -157,7 +157,6 @@
               - gbtunney@mac.com
             message: Motion NOT DETECTED BACM TO RED
   mode: single
-
 - id: "1733563292567"
   alias: Device Unavailable
   description: ""
@@ -343,39 +342,4 @@
               - 89
           target:
             entity_id: light.smart_bulb_1
-  mode: single
-- id: "1734249603918"
-  alias: "Sensor: Cat Fountain Water Level"
-  description:
-    '"the true " value without the 0''s.  TODO: will trigger log for "filled"
-    tank'
-  triggers:
-    - trigger: numeric_state
-      entity_id:
-        - sensor.cat_fountain_remaining_water
-      below: 100
-      above: 0
-      enabled: true
-      for:
-        hours: 0
-        minutes: 3
-        seconds: 0
-  conditions:
-    - condition: template
-      value_template:
-        "{{ bool( states('binary_sensor.cat_fountain_water_tank_status'),false
-        )and bool( states('binary_sensor.cat_fountain_wi_fi'),false ) }}"
-      alias: if Tank  and wifi is connected
-      enabled: true
-  actions:
-    - sequence:
-        - action: input_number.set_value
-          metadata: {}
-          data:
-            value: "{{ states('sensor.cat_fountain_remaining_water') | int (999) }}"
-          target:
-            entity_id: input_number.cat_fountain_water_volume_input
-          enabled: true
-          alias: Set the input variable, which triggers sensor
-      alias: Set "true" value variable which eliminates all the 0's
   mode: single
