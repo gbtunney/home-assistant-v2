@@ -94,10 +94,10 @@
 
 - id: "1734249603918"
   alias: "Sensor: Cat Fountain Water Level"
-  description:
-    'Sets an accurate remaining water level (as in, no zeros when tank
-    disconnected) "the true " value without the 0''s. \nTODO: will trigger log for
-    "filled" tank'
+  description: >
+    "- Sets an accurate remaining water level (as in, no zeros when tank disconnected) so stats aren't cluttered with zeros.
+    - Determine if the tank has been filled based on if new volume is HIGHER than last recorded.
+    - If filled, sets a timestamp variable so there is a 'days since last fill' counter.'"
   triggers:
     - trigger: numeric_state
       entity_id:
@@ -107,7 +107,7 @@
       enabled: true
       for:
         hours: 0
-        minutes: 3
+        minutes: 4
         seconds: 0
   conditions:
     - condition: template
@@ -117,12 +117,34 @@
       alias: only run if tank  and wifi are properly connected
       enabled: true
   actions:
-    - alias: Set "true" value variable which eliminates all the 0's
+    - variables:
+        fill_minimum: 20
+        trigger_entity_id: "{{ trigger.entity_id }}"
+        trigger_value: "{{ states( trigger_entity_id ) | int (999) }}"
+        last_known_value:
+          "{{ states( 'sensor.cat_fountain_water_volume' ) | int (999)
+          }}"
+        target_entity: sensor.cat_fountain_days_since_last_fill
+    - alias: if tank is FILLED, set last filled timestamp
+      if:
+        - condition: template
+          value_template:
+            "{{ bool( (( states('input_number.10g_q_temperature')| int(999)
+            -  states( 'sensor.cat_fountain_water_volume' )  | int(999) ) >  fill_minimum|int(999)
+            ) ) }} "
+      then:
+        - action: input_datetime.set_datetime
+          metadata: {}
+          data:
+            timestamp: "{{float(as_timestamp(now()),0)}}"
+          target:
+            entity_id: input_datetime.cat_fountain_tank_last_filled_date
+    - alias: "Sets an accurate remaining water level (as in, no zeros when tank disconnected) "
       sequence:
         - action: input_number.set_value
           metadata: {}
           data:
-            value: "{{ states('sensor.cat_fountain_remaining_water') | int (999) }}"
+            value: "{{ states( trigger.entity_id ) | int (999) }}"
           target:
             entity_id: input_number.cat_fountain_water_volume_input
           enabled: true
