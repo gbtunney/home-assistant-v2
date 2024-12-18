@@ -1,6 +1,5 @@
 #####
 # Reptile schedules ( Lights )
-# todo: make a single sensor to toggle like aquariums?
 #####
 
 - id: "1733608231107"
@@ -18,6 +17,7 @@
   actions:
     - action: script.set_state_switch_light
       data:
+        bool_invert_state: "Off"
         select_state: Unknown
         target_entity_set:
           entity_id: light.reptile_lights

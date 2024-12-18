@@ -1,11 +1,10 @@
 #####
 # Aquarium schedules ( Lights and C02 )
-# todo: switch to times of day sensor instead
 #####
 
 - id: "1733720729443"
   alias: Aquarium Lighting Scheduled On/Off
-  description: Aquarium CO2 Scheduled On/Off according to a schedule
+  description: Aquarium Lighting turned On/Off according to a schedule
   triggers:
     - trigger: state
       entity_id:
@@ -19,9 +18,10 @@
   actions:
     - action: script.set_state_switch_light
       data:
+        bool_invert_state: "Off"
         select_state: Unknown
         target_entity_set:
-          entity_id: light.fish_lighting
+          entity_id: light.aquarium_lighting
         entity_trigger:
           entity_id: "{{trigger.entity_id}}"
     - action: script.notification_dispatcher
@@ -42,7 +42,7 @@
 
 - id: "1733723752388"
   alias: Aquarium CO2 Scheduled On/Off
-  description: CO2 Toggle Schedule for Aquariums
+  description: Aquarium C02 turned On/Off according to a schedule
   triggers:
     - trigger: state
       entity_id:
@@ -56,6 +56,7 @@
   actions:
     - action: script.set_state_switch_light
       data:
+        bool_invert_state: "Off"
         select_state: Unknown
         target_entity_set:
           entity_id: switch.20g_rack_co2

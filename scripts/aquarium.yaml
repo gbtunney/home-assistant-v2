@@ -1,6 +1,7 @@
 #####
 # SCRIPTS: Aquarium Scripts
-# these are specific but use utilities
+# these are specific USE but use utilities
+# todo: add warning for pump rest
 #####
 
 aquarium_light_on_timer:
@@ -9,9 +10,10 @@ aquarium_light_on_timer:
     - action: script.set_state_switch_light
       metadata: {}
       data:
+        bool_invert_state: "Off"
         select_state: "On"
         target_entity_set:
-          entity_id: light.fish_lighting
+          entity_id: light.aquarium_lighting
     - delay:
         hours: 0
         minutes: "{{ delay_minutes|int }}"
@@ -20,12 +22,13 @@ aquarium_light_on_timer:
     - action: script.set_state_switch_light
       metadata: {}
       data:
+        bool_invert_state: "Off"
         select_state: "Off"
         target_entity_set:
-          entity_id: light.fish_lighting
+          entity_id: light.aquarium_lighting
         entity_trigger:
           entity_id: binary_sensor.aquarium_lighting_schedule
-  description: ""
+  description: "Turn all aquarium lights off on a timer"
   fields:
     delay_minutes:
       selector:
@@ -43,6 +46,7 @@ aquarium_20g_pump_off_timer:
       metadata: {}
       data:
         select_state: "Off"
+        bool_invert_state: "Off"
         target_entity_set:
           entity_id: switch.20g_pumps_heaters
       alias: Turn off pumps
@@ -50,6 +54,7 @@ aquarium_20g_pump_off_timer:
       action: script.set_state_switch_light
       metadata: {}
       data:
+        bool_invert_state: "Off"
         select_state: "Off"
         target_entity_set:
           entity_id: switch.20g_rack_co2
@@ -64,11 +69,13 @@ aquarium_20g_pump_off_timer:
         select_state: "On"
         target_entity_set:
           entity_id: switch.20g_pumps_heaters
+        bool_invert_state: "Off"
       alias: Turn on pumps
     - alias: Turn on CO2 if scheduled
       action: script.set_state_switch_light
       metadata: {}
       data:
+        bool_invert_state: "Off"
         select_state: "Off"
         target_entity_set:
           entity_id: switch.20g_rack_co2

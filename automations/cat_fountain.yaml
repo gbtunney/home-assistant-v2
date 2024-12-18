@@ -1,0 +1,93 @@
+#####
+# Cat Fountain Automations
+# todo: move sensor one
+#####
+
+- id: "1733562107777"
+  alias: Cat Fountain Problem Notification
+  description: "Detects and notifies based on problems with: \n- Tank Disconnected \n- Low Water Level.\rNOTE: This automation does NOT set any sensor values."
+  triggers:
+    - trigger: numeric_state
+      entity_id:
+        - sensor.cat_fountain_water_volume
+      below: 40
+      for:
+        hours: 0
+        minutes: 9
+        seconds: 0
+      enabled: true
+      above: 0
+    - trigger: state
+      entity_id:
+        - binary_sensor.cat_fountain_water_tank_status
+      for:
+        hours: 0
+        minutes: 9
+        seconds: 0
+      to: "off"
+      from: "on"
+  conditions:
+    - condition: template
+      value_template:
+        "{{  bool( states('binary_sensor.cat_fountain_wi_fi'),false
+        ) }}"
+      enabled: true
+  actions:
+    - variables:
+        water_level:
+          "{{ states('sensor.cat_fountain_remaining_water') | int(999)
+          }}"
+        critical_threshold_upper: 30
+        critical:
+          "{%- if water_level | int(0) <= critical_threshold_upper | int(0)
+          %}\n  ON\n{%- else %}\n  OFF\n{%- endif %}\n"
+        message:
+          'Cat water is {% if critical == "ON" %}extremely low{% endif %} at
+          {{ water_level }}% in Area: {{ area_name(trigger.entity_id) }} :: Please fill
+          immediately!!'
+    - if:
+        - condition: template
+          value_template:
+            "{{ bool( states('binary_sensor.cat_fountain_water_tank_status')
+            ,false)}}"
+      then:
+        - action: script.notification_dispatcher
+          metadata: {}
+          data:
+            message: "{{message}}"
+            notification_channel:
+              - iPhone
+              - iPad
+              - macBook
+              - persistant
+              - sms
+              - alexa
+            bool_critical: "{{critical}}"
+            sound: default
+            sms_targets:
+              - 7188138156@mms.att.net
+            email_targets:
+              - gbtunney@mac.com
+          alias: Low Water Notification
+      else:
+        - action: script.notification_dispatcher
+          metadata: {}
+          data:
+            message:
+              "Cat fountain tank appears to be disconnected for more than 10 min
+              in Area: {{ area_name(trigger.entity_id) }} :: Please fix immediately!!"
+            notification_channel:
+              - iPhone
+              - iPad
+              - macBook
+              - persistant
+              - alexa
+            bool_critical: "OFF"
+            sound: default
+            sms_targets:
+              - 7188138156@mms.att.net
+            email_targets:
+              - gbtunney@mac.com
+          alias: Cat Fountain Disconnected Notification
+      alias: Notification Conditional
+  mode: single

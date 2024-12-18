@@ -157,84 +157,15 @@
               - gbtunney@mac.com
             message: Motion NOT DETECTED BACM TO RED
   mode: single
-- id: "1733562107777"
-  alias: Cat Fountain Water is Low
-  description: ""
-  triggers:
-    - trigger: numeric_state
-      entity_id:
-        - sensor.cat_fountain_remaining_water
-      below: 40
-      for:
-        hours: 0
-        minutes: 5
-        seconds: 0
-  conditions:
-    - condition: template
-      value_template:
-        "{{ bool( states('binary_sensor.cat_fountain_water_tank_status'),false
-        )and bool( states('binary_sensor.cat_fountain_wi_fi'),false ) }}"
-  actions:
-    - if:
-        - condition: numeric_state
-          entity_id: sensor.cat_fountain_remaining_water
-          below: 28
-      then:
-        - action: script.notification_dispatcher
-          metadata: {}
-          data:
-            message:
-              "Cat water is at {{ trigger.to_state.state }}% in Area: {{ area_name(trigger.entity_id)
-              }} :: Please fill immediately!!"
-            notification_channel:
-              - iPhone
-              - iPad
-              - macBook
-              - persistant
-              - sms
-              - alexa
-            bool_critical: "ON"
-            sound: default
-            sms_targets:
-              - 7188138156@mms.att.net
-            email_targets:
-              - gbtunney@mac.com
-      else:
-        - action: script.notification_dispatcher
-          metadata: {}
-          data:
-            message:
-              "Cat water is at {{ trigger.to_state.state }}% in Area: {{ area_name(trigger.entity_id)
-              }} :: Please fill!!"
-            notification_channel:
-              - iPhone
-              - iPad
-              - macBook
-              - persistant
-            bool_critical: "OFF"
-            sound: default
-            sms_targets:
-              - 7188138156@mms.att.net
-            email_targets:
-              - gbtunney@mac.com
-  mode: single
+
 - id: "1733563292567"
   alias: Device Unavailable
   description: ""
   triggers:
     - trigger: state
       entity_id:
-        - binary_sensor.cat_fountain_water_tank_status
-      to: "off"
-      for:
-        hours: 0
-        minutes: 8
-        seconds: 0
-    - trigger: state
-      entity_id:
-        - binary_sensor.cat_fountain_wi_fi
-        - binary_sensor.goblins_smart_feeder_wi_fi
-        - binary_sensor.hygrometer_status
+        - binary_sensor.connectivity_status_group
+        - switch.cozy_life_outlet_2
       for:
         hours: 0
         minutes: 6
@@ -412,4 +343,39 @@
               - 89
           target:
             entity_id: light.smart_bulb_1
+  mode: single
+- id: "1734249603918"
+  alias: "Sensor: Cat Fountain Water Level"
+  description:
+    '"the true " value without the 0''s.  TODO: will trigger log for "filled"
+    tank'
+  triggers:
+    - trigger: numeric_state
+      entity_id:
+        - sensor.cat_fountain_remaining_water
+      below: 100
+      above: 0
+      enabled: true
+      for:
+        hours: 0
+        minutes: 3
+        seconds: 0
+  conditions:
+    - condition: template
+      value_template:
+        "{{ bool( states('binary_sensor.cat_fountain_water_tank_status'),false
+        )and bool( states('binary_sensor.cat_fountain_wi_fi'),false ) }}"
+      alias: if Tank  and wifi is connected
+      enabled: true
+  actions:
+    - sequence:
+        - action: input_number.set_value
+          metadata: {}
+          data:
+            value: "{{ states('sensor.cat_fountain_remaining_water') | int (999) }}"
+          target:
+            entity_id: input_number.cat_fountain_water_volume_input
+          enabled: true
+          alias: Set the input variable, which triggers sensor
+      alias: Set "true" value variable which eliminates all the 0's
   mode: single
