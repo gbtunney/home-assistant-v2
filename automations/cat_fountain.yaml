@@ -9,7 +9,7 @@
   triggers:
     - trigger: numeric_state
       entity_id:
-        - sensor.cat_fountain_water_volume
+        - sensor.cat_fountain_remaining_water
       below: 40
       for:
         hours: 0
@@ -93,60 +93,38 @@
   mode: single
 
 - id: "1734249603918"
-  alias: "Sensor: Cat Fountain Water Level"
-  description: >
-    "- Sets an accurate remaining water level (as in, no zeros when tank disconnected) so stats aren't cluttered with zeros.
-    - Determine if the tank has been filled based on if new volume is HIGHER than last recorded.
-    - If filled, sets a timestamp variable so there is a 'days since last fill' counter.'"
+  alias: "Cat Fountain Tank Filled Event"
+  description:
+    "- Determines if the tank has been filled based on if new volume is HIGHER than last recorded. - If filled,
+    sets a timestamp variable so there is a 'days since last fill' counter."
   triggers:
     - trigger: numeric_state
       entity_id:
         - sensor.cat_fountain_remaining_water
-      below: 100
+      value_template:
+        "{{ bool( (( states( trigger.entity_id ) | int(999) -  states('sensor.cat_fountain_water_volume')  |
+        int(999) ) >  20 ) ) }} "
       above: 0
-      enabled: true
-      for:
-        hours: 0
-        minutes: 4
-        seconds: 0
+      below: 100
   conditions:
     - condition: template
       value_template:
         "{{ bool( states('binary_sensor.cat_fountain_water_tank_status'),false
         )and bool( states('binary_sensor.cat_fountain_wi_fi'),false ) }}"
-      alias: only run if tank  and wifi are properly connected
-      enabled: true
   actions:
-    - variables:
-        fill_minimum: 20
-        trigger_entity_id: "{{ trigger.entity_id }}"
-        trigger_value: "{{ states( trigger_entity_id ) | int (999) }}"
-        last_known_value:
-          "{{ states( 'sensor.cat_fountain_water_volume' ) | int (999)
-          }}"
-        target_entity: sensor.cat_fountain_days_since_last_fill
-    - alias: if tank is FILLED, set last filled timestamp
-      if:
-        - condition: template
-          value_template:
-            "{{ bool( (( states('input_number.10g_q_temperature')| int(999)
-            -  states( 'sensor.cat_fountain_water_volume' )  | int(999) ) >  fill_minimum|int(999)
-            ) ) }} "
-      then:
-        - action: input_datetime.set_datetime
-          metadata: {}
-          data:
-            timestamp: "{{float(as_timestamp(now()),0)}}"
-          target:
-            entity_id: input_datetime.cat_fountain_tank_last_filled_date
-    - alias: "Sets an accurate remaining water level (as in, no zeros when tank disconnected) "
-      sequence:
-        - action: input_number.set_value
-          metadata: {}
-          data:
-            value: "{{ states( trigger.entity_id ) | int (999) }}"
-          target:
-            entity_id: input_number.cat_fountain_water_volume_input
-          enabled: true
-          alias: Set the input variable, which triggers sensor
+    - action: logbook.log
+      metadata: {}
+      data:
+        name: Cat Fountain Tank Filled!
+        message:
+          The cat fountain was just filled and is currently at {{ states( trigger.entity_id
+          ) }}%. It was previously filled {{ states('sensor.cat_fountain_days_since_last_fill')}}
+          days ago.
+        entity_id: sensor.cat_fountain_days_since_last_fill
+    - action: input_datetime.set_datetime
+      metadata: {}
+      data:
+        timestamp: "{{float(as_timestamp(now()),0)}}"
+      target:
+        entity_id: input_datetime.cat_fountain_tank_last_filled_date
   mode: single
