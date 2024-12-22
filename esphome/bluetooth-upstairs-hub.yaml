@@ -10,26 +10,27 @@ substitutions:
   atc_1_id: atc_hygrometer_1
   atc_1_friendly_name: "ATC Hygrometer 1"
 
-
 esphome:
-  name: bluetooth-hub-1
-  friendly_name: Bluetooth Hub 1
+  name: bluetooth-upstairs-hub
+  friendly_name: Bluetooth Upstairs Hub
 
 esp32:
-  board: esp32doit-devkit-v1
+  board: esp32dev
   framework:
     type: arduino
+
 # Enable logging
 logger:
+  level: VERY_VERBOSE
 
 # Enable Home Assistant API
 api:
   encryption:
-    key: "TY06fJEENNhrxiorSBZcqj+LASCLAyGxjMjuZkix6a4="
+    key: "UK183nZ61Ngi/7py/HnBtsMQURS8lYXnBke8iBepuFo="
 
 ota:
   - platform: esphome
-    password: "408cc526ee52e9954ed36c508fb16c0e"
+    password: "9261fadd458c420a7f03c4467a4be901"
 
 wifi:
   ssid: !secret wifi_ssid
@@ -37,25 +38,37 @@ wifi:
 
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
-    ssid: "Bluetooth-Hub-1 Fallback Hotspot"
-    password: "CroGZnM0HCVK"
+    ssid: "Bluetooth-Upstairs-Hub"
+    password: "p5uecvmtRSN7"
 
 captive_portal:
+    
 
-  
-  
 
 esp32_ble_tracker:
+  scan_parameters:
+    interval: 1100ms
+    window: 1100ms
+    active: true
+  on_ble_advertise:
+    - then:
 
+bluetooth_proxy:
+  active: true
+  
 ble_client:
-    
  ### ===== ATC BLE CLIENT ===== ###
-  - mac_address: 5B:09:83:FC:69:4C #REPLACE WITH FOB'S MAC ADDRESS
+  - mac_address: A4:C1:38:91:3B:D8 # A4:C1:38:91:3B:D8 .  5B:09:83:FC:69:4C #REPLACE WITH FOB'S MAC ADDRESS "78:6D:EB:2D:BF:4C"
     id: ${atc_1_id}
+    auto_connect: true
     on_connect:
       then:
         - logger.log: "${atc_1_friendly_name} is connected!!"
 
+binary_sensor:
+  - platform: ble_presence
+    mac_address: A4:C1:38:91:3B:D8
+    name: "${atc_1_friendly_name}"
 
 sensor:
   - platform: ble_client
@@ -64,4 +77,7 @@ sensor:
     name: "${atc_1_friendly_name} RSSI"
     entity_category: "diagnostic"
 
+#text_sensor:
+ # - platform: ble_scanner
+   # name: "BLE Devices Scanner"
 

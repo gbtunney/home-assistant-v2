@@ -1,0 +1,77 @@
+esphome:
+  name: gbt-temperature-sensors
+  friendly_name: gbt-temperature-sensors
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+  # Enable logging
+logger:
+  level: VERY_VERBOSE
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "nC12+x5FfSI65ZZpdyXkONHD/Ru4IKpTrEoMVnKAlV8="
+
+ota:
+  - platform: esphome
+    password: "931ae552f960ffeef6871a85e0d9e06e"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Gbt-Temperature-Sensors"
+    password: "hhrkMfNmIK3g"
+
+captive_portal:
+    
+#one_wire:
+ # - platform: gpio
+ #   pin: 
+
+
+one_wire:
+  - platform: gpio
+    pin: GPIO22
+    id: dallas
+
+button:
+  - platform: template
+    name: "Test 1-wire bus"
+    on_press:
+      - logger.log: "Button press notification"
+      - lambda: |-
+          id(dallas).search();
+          id(dallas).dump_config();
+
+sensor:
+  - platform: dallas_temp
+    name: "Temperature"
+  
+external_components:
+  - source:
+      type: git
+      url: https://github.com/ssieb/esphome
+      ref: onewire
+    components: [ gpio, one_wire ]
+    refresh: 1min
+  #- platform: template
+ # name: "Test 1-wire bus"
+#  then:
+     # - lambda: |-
+     #     id(dallas).search();
+      #    id(dallas).dump_config();
+
+#sensor:
+ # - platform: dallas
+  #  address: 0xd13cb3f648ef3c28 #Replace
+   # name: "Boiler 150l Temperature" 
+  #- platform: dallas
+  #  address: 0x5c3c23f648eb7328 #Replace
+  #  name: "Boiler 100l Temperature"     
