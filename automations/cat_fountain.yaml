@@ -75,7 +75,7 @@
           data:
             message:
               "Cat fountain tank appears to be disconnected for more than 10 min
-              in Area: {{ area_name(trigger.entity_id) }} :: Please fix immediately!!"
+              in Area: {{ area_name(trigger.entity_id) }}. The last recorded water remaining was {{ states('sensor.cat_fountain_water_volume') | int(999) }} % :: Please fix immediately!!"
             notification_channel:
               - iPhone
               - iPad

@@ -24,20 +24,6 @@
           entity_id: light.aquarium_lighting
         entity_trigger:
           entity_id: "{{trigger.entity_id}}"
-    - action: script.notification_dispatcher
-      metadata: {}
-      data:
-        notification_channel:
-          - iPhone
-          - persistant
-          - alexa
-        bool_critical: "OFF"
-        sound: default
-        sms_targets:
-          - 7188138156@mms.att.net
-        email_targets:
-          - gbtunney@mac.com
-        message: Aquarium Lights turned {{ trigger.to_state.state}}. TEST MESSAGE!!
   mode: single
 
 - id: "1733723752388"
@@ -62,18 +48,4 @@
           entity_id: switch.20g_rack_co2
         entity_trigger:
           entity_id: "{{trigger.entity_id}}"
-    - action: script.notification_dispatcher
-      metadata: {}
-      data:
-        notification_channel:
-          - iPhone
-          - persistant
-          - alexa
-        bool_critical: "OFF"
-        sound: default
-        sms_targets:
-          - 7188138156@mms.att.net
-        email_targets:
-          - gbtunney@mac.com
-        message: CO2 turned {{ trigger.to_state.state}}. TEST MESSAGE!!
   mode: single

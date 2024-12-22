@@ -23,22 +23,4 @@
           entity_id: light.reptile_lights
         entity_trigger:
           entity_id: "{{trigger.entity_id}}"
-    - action: script.notification_dispatcher
-      metadata: {}
-      data:
-        message:
-          The reptile lighting schedule has been triggered, they should hopefully
-          be {{trigger.to_state.state}}
-        notification_channel:
-          - iPhone
-          - iPad
-          - macBook
-          - alexa
-          - persistant
-        bool_critical: "OFF"
-        sound: default
-        sms_targets:
-          - 7188138156@mms.att.net
-        email_targets:
-          - gbtunney@mac.com
   mode: single
