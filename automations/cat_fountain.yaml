@@ -93,7 +93,7 @@
   mode: single
 
 - id: "1734249603918"
-  alias: "Cat Fountain Tank Filled Event"
+  alias: "Sensor: Cat Fountain Tank Filled"
   description:
     "- Determines if the tank has been filled based on if new volume is HIGHER than last recorded. - If filled,
     sets a timestamp variable so there is a 'days since last fill' counter."

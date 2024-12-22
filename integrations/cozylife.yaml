@@ -1,3 +1,8 @@
+#####
+# Cozy Life Local Pull
+# https://www.home-assistant.io/integrations/bluetooth/
+#####
+
 hass_cozylife_local_pull:
   lang: en
   ip:

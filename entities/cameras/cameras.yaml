@@ -1,7 +1,28 @@
 #####
+# Cameras
+# todo: not sure if ffmpeg cameras are even needed?
+#####
+
+#####
+# Xiaomi Cloud Map Extractor
+# https://github.com/PiotrMachowski/Home-Assistant-custom-components-Xiaomi-Cloud-Map-Extractor
+#####
+
+- platform: xiaomi_cloud_map_extractor
+  host: !secret xiaomi_vacuum_host
+  token: !secret xiaomi_vacuum_token
+  username: !secret xiaomi_cloud_username
+  password: !secret xiaomi_cloud_password
+  draw: ["all"]
+  attributes:
+    - calibration_points
+  #. auto_update: false
+
+#####
 # FFMpeg Cameras
 # Camera 1
 #####
+
 - platform: ffmpeg
   name: "Camera #1 RTSP Stream"
   input: !secret camera_feed_1
