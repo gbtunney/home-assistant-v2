@@ -1,82 +1,85 @@
 llm_vision_describe_scene:
   alias: LLM Vision Describe Scene
-  description: 'LLM Vision: Describe the Camera Feed in Sentence'
+  description: "LLM Vision: Describe the Camera Feed in Sentence"
   fields:
     prompt:
       selector:
         text:
       name: prompt
       required: true
-      default: "\"Summarize what's happening in the camera feed (one sentence max).\n
+      default:
+        "\"Summarize what's happening in the camera feed (one sentence max).\n
         Don't describe the scene! If there is a person, describe what they're\n doing
         and what they look like. If they look like a courier mention that!\n If nothing
         is happening, say so.\"\n"
   sequence:
-  - variables:
-      llv_response: undefined
-  - action: llmvision.image_analyzer
-    metadata: {}
-    data:
-      include_filename: false
-      target_width: 800
-      detail: low
-      max_tokens: 100
-      temperature: 0.5
-      provider: 01JDVNFP4KWD6XERDGQ5V3TY6W
-      message: '{{ prompt }}'
-      remember: false
-      expose_images: false
-      image_file: /media/{{ states( 'input_text.url_llv')  }}
-    response_variable: llv_response
-  - action: input_text.set_value
-    metadata: {}
-    data:
-      value: '{{ llv_response }}'
-    target:
-      entity_id: input_text.llm_response
+    - variables:
+        llv_response: undefined
+    - action: llmvision.image_analyzer
+      metadata: {}
+      data:
+        include_filename: false
+        target_width: 800
+        detail: low
+        max_tokens: 100
+        temperature: 0.5
+        provider: 01JDVNFP4KWD6XERDGQ5V3TY6W
+        message: "{{ prompt }}"
+        remember: false
+        expose_images: false
+        image_file: /media/{{ states( 'input_text.url_llv')  }}
+      response_variable: llv_response
+    - action: input_text.set_value
+      metadata: {}
+      data:
+        value: "{{ llv_response }}"
+      target:
+        entity_id: input_text.llm_response
   icon: mdi:camera
 llm_car_in_driveway:
   alias: LLM Car in Driveway
   sequence:
-  - data:
-      max_tokens: 100
-      image_entity:
-      - camera.carport
-      provider: 01J99F4T99PA1XGQ4CTQS3CP8H
-      model: gpt-4o
-      target_width: 512
-      temperature: 0.5
-      detail: low
-      include_filename: false
-      message: Please check if there is a car in the driveway with the license plate
-        "<your_license_plate_number>" and respond with a JSON object. The JSON object
-        should have a single key, "car_in_driveway," which should be set to true if
-        - and only  if - there is a car with the license number provided above in
-        the  driveway and false otherwise.
-    response_variable: response
-    action: llmvision.image_analyzer
-  - choose:
-    - conditions:
-      - condition: template
-        value_template: '{{ (( response.response_text |regex_replace(find=''```json
+    - data:
+        max_tokens: 100
+        image_entity:
+          - camera.carport
+        provider: 01J99F4T99PA1XGQ4CTQS3CP8H
+        model: gpt-4o
+        target_width: 512
+        temperature: 0.5
+        detail: low
+        include_filename: false
+        message:
+          Please check if there is a car in the driveway with the license plate
+          "<your_license_plate_number>" and respond with a JSON object. The JSON object
+          should have a single key, "car_in_driveway," which should be set to true if
+          - and only  if - there is a car with the license number provided above in
+          the  driveway and false otherwise.
+      response_variable: response
+      action: llmvision.image_analyzer
+    - choose:
+        - conditions:
+            - condition: template
+              value_template:
+                "{{ (( response.response_text |regex_replace(find='```json
 
-          '', replace='''', ignorecase=False) |regex_replace(find=''
+                ', replace='', ignorecase=False) |regex_replace(find='
 
-          ```'', replace='''', ignorecase=False)  ) | from_json).car_in_driveway }}'
-        enabled: true
-      sequence:
-      - target:
-          entity_id: input_boolean.car_in_driveway
-        data: {}
-        action: input_boolean.turn_on
-    default:
-    - target:
-        entity_id: input_boolean.car_in_driveway
-      data: {}
-      action: input_boolean.turn_off
-    enabled: true
+                ```', replace='', ignorecase=False)  ) | from_json).car_in_driveway }}"
+              enabled: true
+          sequence:
+            - target:
+                entity_id: input_boolean.car_in_driveway
+              data: {}
+              action: input_boolean.turn_on
+      default:
+        - target:
+            entity_id: input_boolean.car_in_driveway
+          data: {}
+          action: input_boolean.turn_off
+      enabled: true
   mode: single
-  description: ''
+  description: ""
 llv_prompt_test:
   alias: LLV Prompt Test
   fields:
@@ -86,83 +89,85 @@ llv_prompt_test:
       name: prompt
       required: true
   sequence:
-  - metadata: {}
-    data:
-      max_tokens: 100
-      model: gpt-4o
-      provider: 01J99F4T99PA1XGQ4CTQS3CP8H
-      target_width: 1280
-      include_filename: false
-      image_entity:
-      - camera.front_door
-      - camera.garage
-      message: '{{ prompt }}'
-    response_variable: response
-    action: llmvision.image_analyzer
-  - metadata: {}
-    data:
-      cache: true
-      media_player_entity_id: media_player.entity_id
-      message: '{{response.response_text}}'
-    target:
-      entity_id: tts.piper
-    action: tts.speak
-  description: ''
+    - metadata: {}
+      data:
+        max_tokens: 100
+        model: gpt-4o
+        provider: 01J99F4T99PA1XGQ4CTQS3CP8H
+        target_width: 1280
+        include_filename: false
+        image_entity:
+          - camera.front_door
+          - camera.garage
+        message: "{{ prompt }}"
+      response_variable: response
+      action: llmvision.image_analyzer
+    - metadata: {}
+      data:
+        cache: true
+        media_player_entity_id: media_player.entity_id
+        message: "{{response.response_text}}"
+      target:
+        entity_id: tts.piper
+      action: tts.speak
+  description: ""
 bring_clothes_in_when_it_rains:
   alias: Bring Clothes in when it rains
   sequence:
-  - action: llmvision.image_analyzer
-    metadata: {}
-    data:
-      remember: false
-      include_filename: false
-      detail: low
-      max_tokens: 100
-      expose_images: false
-      temperature: 0.5
-      message: Reply with a simple number, how many pictures of artwork are hanging
-        on the wall?
-      image_entity:
-      - camera.camera_1_q5_profile1
-      model: gemini-1.5-flash
-      target_width: 512
-  - if:
-    - condition: template
-      value_template: '"{{ gemini.response_text | int > 1 }}"'
-    then:
-    - action: persistent_notification.create
+    - action: llmvision.image_analyzer
       metadata: {}
       data:
-        message: 'The clothing items were counted.  COUNT: {{ gemini.response_text
-          | int }}'
+        remember: false
+        include_filename: false
+        detail: low
+        max_tokens: 100
+        expose_images: false
+        temperature: 0.5
+        message:
+          Reply with a simple number, how many pictures of artwork are hanging
+          on the wall?
+        image_entity:
+          - camera.camera_1_q5_profile1
+        model: gemini-1.5-flash
+        target_width: 512
+    - if:
+        - condition: template
+          value_template: '"{{ gemini.response_text | int > 1 }}"'
+      then:
+        - action: persistent_notification.create
+          metadata: {}
+          data:
+            message:
+              "The clothing items were counted.  COUNT: {{ gemini.response_text
+              | int }}"
   description: ddd
   icon: mdi:weather-lightning-rainy
 llv_numeric_question:
   alias: LLV Numeric Question
   sequence:
-  - variables:
-      camera_image_file: undefined
-      test_count: 0
-  - action: script.camera_snapshot_and_upload
-    metadata: {}
-    data:
-      capture_camera_stream:
-        entity_id: '{{capture_camera_stream.entity_id }}'
-      capture_mime_type: image/png
-    response_variable: camera_image_file
-  - action: llmvision.data_analyzer
-    metadata: {}
-    data:
-      message: '{{ questions_prompt }}'
-      include_filename: false
-      target_width: 1280
-      detail: high
-      max_tokens: 5
-      temperature: 0.1
-      provider: 01JDVNFP4KWD6XERDGQ5V3TY6W
-      sensor_entity: '{{ file_path_save_target.entity_id }}'
-      image_file: '{{camera_image_file.media_rel }}'
-  description: ''
+    - variables:
+        camera_image_file: undefined
+        test_count: 0
+    - action: script.camera_snapshot_and_upload
+      metadata: {}
+      data:
+        capture_camera_stream:
+          entity_id: "{{capture_camera_stream.entity_id }}"
+        capture_mime_type: image/png
+      response_variable: camera_image_file
+    - action: llmvision.data_analyzer
+      metadata: {}
+      data:
+        message: "{{ questions_prompt }}"
+        include_filename: false
+        target_width: 1280
+        detail: high
+        max_tokens: 5
+        temperature: 0.1
+        provider: 01JDVNFP4KWD6XERDGQ5V3TY6W
+        sensor_entity: "{{ file_path_save_target.entity_id }}"
+        image_file: "{{camera_image_file.media_rel }}"
+  description: ""
   fields:
     questions_prompt:
       selector:
@@ -190,28 +195,28 @@ llv_numeric_question:
 turn_switch_off_for_delay:
   alias: Turn Switch off for Delay
   sequence:
-  - variables:
-      inverted_state: '{% if initial_state == "ON" %}OFF{% else %}ON{% endif %}'
-  - action: switch.turn_{{ initial_state | lower }}
-    metadata: {}
-    data: {}
-    target:
-      entity_id: '{{ target_switch.entity_id }}
+    - variables:
+        inverted_state: '{% if initial_state == "ON" %}OFF{% else %}ON{% endif %}'
+    - action: switch.turn_{{ initial_state | lower }}
+      metadata: {}
+      data: {}
+      target:
+        entity_id: "{{ target_switch.entity_id }}
 
-        '
-  - delay:
-      hours: 0
-      minutes: '{{ delay_minutes|int }}'
-      seconds: 0
-      milliseconds: 0
-  - action: switch.turn_{{ inverted_state | lower }}
-    metadata: {}
-    data: {}
-    target:
-      entity_id: '{{ target_switch.entity_id }}
+          "
+    - delay:
+        hours: 0
+        minutes: "{{ delay_minutes|int }}"
+        seconds: 0
+        milliseconds: 0
+    - action: switch.turn_{{ inverted_state | lower }}
+      metadata: {}
+      data: {}
+      target:
+        entity_id: "{{ target_switch.entity_id }}
 
-        '
-  description: ''
+          "
+  description: ""
   fields:
     target_switch:
       selector:
@@ -232,135 +237,141 @@ turn_switch_off_for_delay:
       selector:
         select:
           options:
-          - 'ON'
-          - 'OFF'
+            - "ON"
+            - "OFF"
       required: true
       name: Initial State
-      default: 'ON'
+      default: "ON"
 aquarium_selector:
   alias: Aquarium Selector
   sequence:
-  - variables:
-      lookup:
-        120g: switch.120g_pumps_heaters
-        55g: switch.55g_pumps_heaters
-        10g Male: switch.10g_m_pumps_heaters
-        20g Long: switch.20g_pumps_heaters
-        10g Upper: switch.20g_pumps_heaters
-        Quarantine: switch.20g_pumps_heaters
-      co2_list:
-      - 10g Male
-      - 20g Long
-      - 10g Upper
-      - Quarantine
-    alias: CONST ENUM VARIABLES
-  - variables:
-      aq_list: state_attr('input_select.aquarium','options')
-      selected_value: '{{aquarium_picker}}'
-      selected_entity: '{{lookup[selected_value]}}'
-      do_notification: '{{ bool( end_notification_timer is defined , false )  and
-        bool(( end_notification_timer | int(999)  < delay_minutes | int(999) ),false)
-        }}'
-      first_delay: '{% if do_notification %}{{ ( delay_minutes | int(999) - end_notification_timer|int(999)
-        )| int(999) }}{% else %}{{ delay_minutes | int(999) }} {% endif %}'
-      second_delay: '{% if do_notification %}{{  end_notification_timer|int(999) }}{%
-        else %}{{ 0 | int(999) }} {% endif %}'
-      do_co2: '{{ bool(selected_value in co2_list ,false) }}'
-  - action: script.set_state_switch_light
-    metadata: {}
-    data:
-      select_state: 'Off'
-      bool_invert_state: 'Off'
-      target_entity_set:
-        entity_id: '{{selected_entity}}'
-    alias: Turn off pumps
-    enabled: true
-  - alias: Turn off C02 if needed
-    if:
-    - condition: template
-      value_template: '{{ bool( do_co2 ,false) and bool(states(''binary_sensor.aquarium_co2_schedule'',false
-        ))  }}'
-    then:
+    - variables:
+        lookup:
+          120g: switch.120g_pumps_heaters
+          55g: switch.55g_pumps_heaters
+          10g Male: switch.10g_m_pumps_heaters
+          20g Long: switch.20g_pumps_heaters
+          10g Upper: switch.20g_pumps_heaters
+          Quarantine: switch.20g_pumps_heaters
+        co2_list:
+          - 10g Male
+          - 20g Long
+          - 10g Upper
+          - Quarantine
+      alias: CONST ENUM VARIABLES
+    - variables:
+        aq_list: state_attr('input_select.aquarium','options')
+        selected_value: "{{aquarium_picker}}"
+        selected_entity: "{{lookup[selected_value]}}"
+        do_notification:
+          "{{ bool( end_notification_timer is defined , false )  and
+          bool(( end_notification_timer | int(999)  < delay_minutes | int(999) ),false)
+          }}"
+        first_delay:
+          "{% if do_notification %}{{ ( delay_minutes | int(999) - end_notification_timer|int(999)
+          )| int(999) }}{% else %}{{ delay_minutes | int(999) }} {% endif %}"
+        second_delay:
+          "{% if do_notification %}{{  end_notification_timer|int(999) }}{%
+          else %}{{ 0 | int(999) }} {% endif %}"
+        do_co2: "{{ bool(selected_value in co2_list ,false) }}"
     - action: script.set_state_switch_light
       metadata: {}
       data:
-        bool_invert_state: 'Off'
-        select_state: 'Off'
+        select_state: "Off"
+        bool_invert_state: "Off"
         target_entity_set:
-          entity_id: switch.20g_rack_co2
-  - delay:
-      hours: 0
-      minutes: '{{ first_delay |int }}'
-      seconds: 0
-      milliseconds: 0
-    alias: first delay
-    enabled: true
-  - alias: if do notification
-    if:
-    - condition: template
-      value_template: '{{ bool(do_notification ,false)}}'
-    then:
-    - action: script.notification_dispatcher
-      metadata: {}
-      data:
-        message: '"{{ second_delay |int(999) }} minute warning! Pumps/Heaters in {{
-          selected_value  }} have been off for {{ first_delay |int(999) }} and will
-          be turning back on in {{second_delay |int(999) }} minutes!!"
-
-          '
-        notification_channel:
-        - alexa
-        bool_critical: 'OFF'
-        sound: default
-        sms_targets:
-        - 7188138156@mms.att.net
-        email_targets:
-        - gbtunney@mac.com
+          entity_id: "{{selected_entity}}"
+      alias: Turn off pumps
       enabled: true
-  - delay:
-      hours: 0
-      minutes: '{{ second_delay|int }}'
-      seconds: 0
-      milliseconds: 0
-    alias: second delay
-    enabled: true
-  - action: script.set_state_switch_light
-    metadata: {}
-    data:
-      select_state: 'On'
-      bool_invert_state: 'Off'
-      target_entity_set:
-        entity_id: '{{selected_entity}}'
-    alias: Turn ON pumps
-    enabled: true
-  - alias: Turn ON C02 if needed and  if scheduled
-    if:
-    - condition: template
-      value_template: '{{ bool(do_co2 ,false) and bool(states(''binary_sensor.aquarium_co2_schedule'',false
-        )) }}'
-    then:
-    - alias: Turn on CO2 if scheduled
-      action: script.set_state_switch_light
+    - alias: Turn off C02 if needed
+      if:
+        - condition: template
+          value_template:
+            "{{ bool( do_co2 ,false) and bool(states('binary_sensor.aquarium_co2_schedule',false
+            ))  }}"
+      then:
+        - action: script.set_state_switch_light
+          metadata: {}
+          data:
+            bool_invert_state: "Off"
+            select_state: "Off"
+            target_entity_set:
+              entity_id: switch.20g_rack_co2
+    - delay:
+        hours: 0
+        minutes: "{{ first_delay |int }}"
+        seconds: 0
+        milliseconds: 0
+      alias: first delay
+      enabled: true
+    - alias: if do notification
+      if:
+        - condition: template
+          value_template: "{{ bool(do_notification ,false)}}"
+      then:
+        - action: script.notification_dispatcher
+          metadata: {}
+          data:
+            message:
+              '"{{ second_delay |int(999) }} minute warning! Pumps/Heaters in {{
+              selected_value  }} have been off for {{ first_delay |int(999) }} and will
+              be turning back on in {{second_delay |int(999) }} minutes!!"
+
+              '
+            notification_channel:
+              - alexa
+            bool_critical: "OFF"
+            sound: default
+            sms_targets:
+              - 7188138156@mms.att.net
+            email_targets:
+              - gbtunney@mac.com
+          enabled: true
+    - delay:
+        hours: 0
+        minutes: "{{ second_delay|int }}"
+        seconds: 0
+        milliseconds: 0
+      alias: second delay
+      enabled: true
+    - action: script.set_state_switch_light
       metadata: {}
       data:
-        bool_invert_state: 'Off'
-        select_state: 'Off'
+        select_state: "On"
+        bool_invert_state: "Off"
         target_entity_set:
-          entity_id: switch.20g_rack_co2
-        entity_trigger:
-          entity_id: binary_sensor.aquarium_co2_schedule
-  description: ''
+          entity_id: "{{selected_entity}}"
+      alias: Turn ON pumps
+      enabled: true
+    - alias: Turn ON C02 if needed and  if scheduled
+      if:
+        - condition: template
+          value_template:
+            "{{ bool(do_co2 ,false) and bool(states('binary_sensor.aquarium_co2_schedule',false
+            )) }}"
+      then:
+        - alias: Turn on CO2 if scheduled
+          action: script.set_state_switch_light
+          metadata: {}
+          data:
+            bool_invert_state: "Off"
+            select_state: "Off"
+            target_entity_set:
+              entity_id: switch.20g_rack_co2
+            entity_trigger:
+              entity_id: binary_sensor.aquarium_co2_schedule
+  description: ""
   fields:
     aquarium_picker:
       selector:
         select:
           options:
-          - 120g
-          - 55g
-          - 10g Male
-          - 20g Long
-          - 10g Upper
-          - Quarantine
+            - 120g
+            - 55g
+            - 10g Male
+            - 20g Long
+            - 10g Upper
+            - Quarantine
       required: true
       name: Aquarium Picker
     delay_minutes:
@@ -385,407 +396,42 @@ aquarium_selector:
       selector:
         select:
           options:
-          - Water Change (Vacuum)
-          - Trim Plants
-          - Remove algae
-          - Deep Clean
-          - Clean Filter
-          - Quick water Change (no vacuum)
+            - Water Change (Vacuum)
+            - Trim Plants
+            - Remove algae
+            - Deep Clean
+            - Clean Filter
+            - Quick water Change (no vacuum)
           multiple: true
       name: Aquarium Clean Notes
 flash_test:
   alias: Flash Test
   sequence:
-  - repeat:
-      count: 100
-      sequence:
-      - action: light.turn_on
-        metadata: {}
-        data:
-          rgb_color:
-          - 0
-          - 189
-          - 27
-          brightness_pct: 100
-        target:
-          entity_id: light.smart_bulb_1
-      - delay:
-          hours: 0
-          minutes: 0
-          seconds: 0
-          milliseconds: 500
-      - action: light.turn_on
-        metadata: {}
-        data:
-          rgb_color:
-          - 236
-          - 98
-          - 61
-        target:
-          entity_id: light.smart_bulb_1
-  description: ''
-alexa_notification_real:
-  alias: Alexa Notification
-  sequence:
-  - variables:
-      speaker_id: '{{ target_alexa_speaker.entity_id }}'
-      previous_volume: '{{ state_attr(speaker_id,''volume_level'') }}'
-      quiet_hours: '{{ is_state(''binary_sensor.quiet_hours'', ''on'' )}}'
-      do_volume_change: '{{ bool( volume != ''Current'', false ) or ( bool( volume
-        == ''Current'', false ) and bool(quiet_hours,false) )}}'
-      volume_float: "{% if  bool(quiet_hours,false) %}\n  {% if volume == 'Maximum
-        Volume'%}\n    0.5\n  {%- elif volume == \"Normal Volume\" -%}\n    0.35\n
-        \ {%- else -%}\n    0.35\n  {%- endif -%}\n{% else %}\n  {% if volume == 'Maximum
-        Volume'%}\n    1.0\n  {%- elif volume == \"Normal Volume\" -%}\n    .65\n
-        \ {%- else -%}\n    {{previous_volume}}\n  {%- endif -%}\n{% endif %}"
-  - if:
-    - condition: template
-      value_template: '{{ bool(do_volume_change, false)}}'
-    then:
-    - action: media_player.volume_set
-      metadata: {}
-      data:
-        volume_level: '{{ volume_float| float (0.5) }}'
-      target:
-        entity_id: '{{ speaker_id }}'
-    alias: Set temporary vol
-    enabled: true
-  - if:
-    - condition: template
-      value_template: '{%- if sound is defined -%}true{% else %}false{% endif %}'
-    then:
-    - target:
-        entity_id: '{{ speaker_id }}'
-      data:
-        media_content_type: sound
-        media_content_id: '{{ sound }}'
-      action: media_player.play_media
-    alias: play a sound!
-  - action: notify.alexa_media
-    metadata: {}
-    data:
-      target: '{{speaker_id}}'
-      message: '{{ message }}'
-    enabled: true
-  - alias: 'Restore orig. volume '
-    if:
-    - condition: template
-      value_template: '{{ bool(do_volume_change, false)}}'
-    then:
-    - action: media_player.volume_set
-      metadata: {}
-      data:
-        volume_level: '{{   previous_volume | float (0.5) }}'
-      target:
-        entity_id: '{{ speaker_id }}'
-  - if:
-    - condition: template
-      value_template: '{%- if sound is defined -%}true{% else %}false{% endif %}'
-    then:
-    - target:
-        entity_id: '{{ speaker_id }}'
-      data:
-        media_content_type: sound
-        media_content_id: '{{ sound }}'
-      action: media_player.play_media
-    alias: play sound again
-  description: Send an alexa notification with louder volume. Respects a 'quiet hours'
-    policy
-  fields:
-    target_alexa_speaker:
-      selector:
-        target:
-          entity:
-            domain: media_player
-            integration: alexa_media
-      name: Alexa Speaker
-      required: true
-      default:
-        entity_id: media_player.alexa_s_baby
-    volume:
-      selector:
-        select:
-          options:
-          - Maximum Volume
-          - Normal Volume
-          - Current
-      description: If it is quiet hours, vol will only be set to .5 max, and .2 for
-        same
-      default: Normal Volume
-      required: true
-      name: Volume
-    message:
-      selector:
-        text:
-      name: Message
-      default: 'No message set. '
-      required: true
-    sound:
-      selector:
-        select:
-          options:
-          - amzn_sfx_doorbell_chime_01
-          - bell_02
-          - buzzers_pistols_01
-          - amzn_sfx_church_bell_1x_02
-          - amzn_sfx_doorbell_01
-          - amzn_sfx_doorbell_chime_01
-          - amzn_sfx_doorbell_chime_02
-          - christmas_05
-          - horror_10
-          - air_horn_03
-          - boing_01
-          - boing_03
-          - camera_01
-          - squeaky_12
-          - clock_01
-          - amzn_sfx_trumpet_bugle_04
-          - amzn_sfx_cat_meow_1x_01
-          - amzn_sfx_dog_med_bark_1x_02
-          - amzn_sfx_lion_roar_02
-          - amzn_sfx_rooster_crow_01
-          - amzn_sfx_wolf_howl_02
-          - futuristic_10
-          - amzn_sfx_scifi_engines_on_02
-          - amzn_sfx_scifi_alarm_04
-          - amzn_sfx_scifi_sheilds_up_01
-          - amzn_sfx_scifi_alarm_01
-          - zap_01
-          - amzn_sfx_crowd_applause_01
-          - amzn_sfx_large_crowd_cheer_01
-      name: Sound
-      description: Be annoying!!
-  icon: mdi:bullhorn-outline
-notification_dispatcher_ui:
-  alias: Notification Dispatcher UI
-  sequence:
-  - variables:
-      critical: '{% if bool_critical == ''ON'' %}1{% else %}0{% endif %}'
-      alexa_volume_level: "{%- if alexa_volume is not defined -%}\n  {%- if bool_critical
-        == 'ON' -%}\n    Maximum Volume\n  {%- else -%}\n    Normal Volume\n  {%-
-        endif -%}\n{%- else -%}\n  {{ alexa_volume }}\n{%- endif -%}\n"
-  - alias: If alexa selected
-    if:
-    - condition: template
-      value_template: '{% if ''alexa'' in notification_channel %}true{% else %}false{%
-        endif %}'
-    then:
-    - action: script.alexa_notification_real
-      metadata: {}
-      data:
-        target_alexa_speaker:
-          entity_id: media_player.alexa_s_baby
-        volume: '{{ alexa_volume_level }}'
-        message: '{{ message }}'
-        title: '{{ title }}'
-    enabled: true
-  - alias: If persistant selected
-    if:
-    - condition: template
-      value_template: '{% if ''persistant'' in notification_channel %}true{% else
-        %}false{% endif %}'
-    then:
-    - action: persistent_notification.create
-      metadata: {}
-      data:
-        message: '{{message}}'
-        title: '{% if bool_critical == ''ON'' %}CRITICAL : {% else %}{% endif %}{%
-          if title is defined %}{{ title }}{% else %}{% endif %}'
-    enabled: true
-  - alias: If iPhone selected
-    if:
-    - condition: template
-      value_template: '{% if ''iPhone'' in notification_channel %}true{% else %}false{%
-        endif %}'
-    then:
-    - action: notify.mobile_app_iphone
-      metadata: {}
-      data:
-        message: '{{ message }}'
-        title: '{{ title }}'
-        data:
-          push:
-            sound:
-              name: '{{ sound | default(''default'') }}'
-              critical: '{{ critical | int }}'
-    enabled: true
-  - alias: If iPad selected
-    if:
-    - condition: template
-      value_template: '{% if ''iPad'' in notification_channel %}true{% else %}false{%
-        endif %}'
-    then:
-    - action: notify.mobile_app_gillians_ipad
-      metadata: {}
-      data:
-        message: '{{ message }}'
-        title: '{{ title }}'
-        data:
-          push:
-            sound:
-              name: '{{ sound | default(''default'') }}'
-              critical: '{{ critical | int }}'
-    enabled: true
-  - alias: If macBook selected
-    if:
-    - condition: template
-      value_template: '{% if ''macBook'' in notification_channel %}true{% else %}false{%
-        endif %}'
-    then:
-    - action: notify.mobile_app_gillians_macbook_pro_624
-      metadata: {}
-      data:
-        message: '{{ message }}'
-        title: '{{ title }}'
-        data:
-          push:
-            sound:
-              name: '{{ sound | default(''default'') }}'
-              critical: '{{ critical | int }}'
-    enabled: true
-  - alias: If email selected
-    if:
-    - alias: 'note:  email title == subject. Inserts critical warning in subject'
-      condition: template
-      value_template: '{% if ''email'' in notification_channel %}true{% else %}false{%
-        endif %}'
-    then:
-    - action: notify.gbtunney_gmail_com
-      metadata: {}
-      data:
-        message: '{{message}}'
-        title: '{% if bool_critical == ''ON'' %}CRITICAL {% else %}{% endif %}Notification
-          from Homeassistant{% if title is defined %}: {{ title }}{% else %}{% endif
-          %}'
-        target: '{{ email_targets }}'
-    enabled: true
-  - alias: If sms selected
-    if:
-    - condition: template
-      value_template: '{% if ''sms'' in notification_channel %}true{% else %}false{%
-        endif %}'
-      alias: 'note: sms does not have a title so it inserts it before message'
-    then:
-    - action: notify.gbtunney_gmail_com
-      metadata: {}
-      data:
-        message: '{% if bool_critical == ''ON'' %}CRITICAL {% else %}{% endif %}Notification
-          from Homeassistant: {% if title is defined %}{{ title }} :{% else %}{% endif
-          %}{{ message }}'
-        title: '{{ title }}'
-        target: '{{ sms_targets }}'
-    enabled: true
-  description: Send to multiple notification types
-  icon: mdi:bullhorn-variant-outline
-  fields:
-    message:
-      selector:
-        text:
-      name: Message
-      required: true
-      description: Required!
-      default: no message set
-    notification_channel:
-      selector:
-        select:
-          options:
-          - iPhone
-          - iPad
-          - macBook
-          - persistant
-          - sms
-          - email
-          - alexa
-          multiple: true
-      name: Notification Channel
-      required: true
-      default:
-      - iPhone
-      - iPad
-      - macBook
-      - persistant
-    title:
-      selector:
-        text:
-      name: Title
-      required: false
-    bool_critical:
-      selector:
-        select:
-          options:
-          - 'ON'
-          - 'OFF'
-      name: Critical
-      default: 'OFF'
-      required: true
-    sound:
-      selector:
-        text:
-      name: Sound
-      description: 'To get sound: go to settings > companion app > notification >
-        system and click copy.'
-      required: true
-      default: default
-    sms_targets:
-      selector:
-        text:
-          multiple: true
-      name: SMS Targets
-      default:
-      - 7188138156@mms.att.net
-      description: This is only used if sms notification target is selected!
-      required: true
-    email_targets:
-      selector:
-        text:
-          multiple: true
-      name: Email Targets
-      description: This is only used if email notification target is selected!
-      default:
-      - gbtunney@mac.com
-      required: true
-    alexa_volume:
-      selector:
-        select:
-          options:
-          - Maximum Volume
-          - Normal Volume
-          - Current
-      description: If it is quiet hours, vol will only be set to .5 max, and .2 for
-        same
-      name: Override Alexa Volume
-    alexa_sound:
-      selector:
-        select:
-          options:
-          - amzn_sfx_doorbell_chime_01
-          - bell_02
-          - buzzers_pistols_01
-          - amzn_sfx_church_bell_1x_02
-          - amzn_sfx_doorbell_01
-          - amzn_sfx_doorbell_chime_01
-          - amzn_sfx_doorbell_chime_02
-          - christmas_05
-          - horror_10
-          - air_horn_03
-          - boing_01
-          - boing_03
-          - camera_01
-          - squeaky_12
-          - clock_01
-          - amzn_sfx_trumpet_bugle_04
-          - amzn_sfx_cat_meow_1x_01
-          - amzn_sfx_dog_med_bark_1x_02
-          - amzn_sfx_lion_roar_02
-          - amzn_sfx_rooster_crow_01
-          - amzn_sfx_wolf_howl_02
-          - futuristic_10
-          - amzn_sfx_scifi_engines_on_02
-          - amzn_sfx_scifi_alarm_04
-          - amzn_sfx_scifi_sheilds_up_01
-          - amzn_sfx_scifi_alarm_01
-          - zap_01
-          - amzn_sfx_crowd_applause_01
-          - amzn_sfx_large_crowd_cheer_01
-      name: Alexa Sound
-      description: 'Be annoying!! TODO: fix this in script doesnt work'
+    - repeat:
+        count: 100
+        sequence:
+          - action: light.turn_on
+            metadata: {}
+            data:
+              rgb_color:
+                - 0
+                - 189
+                - 27
+              brightness_pct: 100
+            target:
+              entity_id: light.smart_bulb_1
+          - delay:
+              hours: 0
+              minutes: 0
+              seconds: 0
+              milliseconds: 500
+          - action: light.turn_on
+            metadata: {}
+            data:
+              rgb_color:
+                - 236
+                - 98
+                - 61
+            target:
+              entity_id: light.smart_bulb_1
+  description: ""
