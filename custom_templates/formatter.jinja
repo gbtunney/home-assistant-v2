@@ -3,21 +3,22 @@
 {% endmacro %}
 
 {%- macro leak_detector_format_list(my_value) -%}
-  {%- if my_value is string -%}
-    {%- set the_list = [my_value] -%}
-  {%- else -%}
-    {%- set the_list = my_value -%}
-  {%- endif -%}
+{%- if my_value is string -%}
+{%- set the_list = [my_value] -%}
+{%- else -%}
+{%- set the_list = my_value -%}
+{%- endif -%}
 
-  {%- for item in the_list -%}
-    {%- if expand(item) is not none -%}
-      {%- set entities_list = expand(item) | map(attribute='entity_id') -%}
-    {%- else -%}
-      {%- set entities_list = [item] -%}
-    {%- endif -%}
+{%- for item in the_list -%}
+{%- if expand(item) is not none -%}
+{%- set entities_list = expand(item) | map(attribute='entity_id') -%}
+{%- else -%}
+{%- set entities_list = [item] -%}
+{%- endif -%}
 
-    {%- for entity_id in entities_list -%}
-       {%- if is_state(entity_id, ['on']) -%}The {{ state_attr(entity_id, 'friendly_name') }} in Area: {{ area_name(entity_id) }},{%- endif -%}
-    {%- endfor -%}
-  {%- endfor -%}
+{%- for entity_id in entities_list -%}
+{%- if is_state(entity_id, ['on']) -%}The {{ state_attr(entity_id, 'friendly_name') }} in Area: {{ area_name(entity_id)
+}},{%- endif -%}
+{%- endfor -%}
+{%- endfor -%}
 {%- endmacro %}
