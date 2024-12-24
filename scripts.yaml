@@ -424,18 +424,20 @@ flash_test:
         target:
           entity_id: light.smart_bulb_1
   description: ''
-alenew_script:
+alexa_notification_real:
   alias: Alexa Notification
   sequence:
   - variables:
       speaker_id: '{{ target_alexa_speaker.entity_id }}'
-      previous_volume: '{{ state_attr( ''media_player.alexa_s_baby'',''volume_level'')
-        }}'
-      do_volume_change: '{{ bool( volume != ''Current'', false ) }}'
+      previous_volume: '{{ state_attr(speaker_id,''volume_level'') }}'
       quiet_hours: '{{ is_state(''binary_sensor.quiet_hours'', ''on'' )}}'
-      volume_float: "{% if volume== 'Maximum Volume'%}\n  {% if  bool(quiet_hours,false)
-        %}\n    0.5\n  {% else %}\n    1.0\n  {% endif %}\n{% else %}\n  {% if  bool(quiet_hours,false)
-        %}\n    0.35\n  {% else %}\n    0.65\n  {% endif %}\n{% endif  %}"
+      do_volume_change: '{{ bool( volume != ''Current'', false ) or ( bool( volume
+        == ''Current'', false ) and bool(quiet_hours,false) )}}'
+      volume_float: "{% if  bool(quiet_hours,false) %}\n  {% if volume == 'Maximum
+        Volume'%}\n    0.5\n  {%- elif volume == \"Normal Volume\" -%}\n    0.35\n
+        \ {%- else -%}\n    0.35\n  {%- endif -%}\n{% else %}\n  {% if volume == 'Maximum
+        Volume'%}\n    1.0\n  {%- elif volume == \"Normal Volume\" -%}\n    .65\n
+        \ {%- else -%}\n    {{previous_volume}}\n  {%- endif -%}\n{% endif %}"
   - if:
     - condition: template
       value_template: '{{ bool(do_volume_change, false)}}'
@@ -447,18 +449,24 @@ alenew_script:
       target:
         entity_id: '{{ speaker_id }}'
     alias: Set temporary vol
-  - action: notify.alexa_media_alexa_s_baby
-    metadata: {}
-    data:
-      message: '{{message}}'
-    enabled: false
+    enabled: true
+  - if:
+    - condition: template
+      value_template: '{%- if sound is defined -%}true{% else %}false{% endif %}'
+    then:
+    - target:
+        entity_id: '{{ speaker_id }}'
+      data:
+        media_content_type: sound
+        media_content_id: '{{ sound }}'
+      action: media_player.play_media
+    alias: play a sound!
   - action: notify.alexa_media
     metadata: {}
     data:
-      target:
-        entity_id: '{{ speaker_id }}'
+      target: '{{speaker_id}}'
       message: '{{ message }}'
-    enabled: false
+    enabled: true
   - alias: 'Restore orig. volume '
     if:
     - condition: template
@@ -470,13 +478,26 @@ alenew_script:
         volume_level: '{{   previous_volume | float (0.5) }}'
       target:
         entity_id: '{{ speaker_id }}'
-  description: ''
+  - if:
+    - condition: template
+      value_template: '{%- if sound is defined -%}true{% else %}false{% endif %}'
+    then:
+    - target:
+        entity_id: '{{ speaker_id }}'
+      data:
+        media_content_type: sound
+        media_content_id: '{{ sound }}'
+      action: media_player.play_media
+    alias: play sound again
+  description: Send an alexa notification with louder volume. Respects a 'quiet hours'
+    policy
   fields:
     target_alexa_speaker:
       selector:
         target:
           entity:
             domain: media_player
+            integration: alexa_media
       name: Alexa Speaker
       required: true
       default:
@@ -499,4 +520,272 @@ alenew_script:
       name: Message
       default: 'No message set. '
       required: true
+    sound:
+      selector:
+        select:
+          options:
+          - amzn_sfx_doorbell_chime_01
+          - bell_02
+          - buzzers_pistols_01
+          - amzn_sfx_church_bell_1x_02
+          - amzn_sfx_doorbell_01
+          - amzn_sfx_doorbell_chime_01
+          - amzn_sfx_doorbell_chime_02
+          - christmas_05
+          - horror_10
+          - air_horn_03
+          - boing_01
+          - boing_03
+          - camera_01
+          - squeaky_12
+          - clock_01
+          - amzn_sfx_trumpet_bugle_04
+          - amzn_sfx_cat_meow_1x_01
+          - amzn_sfx_dog_med_bark_1x_02
+          - amzn_sfx_lion_roar_02
+          - amzn_sfx_rooster_crow_01
+          - amzn_sfx_wolf_howl_02
+          - futuristic_10
+          - amzn_sfx_scifi_engines_on_02
+          - amzn_sfx_scifi_alarm_04
+          - amzn_sfx_scifi_sheilds_up_01
+          - amzn_sfx_scifi_alarm_01
+          - zap_01
+          - amzn_sfx_crowd_applause_01
+          - amzn_sfx_large_crowd_cheer_01
+      name: Sound
+      description: Be annoying!!
   icon: mdi:bullhorn-outline
+notification_dispatcher_ui:
+  alias: Notification Dispatcher UI
+  sequence:
+  - variables:
+      critical: '{% if bool_critical == ''ON'' %}1{% else %}0{% endif %}'
+      alexa_volume_level: "{%- if alexa_volume is not defined -%}\n  {%- if bool_critical
+        == 'ON' -%}\n    Maximum Volume\n  {%- else -%}\n    Normal Volume\n  {%-
+        endif -%}\n{%- else -%}\n  {{ alexa_volume }}\n{%- endif -%}\n"
+  - alias: If alexa selected
+    if:
+    - condition: template
+      value_template: '{% if ''alexa'' in notification_channel %}true{% else %}false{%
+        endif %}'
+    then:
+    - action: script.alexa_notification_real
+      metadata: {}
+      data:
+        target_alexa_speaker:
+          entity_id: media_player.alexa_s_baby
+        volume: '{{ alexa_volume_level }}'
+        message: '{{ message }}'
+        title: '{{ title }}'
+    enabled: true
+  - alias: If persistant selected
+    if:
+    - condition: template
+      value_template: '{% if ''persistant'' in notification_channel %}true{% else
+        %}false{% endif %}'
+    then:
+    - action: persistent_notification.create
+      metadata: {}
+      data:
+        message: '{{message}}'
+        title: '{% if bool_critical == ''ON'' %}CRITICAL : {% else %}{% endif %}{%
+          if title is defined %}{{ title }}{% else %}{% endif %}'
+    enabled: true
+  - alias: If iPhone selected
+    if:
+    - condition: template
+      value_template: '{% if ''iPhone'' in notification_channel %}true{% else %}false{%
+        endif %}'
+    then:
+    - action: notify.mobile_app_iphone
+      metadata: {}
+      data:
+        message: '{{ message }}'
+        title: '{{ title }}'
+        data:
+          push:
+            sound:
+              name: '{{ sound | default(''default'') }}'
+              critical: '{{ critical | int }}'
+    enabled: true
+  - alias: If iPad selected
+    if:
+    - condition: template
+      value_template: '{% if ''iPad'' in notification_channel %}true{% else %}false{%
+        endif %}'
+    then:
+    - action: notify.mobile_app_gillians_ipad
+      metadata: {}
+      data:
+        message: '{{ message }}'
+        title: '{{ title }}'
+        data:
+          push:
+            sound:
+              name: '{{ sound | default(''default'') }}'
+              critical: '{{ critical | int }}'
+    enabled: true
+  - alias: If macBook selected
+    if:
+    - condition: template
+      value_template: '{% if ''macBook'' in notification_channel %}true{% else %}false{%
+        endif %}'
+    then:
+    - action: notify.mobile_app_gillians_macbook_pro_624
+      metadata: {}
+      data:
+        message: '{{ message }}'
+        title: '{{ title }}'
+        data:
+          push:
+            sound:
+              name: '{{ sound | default(''default'') }}'
+              critical: '{{ critical | int }}'
+    enabled: true
+  - alias: If email selected
+    if:
+    - alias: 'note:  email title == subject. Inserts critical warning in subject'
+      condition: template
+      value_template: '{% if ''email'' in notification_channel %}true{% else %}false{%
+        endif %}'
+    then:
+    - action: notify.gbtunney_gmail_com
+      metadata: {}
+      data:
+        message: '{{message}}'
+        title: '{% if bool_critical == ''ON'' %}CRITICAL {% else %}{% endif %}Notification
+          from Homeassistant{% if title is defined %}: {{ title }}{% else %}{% endif
+          %}'
+        target: '{{ email_targets }}'
+    enabled: true
+  - alias: If sms selected
+    if:
+    - condition: template
+      value_template: '{% if ''sms'' in notification_channel %}true{% else %}false{%
+        endif %}'
+      alias: 'note: sms does not have a title so it inserts it before message'
+    then:
+    - action: notify.gbtunney_gmail_com
+      metadata: {}
+      data:
+        message: '{% if bool_critical == ''ON'' %}CRITICAL {% else %}{% endif %}Notification
+          from Homeassistant: {% if title is defined %}{{ title }} :{% else %}{% endif
+          %}{{ message }}'
+        title: '{{ title }}'
+        target: '{{ sms_targets }}'
+    enabled: true
+  description: Send to multiple notification types
+  icon: mdi:bullhorn-variant-outline
+  fields:
+    message:
+      selector:
+        text:
+      name: Message
+      required: true
+      description: Required!
+      default: no message set
+    notification_channel:
+      selector:
+        select:
+          options:
+          - iPhone
+          - iPad
+          - macBook
+          - persistant
+          - sms
+          - email
+          - alexa
+          multiple: true
+      name: Notification Channel
+      required: true
+      default:
+      - iPhone
+      - iPad
+      - macBook
+      - persistant
+    title:
+      selector:
+        text:
+      name: Title
+      required: false
+    bool_critical:
+      selector:
+        select:
+          options:
+          - 'ON'
+          - 'OFF'
+      name: Critical
+      default: 'OFF'
+      required: true
+    sound:
+      selector:
+        text:
+      name: Sound
+      description: 'To get sound: go to settings > companion app > notification >
+        system and click copy.'
+      required: true
+      default: default
+    sms_targets:
+      selector:
+        text:
+          multiple: true
+      name: SMS Targets
+      default:
+      - 7188138156@mms.att.net
+      description: This is only used if sms notification target is selected!
+      required: true
+    email_targets:
+      selector:
+        text:
+          multiple: true
+      name: Email Targets
+      description: This is only used if email notification target is selected!
+      default:
+      - gbtunney@mac.com
+      required: true
+    alexa_volume:
+      selector:
+        select:
+          options:
+          - Maximum Volume
+          - Normal Volume
+          - Current
+      description: If it is quiet hours, vol will only be set to .5 max, and .2 for
+        same
+      name: Override Alexa Volume
+    alexa_sound:
+      selector:
+        select:
+          options:
+          - amzn_sfx_doorbell_chime_01
+          - bell_02
+          - buzzers_pistols_01
+          - amzn_sfx_church_bell_1x_02
+          - amzn_sfx_doorbell_01
+          - amzn_sfx_doorbell_chime_01
+          - amzn_sfx_doorbell_chime_02
+          - christmas_05
+          - horror_10
+          - air_horn_03
+          - boing_01
+          - boing_03
+          - camera_01
+          - squeaky_12
+          - clock_01
+          - amzn_sfx_trumpet_bugle_04
+          - amzn_sfx_cat_meow_1x_01
+          - amzn_sfx_dog_med_bark_1x_02
+          - amzn_sfx_lion_roar_02
+          - amzn_sfx_rooster_crow_01
+          - amzn_sfx_wolf_howl_02
+          - futuristic_10
+          - amzn_sfx_scifi_engines_on_02
+          - amzn_sfx_scifi_alarm_04
+          - amzn_sfx_scifi_sheilds_up_01
+          - amzn_sfx_scifi_alarm_01
+          - zap_01
+          - amzn_sfx_crowd_applause_01
+          - amzn_sfx_large_crowd_cheer_01
+      name: Alexa Sound
+      description: 'Be annoying!! TODO: fix this in script doesnt work'
