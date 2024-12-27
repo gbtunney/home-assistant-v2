@@ -7,7 +7,6 @@ set_state_switch_light:
   sequence:
     - variables:
         use_trigger: "{{ bool( entity_trigger is defined , false ) }}"
-        use_target: "{{ bool( target_entity_set is defined , false ) }}"
         bool_invert: "{{ bool(bool_invert_state,false) }}"
         valid_trigger_value:
           "{{-  bool(use_trigger, false )  and bool(states( entity_trigger.entity_id
@@ -19,14 +18,10 @@ set_state_switch_light:
           "{{- bool( ( bool( use_trigger, false ) and  bool(valid_trigger_value,
           false ) ) or ( bool( use_trigger, false ) == false and  bool(valid_select_value,
           false ) ),false) -}}"
-        default_domain: switch
-        todo_test_domain:
-          "{% if target_entity_set is iterable and target_entity_set
-          | length > 0 and target_entity_set[0] is string and '.' in target_entity_set[0]  %}is
-          list{%else %}is string{% endif %}"
-        domain:
-          "{%- if use_target -%}\n  {{- target_entity_set.entity_id.split('.')[0]
-          }}\n{%- else %}\n  {{- default_domain}}\n{%- endif %}"
+        target_list:
+          "{{ [] if (target_entity_set is not defined ) else target_entity_set.entity_id
+          if target_entity_set.entity_id is list else [target_entity_set.entity_id]
+          }}"
         result:
           action_called: false
           action: undefined
@@ -39,67 +34,78 @@ set_state_switch_light:
         - condition: template
           value_template: "{{ bool ( exec_rest,false )}}"
       then:
-        - variables:
-            pre_state:
-              "{%- if bool(use_trigger, false ) -%}\n  {%- if bool(states( entity_trigger.entity_id
-              ) in ['on' ], false ) -%}on{%- else -%}off{%- endif -%}\n{%- else -%}{{-
-              select_state | lower -}}{%- endif  -%}"
-            the_state:
-              "{%- if bool(bool_invert, false ) -%}\n  {%- if bool( pre_state
-              \ in ['on' ], false ) -%}off{%- else -%}on{%- endif -%}\n{%- else -%}{{pre_state}}{%-
-              endif  -%}"
-            action: "{{- domain }}.turn_{{- the_state }}"
-            logbook_message:
-              '''{% if use_target %}Going to call action {{ action }} on
-              {{ state_attr( target_entity_set.entity_id , "friendly_name" ) }} {% else
-              %} not calling action because NO target has been selected{% endif %}''
+        - repeat:
+            for_each: "{{ target_list }}"
+            sequence:
+              - variables:
+                  default_domain: switch
+                  target_entity: "{{ repeat.item }}"
+                  use_target:
+                    "{{ target_entity is defined and target_entity is string and
+                    is_state(target_entity, ['on', 'off']) }}"
+                  domain:
+                    "{%- if use_target and target_entity is string and '.' in target_entity
+                    -%}\n  {{ target_entity.split('.')[0] }}\n{%- else -%}\n  {{ default_domain
+                    }}\n{%- endif %}"
+                  pre_state:
+                    "{%- if bool(use_trigger, false ) -%}\n  {%- if bool(states(
+                    entity_trigger.entity_id ) in ['on' ], false ) -%}on{%- else -%}off{%-
+                    endif -%}\n{%- else -%}{{- select_state | lower -}}{%- endif  -%}"
+                  the_state:
+                    "{%- if bool(bool_invert, false ) -%}\n  {%- if bool( pre_state
+                    \ in ['on' ], false ) -%}off{%- else -%}on{%- endif -%}\n{%- else -%}{{pre_state}}{%-
+                    endif  -%}"
+                  action: "{{- domain }}.turn_{{- the_state }}"
+                  logbook_message:
+                    '''{% if use_target %}Going to call action {{ action
+                    }} on {{ state_attr( target_entity, "friendly_name" ) }} {% else %}
+                    not calling action because NO target has been selected{% endif %}''
 
-              '
-            result:
-              action_called: "{{ bool( use_target , false) }}"
-              action: "{{action}}"
-              trigger_state: "{{the_state}}"
-              trigger_entity_id:
-                "{%- if bool(use_trigger, false ) -%}\n  {{ entity_trigger.entity_id
-                }}\n{%- else -%}manual{%- endif -%}"
-              target_entity_id:
-                "{% if use_target %}\n  {{ target_entity_set.entity_id
-                }}\n{%- else -%}false{%- endif -%}"
-              logbook_message: "{{logbook_message}}"
-        - alias: if trigger is being used
-          if:
-            - condition: template
-              value_template: "{{ bool(use_trigger,false) }}"
-              alias: if using manually selected state
-          then:
-            - action: logbook.log
-              metadata: {}
-              data:
-                name: "State: {{ the_state | upper }} "
-                message: "{{ logbook_message }}"
-                entity_id: "{{ entity_trigger.entity_id }}"
-              enabled: true
-          else:
-            - action: logbook.log
-              metadata: {}
-              data:
-                name: Manually selected {{ the_state | upper }}
-                message: "{{logbook_message}}"
-          enabled: true
-        - alias: if target is set, call the action.
-          if:
-            - condition: template
-              value_template:
-                "{% if target_entity_set is defined %}true{%else%}false{%
-                endif %}"
-          then:
-            - action: "{{ action }}"
-              metadata: {}
-              data: {}
-              target:
-                entity_id:
-                  - "{{ target_entity_set.entity_id }}"
-              enabled: true
+                    '
+                  result:
+                    action_called: "{{ bool( use_target , false) }}"
+                    action: "{{action}}"
+                    trigger_state: "{{the_state}}"
+                    trigger_entity_id:
+                      "{%- if bool(use_trigger, false ) -%}\n  {{ entity_trigger.entity_id
+                      }}\n{%- else -%}manual{%- endif -%}"
+                    target_entity_id:
+                      "{% if use_target %}\n  {{ target_entity }}\n{%- else
+                      -%}false{%- endif -%}"
+                    logbook_message: "{{logbook_message}}"
+                alias: "todo: fix result variable"
+              - alias: if trigger is being used
+                if:
+                  - condition: template
+                    value_template: "{{ bool(use_trigger,false) }}"
+                    alias: if using manually selected state
+                then:
+                  - action: logbook.log
+                    metadata: {}
+                    data:
+                      name: "State: {{ the_state | upper }} "
+                      message: "{{ logbook_message }}"
+                      entity_id: "{{ entity_trigger.entity_id }}"
+                    enabled: true
+                else:
+                  - action: logbook.log
+                    metadata: {}
+                    data:
+                      name: Manually selected {{ the_state | upper }}
+                      message: "{{logbook_message}}"
+                enabled: true
+              - alias: if target is set, call the action.
+                if:
+                  - condition: template
+                    value_template: "{{ bool(use_target,false) }}"
+                then:
+                  - action: "{{ action }}"
+                    metadata: {}
+                    data: {}
+                    target:
+                      entity_id:
+                        - "{{ target_entity }}"
+                    enabled: true
       else:
         - variables:
             the_state:
@@ -139,10 +145,12 @@ set_state_switch_light:
               data:
                 name: "Manually selected: {{ the_state | upper }} "
                 message: "{{logbook_message}}"
+      enabled: true
     - stop:
         "{% if exec_rest %}Action call complete{% else %}Action NOT called{% endif
         %}"
       response_variable: result
+      enabled: true
   fields:
     target_entity_set:
       selector:
@@ -163,6 +171,7 @@ set_state_switch_light:
               - schedule
               - switch
               - light
+              - input_boolean
       name: Entity State to use as trigger
       required: false
       description: Entity to mock trigger from (like time of day sensor, schedule)

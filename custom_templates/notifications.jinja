@@ -16,7 +16,7 @@
 {%- for entity_id in entities_list -%}
 {%- if is_state(entity_id, 'on') -%}
 The {{ state_attr(entity_id, 'friendly_name') | regex_replace(find='(\\d+)\\s*g\\s+', replace='\\1 gallon ',
-ignorecase=True) }} in Area: {{ area_name(entity_id) }},
+ignorecase=True) }} in Area: {{ area_name(entity_id ) }},
 {%- endif -%}
 {%- endfor -%}
 {%- endfor -%}

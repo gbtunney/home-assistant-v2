@@ -18,7 +18,7 @@ notification_dispatcher:
             "{% if 'alexa' in notification_channel %}true{% else %}false{%
             endif %}"
       then:
-        - action: script.alexa_notification_real
+        - action: script.alexa_notification
           metadata: {}
           data:
             target_alexa_speaker:
