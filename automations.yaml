@@ -4,7 +4,7 @@
   triggers:
   - trigger: state
     entity_id:
-    - binary_sensor.leak_sensor
+    - binary_sensor.leak_sensor_group
     from: 'off'
     to: 'on'
     for:
@@ -14,13 +14,14 @@
   conditions: []
   actions:
   - variables:
-      expand_group: '{% from ''formatter.jinja'' import leak_detector_format_list
-        %} {{ leak_detector_format_list(trigger.entity_id) }}'
+      message: '{% from ''notifications.jinja'' import leak_detector_notification
+        %} {{ leak_detector_notification(trigger.entity_id) }}'
   - action: logbook.log
     metadata: {}
     data:
       name: leak test problem
-      message: there is a leak!!!! {{ expand_group}}
+      message: '{{message}}'
+      entity_id: '{{ trigger.entity_id }}'
   - action: script.notification_dispatcher
     metadata: {}
     data:
@@ -37,10 +38,6 @@
         Area: {{ area_name(trigger.entity_id) }} is detecting moisture. Please fix
         immediately!!'
     enabled: false
-  - action: logbook.log
-    metadata: {}
-    data:
-      name: leak test problem
   mode: single
 - id: '1733535410225'
   alias: Temperature Alert
@@ -170,8 +167,7 @@
   triggers:
   - trigger: state
     entity_id:
-    - binary_sensor.connectivity_status_group
-    - switch.cozy_life_outlet_2
+    - binary_sensor.aq_and_rept_connectivity_status_group
     for:
       hours: 0
       minutes: 6
@@ -185,6 +181,11 @@
     entity_id: alarm_control_panel.home_alarm
     state: armed_home
   actions:
+  - variables:
+      message: '{% from ''notifications.jinja'' import device_unavailable_notification
+        %} {{ device_unavailable_notification(trigger.entity_id) }}'
+      message_bk: "Device {{ state_attr(trigger.entity_id,'friendly_name' )  }} in
+        Area: {{\n area_name(trigger.entity_id) }} is disconnected. Please fix immediately!!"
   - action: script.notification_dispatcher
     metadata: {}
     data:
@@ -200,8 +201,11 @@
       - 7188138156@mms.att.net
       email_targets:
       - gbtunney@mac.com
-      message: "Device {{ state_attr(trigger.entity_id,'friendly_name' )  }} in Area:
-        {{\n area_name(trigger.entity_id) }} is disconnected. Please fix immediately!!"
+      message: '{{message}}'
+  - choose:
+    - conditions: []
+      sequence: []
+    enabled: false
   mode: single
 - id: '1733605050618'
   alias: Lighting & Powerstrip Connectivity Warning
@@ -351,3 +355,18 @@
     path: Blackshome/notifications-and-announcements.yaml
     input:
       persistent_message: Hihi
+- id: '1735089085485'
+  alias: 'Sensor: Home Assistant Last Started'
+  description: ''
+  triggers:
+  - trigger: homeassistant
+    event: start
+  conditions: []
+  actions:
+  - action: input_datetime.set_datetime
+    metadata: {}
+    data:
+      timestamp: '{{float(as_timestamp(now()),0)}}'
+    target:
+      entity_id: input_datetime.ha_last_start
+  mode: single
