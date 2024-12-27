@@ -198,6 +198,6 @@ set_state_switch_light:
       name: Invert State
       description: Negates on and off states to toggle
       default: "Off"
-      required: true
+      required: false
   description: Target to turn on or off (setting the state)
   icon: mdi:toggle-switch-off
