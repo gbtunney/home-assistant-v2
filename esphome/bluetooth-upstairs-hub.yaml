@@ -58,7 +58,7 @@ bluetooth_proxy:
   
 ble_client:
  ### ===== ATC BLE CLIENT ===== ###
-  - mac_address: A4:C1:38:91:3B:D8 # A4:C1:38:91:3B:D8 .  5B:09:83:FC:69:4C #REPLACE WITH FOB'S MAC ADDRESS "78:6D:EB:2D:BF:4C"
+  - mac_address: A4:C1:38:CF:0F:45 # A4:C1:38:91:3B:D8 .  5B:09:83:FC:69:4C #REPLACE WITH FOB'S MAC ADDRESS "78:6D:EB:2D:BF:4C"
     id: ${atc_1_id}
     auto_connect: true
     on_connect:

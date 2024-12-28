@@ -1,0 +1,51 @@
+#################################  Notify  ###################################
+notify:
+  - name: STD_Information
+    platform: group
+    services:
+      - service: mobile_app_iphone
+      - service: persistent_notification
+  - name: STD_Warning
+    platform: group
+    services:
+      - service: mobile_app_iphone
+      - service: alexa_media
+  - name: STD_Critical
+    platform: group
+    services:
+      - service: mobile_app_iphone
+      - service: alexa_media
+
+group:
+  Garage Doors:
+    entities:
+      - binary_sensor.dummy_connectivity_sensor
+      - binary_sensor.dummy_sensor_2
+
+input_boolean:
+  garage_door_notify:
+    name: Garage Door Notify
+    icon: mdi:information
+
+template:
+  - binary_sensor:
+      - name: Garage Door Alert Active
+        state: "{{ is_state('group.garage_doors', 'on') and is_state('input_boolean.garage_door_notify', 'on') }}"
+
+alert:
+  garage_door_info_alert_active:
+    name: Garage Door Alert Active
+    entity_id: binary_sensor.garage_door_alert_active
+    state: "on"
+    repeat:
+      - 2
+    can_acknowledge: true
+    skip_first: true
+    title: "7580 Info - Garage Door Open"
+    message: >
+      Garage Door open for {{ relative_time(states.binary_sensor.garage_door_alert_active.last_changed) }} \  
+
+      Triggered: {{ as_timestamp(states.binary_sensor.garage_door_alert_active.last_changed) | timestamp_custom('%A %I:%M%p (%d-%b-%Y)') }}
+    done_message: "Garage Door Alert RESOLVED at {{ as_timestamp(states.binary_sensor.garage_door_alert_active.last_changed) | timestamp_custom('%A %I:%M%p (%d-%b-%Y)') }}"
+    notifiers:
+      - STD_Information
