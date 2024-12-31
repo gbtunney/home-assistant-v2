@@ -4,6 +4,6 @@
 # https://www.home-assistant.io/docs/configuration/splitting_configuration/
 #####
 
-automation manual: !include_dir_merge_list ../automations
+automation manual: !include_dir_merge_list ../../automations
 
-automation ui: !include ./../automations.yaml
+automation ui: !include ./../../automations.yaml

@@ -173,6 +173,7 @@ dist
 .uuid
 core.*
 core
+!core.yaml
 home-assistant_v2
 home-assistant_v2.*
 deps

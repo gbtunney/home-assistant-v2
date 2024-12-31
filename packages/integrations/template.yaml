@@ -6,4 +6,4 @@
 # https://www.home-assistant.io/integrations/sensor
 #####
 
-template: !include_dir_merge_list ../entities/template
+template: !include_dir_merge_list ../../entities/template
