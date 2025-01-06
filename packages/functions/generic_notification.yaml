@@ -1,0 +1,10 @@
+# Example configuration.yaml entry
+notify:
+  - name: func_dispatch_notification
+    platform: rest
+    method: POST_JSON
+    resource: http://homeassistant.local:8123/api/services/script/testing_alert_confirmable_notification
+    #resource: http://homeassistant.local:8123/api/services/script/notification_dispatcher
+    headers:
+      Authorization: !secret rest_token
+      Content-Type: "application/json"

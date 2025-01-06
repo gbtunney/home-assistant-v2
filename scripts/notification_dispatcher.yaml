@@ -5,10 +5,10 @@ notification_dispatcher:
   alias: Notification Dispatcher
   sequence:
     - variables:
-        critical: "{% if bool_critical == 'ON' %}1{% else %}0{% endif %}"
+        critical: "{{1 if (bool_critical is defined and bool_critical == 'ON') else 0 | int}}"
         alexa_volume_level:
-          "{%- if alexa_volume is not defined -%}\n  {%- if bool_critical
-          == 'ON' -%}\n    Maximum Volume\n  {%- else -%}\n    Normal Volume\n  {%-
+          "{%- if alexa_volume is not defined -%}\n  {%- if critical |int
+          == 1 -%}\n    Maximum Volume\n  {%- else -%}\n    Normal Volume\n  {%-
           endif -%}\n{%- else -%}\n  {{ alexa_volume }}\n{%- endif -%}\n"
         sound: "{{ 'no_sound' if alexa_sound is not defined else alexa_sound }}"
     - alias: If alexa selected
@@ -40,7 +40,7 @@ notification_dispatcher:
           data:
             message: "{{message}}"
             title:
-              "{% if bool_critical == 'ON' %}CRITICAL : {% else %}{% endif %}{%
+              "{% if critical |int  == 1 %}CRITICAL : {% else %}{% endif %}{%
               if title is defined %}{{ title }}{% else %}{% endif %}"
       enabled: true
     - alias: If iPhone selected
@@ -110,7 +110,7 @@ notification_dispatcher:
           data:
             message: "{{message}}"
             title:
-              "{% if bool_critical == 'ON' %}CRITICAL {% else %}{% endif %}Notification
+              "{% if critical |int == 1 %}CRITICAL {% else %}{% endif %}Notification
               from Homeassistant{% if title is defined %}: {{ title }}{% else %}{% endif
               %}"
             target: "{{ email_targets }}"
@@ -127,7 +127,7 @@ notification_dispatcher:
           metadata: {}
           data:
             message:
-              "{% if bool_critical == 'ON' %}CRITICAL {% else %}{% endif %}Notification
+              "{% if critical|int == 1 %}CRITICAL {% else %}{% endif %}Notification
               from Homeassistant: {% if title is defined %}{{ title }} :{% else %}{% endif
               %}{{ message }}"
             title: "{{ title }}"
@@ -174,8 +174,7 @@ notification_dispatcher:
             - "ON"
             - "OFF"
       name: Critical
-      default: "OFF"
-      required: true
+      required: false
     sound:
       selector:
         text:
@@ -183,7 +182,7 @@ notification_dispatcher:
       description:
         "To get sound: go to settings > companion app > notification >
         system and click copy."
-      required: true
+      required: false
       default: default
     sms_targets:
       selector:
@@ -193,7 +192,7 @@ notification_dispatcher:
       default:
         - 7188138156@mms.att.net
       description: This is only used if sms notification target is selected!
-      required: true
+      required: false
     email_targets:
       selector:
         text:
@@ -202,7 +201,7 @@ notification_dispatcher:
       description: This is only used if email notification target is selected!
       default:
         - gbtunney@mac.com
-      required: true
+      required: false
     alexa_volume:
       selector:
         select:

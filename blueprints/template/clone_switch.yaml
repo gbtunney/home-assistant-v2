@@ -1,0 +1,31 @@
+blueprint:
+  name: Clone a switch
+  description: Creates a clone of a switch based on a reference switch
+  domain: template
+  input:
+    reference_entity:
+      name: Switch to be cloned
+      selector:
+        entity:
+          domain: switch
+variables:
+  reference_entity: !input reference_entity
+# configuration.yaml
+
+switch:
+  - platform: template
+    switches:
+      clone_aquarium_pump:
+        friendly_name: "Aquarium Pump Clone"
+        value_template: "{{ is_state(reference_entity, 'on') }}"
+        turn_on:
+          service: switch.turn_on
+          target:
+            entity_id: "{{reference_entity}}"
+        turn_off:
+          service: switch.turn_off
+          target: entity_id:"{{ reference_entity}}"
+  # TODO: test undr template:
+  #     - switch:
+  #- name: "Aquarium Pump"
+  #state: "{{ is_state('switch.20g_rack_filter_powerhead_heater', 'on') }}"

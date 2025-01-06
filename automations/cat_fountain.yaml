@@ -10,10 +10,10 @@
     - trigger: numeric_state
       entity_id:
         - sensor.cat_fountain_remaining_water
-      below: 40
+      below: 33
       for:
         hours: 0
-        minutes: 9
+        minutes: 20
         seconds: 0
       enabled: true
       above: 0

@@ -348,13 +348,6 @@
       target:
         entity_id: light.smart_bulb_1
   mode: single
-- id: '1734858357880'
-  alias: KnmNotifications & Announcements
-  description: ''
-  use_blueprint:
-    path: Blackshome/notifications-and-announcements.yaml
-    input:
-      persistent_message: Hihi
 - id: '1735089085485'
   alias: 'Sensor: Home Assistant Last Started'
   description: ''
@@ -369,4 +362,28 @@
       timestamp: '{{float(as_timestamp(now()),0)}}'
     target:
       entity_id: input_datetime.ha_last_start
+  mode: single
+- id: '1736126771525'
+  alias: 'Notify: acknowledge test alert'
+  description: ''
+  triggers:
+  - event_type: mobile_app_notification_action
+    event_data:
+      action: okalerttest
+    trigger: event
+  conditions: []
+  actions:
+  - action: alert.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id: alert.aquarium_off_info_alert_active
+  - delay:
+      hours: 0
+      minutes: 5
+      seconds: 0
+  - action: alert.turn_on
+    data: {}
+    target:
+      entity_id: alert.aquarium_off_info_alert_active
   mode: single
