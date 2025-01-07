@@ -16,7 +16,7 @@ input_boolean:
 #####
 script:
   custom_alexa_notification:
-    alias: !secret test_me
+    alias: Alexa Custom Notification
     sequence:
       - variables:
           speaker_id: "{{ target_alexa_speaker.entity_id }}"
