@@ -1,0 +1,95 @@
+#####
+# Alert & Notifications Package: Stuff
+#####
+automation:
+  - alias: "Alert: acknowledge irregular_off"
+    description: ""
+    trigger:
+      - platform: event
+        event_type: mobile_app_notification_action
+    variables:
+      alert_entity: "alert.warn_irregular_off"
+      controlling_binary_sensor: "binary_sensor.alert_state_warn_irregular_off"
+      incoming_data: "{{trigger.event.data.action.data}}"
+      incoming_alert_entity: "{{trigger.event.data.action.data.controlling_binary_sensor}}"
+      outer_object: "{{ action_mapping[trigger.event.data.action] }}"
+      other_data: "{{ trigger.event.data }}"
+      action_mapping:
+        ACK_WARN_IRREGULAR_OFF: alert.warn_irregular_off
+        okalertfoo: alert.foo
+    condition:
+      - condition: template
+        value_template: "{{ trigger.event.data.action is defined and trigger.event.data.action in action_mapping }}"
+    action:
+      - action: logbook.log
+        data:
+          name: ALERT TEST
+          message: testing this thing. !
+
+      - service: alert.toggle
+        enabled: false
+        target:
+          entity_id: "{{ action_mapping[trigger.event.data.action] }}"
+    mode: single
+
+input_boolean:
+  alert_enabled_warn_irregular_off:
+    name: "Alert Enabled: Warning - Irregular Off"
+    # description: "used to supress warnings during clean event"
+    icon: mdi:alert
+
+template:
+  #- use_blueprint:
+  #    path: "label_list_binary_sensor.yaml"
+  #   input:
+  #    label_id: entity_list_aquarium_group_switch
+  #    name: "Test Blueprint Alert"
+  # unique_id: "gbt_alert_test_blueprintreal"
+  #  state_picker: ["off"]
+
+  - binary_sensor:
+      - name: "Alert State: Warning - Irregular Off"
+        unique_id: binary_sensor.alert_state_warn_irregular_off
+        state: |
+          {% set my_label = "entity_list_aquarium_group_switch" %}
+          {% set label_list = label_entities(my_label) | select('is_state', 'off') | list  %}    
+          {% set label_count = label_list | count %}
+          {{ bool( label_count | int > 0 ,false) }}
+alert:
+  #TODO: fix timestamps
+  warn_irregular_off:
+    name: "Alert Integration: Warning - Irregular Off" #name of the alert entity
+    entity_id: binary_sensor.alert_state_warn_irregular_off
+    state: "on"
+    repeat:
+      - 1
+    can_acknowledge: true
+    skip_first: true
+    title: "Warning - Devices are in an unexpected off state"
+    done_message: "Aquarium  Alert RESOLVED"
+    notifiers:
+      - mobile_app_iphone
+      # - func_dispatch_notification
+    data:
+      tag: "warn_irregular_off" # required for iOS notification replacement
+      actions:
+        - action: "ACK_WARN_IRREGULAR_OFF" #to trigger our automation
+          title: "Acknowledge Alert (snooze)" #notification button text
+          data:
+            alert_entity: alert.warn_irregular_off
+            controlling_binary_sensor: binary_sensor.alert_state_warn_irregular_off
+            test_data: "hello i am a thing!!"
+
+    message: |
+      {% set my_label = "entity_list_aquarium_group_switch" %}
+      {% set controlling_binary_sensor = 'binary_sensor.alert_state_warn_irregular_off' %}
+      {% set label_list = label_entities(my_label) | select('is_state', 'off') |list %}    
+      {%- for entity_id in label_list -%}
+        {% set entity_name = state_attr(entity_id,"friendly_name") %}
+        {% set entity_area_name = area_name(entity_id)  %}
+          Entity {{entity_name}} in Area: {{entity_area_name }} has been off since  {{states[entity_id].last_updated }}. Please fix immediately!!
+          Entity {{ entity_name }} off for {{ relative_time(states[entity_id].last_updated  ) }} 
+          Alerts on area {{entity_area_name}}
+      {% endfor %}
+      Triggered: {{ as_timestamp(states[controlling_binary_sensor].last_changed) | timestamp_custom('%a %d-%m-%Y %-I:%M %p')}}
+      Test self: {{ this.entity_id }} rntity: {{this.entity}}
