@@ -6,56 +6,15 @@
 ## 20g / 10g Aquarium Rack
 ############################################################
 
-20g_l_temperature:
-  icon: mdi:thermometer
-  name: 20g Long Temperature
-  min: 20
-  max: 100
-  step: 1
-
-10g_f_temperature:
-  icon: mdi:thermometer
-  name: 10g F (Upper) Temperature
-  min: 20
-  max: 100
-  step: 1
-
-10g_q_temperature:
-  icon: mdi:thermometer
-  name: 10g Quarantine Temperature
-  min: 20
-  max: 100
-  step: 1
-
 #############################################################
 ## 10g Male ELBs
 ############################################################
-
-10g_m_temperature:
-  icon: mdi:thermometer
-  name: 10g M Temperature
-  min: 20
-  max: 100
-  step: 1
 
 #############################################################
 ## 120g Loaches
 ############################################################
 
-120g_temperature:
-  icon: mdi:thermometer
-  name: 120g Temperature
-  min: 20
-  max: 100
-  step: 1
-
 #############################################################
 ## 55g Loaches
 ############################################################
-
-55g_temperature:
-  icon: mdi:thermometer
-  name: 55g Temperature
-  min: 20
-  max: 100
-  step: 1
+{}

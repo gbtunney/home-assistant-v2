@@ -39,15 +39,19 @@ template:
           {{ bool( label_count | int > 0 ,false) }}
 alert:
   #TODO: fix timestamps
-  warning_alert_irregular_off::
+  warning_irregular_off:
     name: Warning Alert Irregular Off #name of the alert entity
-    entity_id: binary_sensor.warning_alert_irregular_off
+    entity_id: binary_sensor.alert_warning_irregular_off
     state: "on"
     repeat:
       - 1
     can_acknowledge: true
     skip_first: true
     title: "Warning - Aquarium device left off"
+    done_message: "Aquarium  Alert RESOLVED"
+    notifiers:
+      - mobile_app_iphone
+      - func_dispatch_notification
     data:
       tag: "testalert" # required for iOS notification replacement
       actions:
@@ -64,8 +68,5 @@ alert:
           Entity {{ entity_name }} off for {{ relative_time(states[entity_id].last_updated  ) }} 
           Alerts on area {{entity_area_name}}
       {% endfor %}
-      Triggered: {{ as_timestamp(states[controlling_binary_sensor].last_changed) | timestamp_custom('%a %d-%m-%Y %-I:%M %p')') }}
-    done_message: "Aquarium  Alert RESOLVED at {{ as_timestamp(states[controlling_binary_sensor].last_changed) | timestamp_custom('%A %I:%M%p (%d-%b-%Y)') }}"
-    notifiers:
-      - mobile_app_iphone
-      - func_dispatch_notification
+      Triggered: {{ as_timestamp(states[controlling_binary_sensor].last_changed) | timestamp_custom('%a %d-%m-%Y %-I:%M %p')}}
+      Test self: {{ this.entity_id }} rntity: [{this.entity}}
