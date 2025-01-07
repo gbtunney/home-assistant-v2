@@ -7,7 +7,7 @@
 #####
 input_boolean:
   bool_mute_alexa_notifications:
-    name: Mute Alexa Notification Button
+    name: Mute Alexa Notification
     # description: "used to supress warnings during clean event"
     icon: mdi:speaker-off
 
@@ -16,12 +16,18 @@ input_boolean:
 #####
 script:
   custom_alexa_notification:
-    alias: Alexa Custom Notification
     sequence:
       - variables:
+          bool_local_mute:
+            "{{  bool( 'Off' if local_mute is not defined else bool(
+            local_mute,false),false) }}"
+          global_mute:
+            "{{ bool(states('input_boolean.bool_mute_alexa_notifications'),false)
+            }}"
+          bool_mute: "{{bool(( global_mute or local_mute ),false)}}"
           speaker_id: "{{ target_alexa_speaker.entity_id }}"
           previous_volume: "{{ state_attr(speaker_id,'volume_level') }}"
-          quiet_hours: "{{ is_state('binary_sensor.quiet_hours', 'on' )}}"
+          quiet_hours: "{{bool( is_state('binary_sensor.quiet_hours', 'on' ),false)}}"
           do_volume_change:
             "{{ bool( volume != 'Current', false ) or ( bool( volume
             == 'Current', false ) and bool(quiet_hours,false) )}}"
@@ -35,67 +41,91 @@ script:
             "{{ false if sound is not defined or sound == 'no_sound' else
             true }}"
           message_real:
-            '{{ message | regex_replace(find=''(\\d+)\\s*g\\s+'', replace=''\\1
-            gallon '', ignorecase=True) }}
+            '"{{ message | regex_replace(find=''(\\d+)\\s*g\\s+'', replace=''\\1
+            gallon '', ignorecase=True) }}"
 
             '
-      - if:
-          - condition: template
-            value_template: "{{ bool(do_volume_change, false)}}"
-        then:
-          - action: media_player.volume_set
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ bool(bool_mute,false )  }}"
+            sequence:
+              - action: logbook.log
+                metadata: {}
+                data:
+                  entity_id: "{{ speaker_id }}"
+                  name: Alexa Muted
+                  message:
+                    "Alexa was MUTED and is not allowed to say the following message,
+                    {{ message_real }} | Sound: {{play_sound}} {{ sound }} | Volume: {{volume_float}}
+                    | Quiet Hrs: {{quiet_hours}} | Prev Volume: {{previous_volume}}"
+            alias: If alexa is MUTED
+        default:
+          - if:
+              - condition: template
+                value_template: "{{ bool(do_volume_change, false)}}"
+            then:
+              - action: media_player.volume_set
+                metadata: {}
+                data:
+                  volume_level: "{{ volume_float| float (0.5) }}"
+                target:
+                  entity_id: "{{ speaker_id }}"
+            alias: Set temporary vol
+            enabled: true
+          - alias: play a sound!
+            if:
+              - condition: template
+                value_template: "{{ bool(play_sound , false )}}"
+            then:
+              - target:
+                  entity_id: "{{ speaker_id }}"
+                data:
+                  media_content_type: sound
+                  media_content_id: "{{ sound }}"
+                action: media_player.play_media
+          - action: notify.alexa_media
             metadata: {}
             data:
-              volume_level: "{{ volume_float| float (0.5) }}"
-            target:
-              entity_id: "{{ speaker_id }}"
-        alias: Set temporary vol
-        enabled: true
-      - alias: play a sound!
-        if:
-          - condition: template
-            value_template: "{{ bool(play_sound , false )}}"
-        then:
-          - target:
-              entity_id: "{{ speaker_id }}"
-            data:
-              media_content_type: sound
-              media_content_id: "{{ sound }}"
-            action: media_player.play_media
-      - action: notify.alexa_media
-        metadata: {}
-        data:
-          target: "{{speaker_id}}"
-          message:
-            '{{ message | regex_replace(find=''(\\d+)\\s*g\\s+'', replace=''\\1
-            gallon '', ignorecase=True) }}
-
-            '
-        enabled: true
-        alias: send notification, replace 'g' with gallon
-      - alias: "Restore orig. volume "
-        if:
-          - condition: template
-            value_template: "{{ bool(do_volume_change, false)}}"
-        then:
-          - action: media_player.volume_set
+              target: "{{speaker_id}}"
+              message: "{{message_real}}"
+            enabled: true
+            alias: send notification, replace 'g' with gallon
+          - alias: "Restore orig. volume "
+            if:
+              - condition: template
+                value_template: "{{ bool(do_volume_change, false)}}"
+            then:
+              - action: media_player.volume_set
+                metadata: {}
+                data:
+                  volume_level: "{{   previous_volume | float (0.5) }}"
+                target:
+                  entity_id: "{{ speaker_id }}"
+          - alias: play sound again
+            if:
+              - condition: template
+                value_template: "{{ bool(play_sound , false )}}"
+            then:
+              - target:
+                  entity_id: "{{ speaker_id }}"
+                data:
+                  media_content_type: sound
+                  media_content_id: "{{ sound }}"
+                action: media_player.play_media
+          - action: logbook.log
             metadata: {}
             data:
-              volume_level: "{{   previous_volume | float (0.5) }}"
-            target:
               entity_id: "{{ speaker_id }}"
-      - alias: play sound again
-        if:
-          - condition: template
-            value_template: "{{ bool(play_sound , false )}}"
-        then:
-          - target:
-              entity_id: "{{ speaker_id }}"
-            data:
-              media_content_type: sound
-              media_content_id: "{{ sound }}"
-            action: media_player.play_media
-    description: Send an alexa notification with louder volume. Respects a 'quiet hours' policy
+              name: Alexa Notification Dispatched
+              message:
+                "Alexa was dispatched to say the following message, {{ message_real
+                }} | Sound: {{play_sound}} {{ sound }} | Volume: {{volume_float}} | Quiet
+                Hrs: {{quiet_hours}} | Prev Volume: {{previous_volume}} "
+    alias: Alexa Custom Notification
+    description:
+      Send an alexa notification with louder volume. Respects a 'quiet hours'
+      policy
     fields:
       target_alexa_speaker:
         selector:
@@ -161,6 +191,14 @@ script:
               - amzn_sfx_large_crowd_cheer_01
         name: Sound
         description: Be annoying!!
+      local_mute:
+        selector:
+          select:
+            options:
+              - "On"
+              - "Off"
+        name: Local Mute
+        description: Mute for testing purposes. Global alexa mute entity is input_boolean.bool_mute_alexa_notifications
     icon: mdi:bullhorn-outline
 
 #####

@@ -283,7 +283,6 @@ testing_alert_confirmable_notification:
         text:
       name: message
       default: message from fields
-
 purge_logbook_by_entiity:
   alias: Purge Logbook by Entiity
   sequence:
