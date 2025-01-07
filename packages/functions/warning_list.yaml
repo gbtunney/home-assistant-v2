@@ -15,48 +15,39 @@ notify:
     services:
 
 input_boolean:
-  alert_test_mode:
-    name: Alert Test Mode
+  warning_alert_irregular_off:
+    name: Supress Warning Alert Irregular Off
+    # description: "used to supress warnings during clean event"
     icon: mdi:test-tube
 
 template:
+  #- use_blueprint:
+  #    path: "label_list_binary_sensor.yaml"
+  #   input:
+  #    label_id: entity_list_aquarium_group_switch
+  #    name: "Test Blueprint Alert"
+  # unique_id: "gbt_alert_test_blueprintreal"
+  #  state_picker: ["off"]
+
   - binary_sensor:
-      - name: Alert Watch List
-        unique_id: binary_sensor.alert_watch_list
-        device_class: power
-        state: >-
-          {% set label_list = label_entities("entity_list_aquarium_group_switch")  %}
-          {% set labelOffCount = label_list | select('is_state', 'off') | list|count %}
-          {{ bool( labelOffCount | int > 0 ,false)}}
-
+      - name: Warning Alert Irregular Off
+        unique_id: binary_sensor.alert_warning_irregular_off
+        state: |
+          {% set my_label = "entity_list_aquarium_group_switch" %}
+          {% set label_list = label_entities(my_label) | select('is_state', 'off') | list  %}    
+          {% set label_count = label_list | count %}
+          {{ bool( label_count | int > 0 ,false) }}
 alert:
-  test_alert:
-    name: Test Alert #name of the alert entity
-    message: "This is a test alert" #text you see on the notifiction
-    done_message: clear_notification #this allows the notification to be removed from a device when it is acknowledged or cleared
-    entity_id: binary_sensor.testing_alert_new #the binary sensor that triggers our alert
-    state: "on" #the state that should trigger the alert
-    repeat: 1 #repeates every minute
-    can_acknowledge: true #without this, no toggle
-    data:
-      tag: "testalert" # required for iOS notification replacement
-      actions:
-        - action: "okalerttest" #to trigger our automation
-          title: "Acknowledge Alert" #notification button text
-    skip_first: false # the alert will trigger immediately, not wait for the first repeat cycle
-    notifiers:
-      - func_dispatch_notification
-      - mobile_app_iphone #where the alert should go to, I use a group for all real alerts, this is just for the test alert
-
-  aquarium_off_info_alert_active:
-    name: Aquarium Device Off Alert
-    entity_id: binary_sensor.alert_watch_list
+  #TODO: fix timestamps
+  warning_alert_irregular_off::
+    name: Warning Alert Irregular Off #name of the alert entity
+    entity_id: binary_sensor.warning_alert_irregular_off
     state: "on"
     repeat:
       - 1
     can_acknowledge: true
     skip_first: true
-    title: "7580 Info - Aquarium device left off"
+    title: "Warning - Aquarium device left off"
     data:
       tag: "testalert" # required for iOS notification replacement
       actions:
@@ -73,7 +64,7 @@ alert:
           Entity {{ entity_name }} off for {{ relative_time(states[entity_id].last_updated  ) }} 
           Alerts on area {{entity_area_name}}
       {% endfor %}
-      Triggered: {{ as_timestamp(states[controlling_binary_sensor].last_changed) | timestamp_custom('%A %I:%M%p (%d-%b-%Y)') }}
+      Triggered: {{ as_timestamp(states[controlling_binary_sensor].last_changed) | timestamp_custom('%a %d-%m-%Y %-I:%M %p')') }}
     done_message: "Aquarium  Alert RESOLVED at {{ as_timestamp(states[controlling_binary_sensor].last_changed) | timestamp_custom('%A %I:%M%p (%d-%b-%Y)') }}"
     notifiers:
       - mobile_app_iphone
