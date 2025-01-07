@@ -1,0 +1,234 @@
+#####
+# SCRIPTS:  GBT Entity List Manager
+# use labels to make mixed fdomain 'groups'
+#####
+
+entity_list_manager:
+  alias: GBT Entity List Manager
+  sequence:
+    - variables:
+        prefix: entity_list_
+        pre_label_id: "{{ list_slug | regex_replace('[^a-zA-Z0-9-_ ]', '') }}"
+        inner_label_id: "{{ prefix}}{{- pre_label_id | replace(prefix, '') }}"
+        slugged_id:
+          '{{ inner_label_id | lower | regex_replace(''\s+'', '' '') | replace(''
+          '', ''_'') | regex_replace(''(^[-_]+|[-_]+$)'', '''') }}
+
+          '
+        full_label_id: "{{slugged_id}}"
+        create_label_mode:
+          "{{ 'Disable' if bool( field_create_label is not defined
+          ,false) else field_create_label }}"
+        do_change_target_labels:
+          "{{ bool( ( target_entities is defined and add_or_remove_entities_from_list
+          is defined and  add_or_remove_entities_from_list != 'Disable'),false) }}"
+        change_label_mode: "{{ add_or_remove_entities_from_list }}"
+        change_label_list: "{{ [] if target_entities is not defined else target_entities.entity_id}}"
+        label_does_exist: "{{bool(( label_id( full_label_id ) is not none ) ,false)}}"
+        bool_clean_mode:
+          "{{ bool(bool( (target_entities is not defined ),false) and
+          clean_mode is defined ,false) }}"
+    - alias: IF LABEL DOESNT EXCIST , mode
+      choose:
+        - conditions:
+            - condition: template
+              value_template:
+                '{{bool (( bool(label_does_exist,false ) and create_label_mode
+                == "Remove" ),false) }}'
+          sequence:
+            - action: homeassistant.delete_label
+              metadata: {}
+              data:
+                label_id: "{{ full_label_id }}"
+          alias: REMOVE MODE
+        - conditions:
+            - alias: ADD MODE
+              condition: template
+              value_template:
+                '{{bool (( bool(label_does_exist,false ) == false and create_label_mode
+                == "Add" ),false) }}'
+          sequence:
+            - action: homeassistant.create_label
+              metadata: {}
+              data:
+                name: "{{ full_label_id }}"
+                description: From entity list manager
+                icon: mdi:format-list-bulleted
+                color: "#FFFF00"
+    - variables:
+        label_does_exist: "{{bool(( label_id( full_label_id ) is not none ) ,false)}}"
+        labeled_entities:
+          all: "{{ label_entities(full_label_id) }}"
+          "off": "{{ label_entities(full_label_id) | select('is_state', 'off') |
+            list}}"
+          "on": "{{label_entities(full_label_id) | select('is_state', 'on') | list}}"
+        clean_list:
+          "{% if clean_mode is not defined %}\n  []\n{% elif clean_mode ==
+          \"ALL\" %}\n {{ labeled_entities.all}}\n{% elif clean_mode == \"ON\" %}\n
+          \ {{labeled_entities.on}}\n{% elif clean_mode == \"OFF\" %}\n {{ labeled_entities.off}}\n{%
+          else %}\n  []\n{% endif %}\n"
+      alias: Update Variables
+    - alias: If CLEANMODE
+      choose:
+        - conditions:
+            - condition: template
+              value_template:
+                "{{ bool( (clean_list | list | count > 0) and bool(label_does_exist,false)
+                and bool(bool_clean_mode,false) ,false )}}"
+          sequence:
+            - action: homeassistant.remove_label_from_entity
+              metadata: {}
+              data:
+                entity_id: "{{ clean_list }}"
+                label_id: "{{full_label_id}}"
+          alias: CLEAN MODE TRUE
+        - conditions:
+            - condition: template
+              value_template:
+                "{{ bool(label_does_exist and do_change_target_labels and
+                ( change_label_list | list| count >0 ),false)}}"
+          sequence:
+            - choose:
+                - conditions:
+                    - alias: ADD MODE
+                      condition: template
+                      value_template: '{{ bool(change_label_mode == "Add",false) }}'
+                  sequence:
+                    - action: logbook.log
+                      metadata: {}
+                      data:
+                        name: Change Label
+                        message:
+                          "do_change_target_labels {{do_change_target_labels}} mode:
+                          {{change_label_mode}} ADD TO LIST!!{{ change_label_list|join(',')
+                          }} entity_id: script.gbt_sample_script"
+                    - action: homeassistant.add_label_to_entity
+                      metadata: {}
+                      data:
+                        entity_id: "{{ change_label_list }}"
+                        label_id: "{{full_label_id}}"
+                      enabled: true
+                  alias: ADD MODE
+                - conditions:
+                    - condition: template
+                      value_template: '{{bool(change_label_mode == "Remove",false) }}'
+                  sequence:
+                    - action: homeassistant.remove_label_from_entity
+                      metadata: {}
+                      data:
+                        entity_id: "{{ change_label_list }}"
+                        label_id: "{{full_label_id}}"
+                    - action: logbook.log
+                      metadata: {}
+                      data:
+                        name: Change Label
+                        message:
+                          "do_change_target_labels {{do_change_target_labels}} mode:
+                          {{change_label_mode}} REMOVE FROM LIST!!{{ change_label_list|join(',')
+                          }} entity_id: script.gbt_sample_script"
+                  alias: REMOVE MODE
+          alias: CHANGE  LABELED ENTITIES
+    - variables:
+        new_labeled_entities:
+          all: "{{ label_entities(full_label_id) }}"
+          "off": "{{ label_entities(full_label_id) | select('is_state', 'off') |
+            list}}"
+          "on": "{{label_entities(full_label_id) | select('is_state', 'on') | list}}"
+        prefixed_label_list: "{{ labels() | select('search', '^' + prefix) | list  }}"
+    - if:
+        - condition: template
+          value_template: "{{ bool(label_does_exist,false)}}"
+          alias: LABEL ALREADY EXCISTS
+      then:
+        - action: logbook.log
+          metadata: {}
+          data:
+            name: Initial Report Label List Members
+            entity_id: script.gbt_sample_script
+            message:
+              "LIST: {{full_label_id}}\nCOUNT SUMMARY: ALL: {{ labeled_entities.all
+              |count}}  ON:{{\nlabeled_entities.on |count}} OFF: {{ labeled_entities.off
+              |count}}\nSTART_ALL: {{labeled_entities.all  | join(',') }}  \n</br>START_ON
+              LIST {{labeled_entities.on  |join(',')}} \nSTART_OFF LIST: {{labeled_entities.off|join(',')}}
+              \nAFTER_ALL: {{new_labeled_entities.all  | join(',') }}  \nAFTER__ON LIST
+              {{new_labeled_entities.on  |join(',')}} \nAFTER_LIST: {{new_labeled_entities.off|join(',')}}
+              \n"
+        - action: logbook.log
+          metadata: {}
+          data:
+            name: After Report Label List Members
+            entity_id: script.gbt_sample_script
+            message:
+              "LIST: {{full_label_id}}\nAFTER COUNT SUMMARY: ALL: {{ new_labeled_entities.all
+              |count}}  ON:{{\n  new_labeled_entities.on |count}} OFF:  {{ new_labeled_entities.off
+              |count}}\nAFTER_ALL: {{new_labeled_entities.all  | join(',') }}  \nAFTER__ON
+              LIST {{new_labeled_entities.on  |join(',')}} \nAFTER_LIST: {{new_labeled_entities.off|join(',')}}
+              \n"
+      else:
+        - action: logbook.log
+          metadata: {}
+          data:
+            name: Report Label Not Found
+            message: "LIST: {{full_label_id}} not found"
+            entity_id: script.gbt_sample_script
+    - action: logbook.log
+      metadata: {}
+      data:
+        name: Report Prefixed Labels List
+        message:
+          "PREFIX: {{prefix}} LABEL COUNT {{ prefixed_label_list |list|count}}
+          LIST: {{ prefixed_label_list  }}"
+        entity_id: script.gbt_sample_script
+      alias: report Prefixed Labels
+  description: Add an binary entity to a list
+  icon: mdi:plus
+  fields:
+    list_slug:
+      selector:
+        text:
+      name: "List ID "
+      description: ID in slug format. Prefixed by entity_list_ so dont add that!!!
+      required: true
+      default: test_list
+    target_entities:
+      selector:
+        target:
+          entity:
+            domain:
+              - binary_sensor
+              - schedule
+              - switch
+              - light
+              - input_boolean
+      name: Target Entities to add/remove to an Entity List
+      required: false
+      description:
+        Entities with binary states to add to list like binary_sensor,schedule,switch,light,
+        input_boolean. If left empty, it will just report list stats
+    add_or_remove_entities_from_list:
+      selector:
+        select:
+          options:
+            - Add
+            - Remove
+            - Disable
+      name: Add or remove entities from list
+      default: Add
+    field_create_label:
+      selector:
+        select:
+          options:
+            - Add
+            - Remove
+            - Disable
+      name: Create Label
+      description: Creates a label if it doesn't already excist
+      default: Add
+    clean_mode:
+      selector:
+        select:
+          options:
+            - ALL
+            - "ON"
+            - "OFF"
+      name: Clean Mode

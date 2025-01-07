@@ -1,82 +1,85 @@
 llm_vision_describe_scene:
   alias: LLM Vision Describe Scene
-  description: 'LLM Vision: Describe the Camera Feed in Sentence'
+  description: "LLM Vision: Describe the Camera Feed in Sentence"
   fields:
     prompt:
       selector:
         text:
       name: prompt
       required: true
-      default: "\"Summarize what's happening in the camera feed (one sentence max).\n
+      default:
+        "\"Summarize what's happening in the camera feed (one sentence max).\n
         Don't describe the scene! If there is a person, describe what they're\n doing
         and what they look like. If they look like a courier mention that!\n If nothing
         is happening, say so.\"\n"
   sequence:
-  - variables:
-      llv_response: undefined
-  - action: llmvision.image_analyzer
-    metadata: {}
-    data:
-      include_filename: false
-      target_width: 800
-      detail: low
-      max_tokens: 100
-      temperature: 0.5
-      provider: 01JDVNFP4KWD6XERDGQ5V3TY6W
-      message: '{{ prompt }}'
-      remember: false
-      expose_images: false
-      image_file: /media/{{ states( 'input_text.url_llv')  }}
-    response_variable: llv_response
-  - action: input_text.set_value
-    metadata: {}
-    data:
-      value: '{{ llv_response }}'
-    target:
-      entity_id: input_text.llm_response
+    - variables:
+        llv_response: undefined
+    - action: llmvision.image_analyzer
+      metadata: {}
+      data:
+        include_filename: false
+        target_width: 800
+        detail: low
+        max_tokens: 100
+        temperature: 0.5
+        provider: 01JDVNFP4KWD6XERDGQ5V3TY6W
+        message: "{{ prompt }}"
+        remember: false
+        expose_images: false
+        image_file: /media/{{ states( 'input_text.url_llv')  }}
+      response_variable: llv_response
+    - action: input_text.set_value
+      metadata: {}
+      data:
+        value: "{{ llv_response }}"
+      target:
+        entity_id: input_text.llm_response
   icon: mdi:camera
 llm_car_in_driveway:
   alias: LLM Car in Driveway
   sequence:
-  - data:
-      max_tokens: 100
-      image_entity:
-      - camera.carport
-      provider: 01J99F4T99PA1XGQ4CTQS3CP8H
-      model: gpt-4o
-      target_width: 512
-      temperature: 0.5
-      detail: low
-      include_filename: false
-      message: Please check if there is a car in the driveway with the license plate
-        "<your_license_plate_number>" and respond with a JSON object. The JSON object
-        should have a single key, "car_in_driveway," which should be set to true if
-        - and only  if - there is a car with the license number provided above in
-        the  driveway and false otherwise.
-    response_variable: response
-    action: llmvision.image_analyzer
-  - choose:
-    - conditions:
-      - condition: template
-        value_template: '{{ (( response.response_text |regex_replace(find=''```json
+    - data:
+        max_tokens: 100
+        image_entity:
+          - camera.carport
+        provider: 01J99F4T99PA1XGQ4CTQS3CP8H
+        model: gpt-4o
+        target_width: 512
+        temperature: 0.5
+        detail: low
+        include_filename: false
+        message:
+          Please check if there is a car in the driveway with the license plate
+          "<your_license_plate_number>" and respond with a JSON object. The JSON object
+          should have a single key, "car_in_driveway," which should be set to true if
+          - and only  if - there is a car with the license number provided above in
+          the  driveway and false otherwise.
+      response_variable: response
+      action: llmvision.image_analyzer
+    - choose:
+        - conditions:
+            - condition: template
+              value_template:
+                "{{ (( response.response_text |regex_replace(find='```json
 
-          '', replace='''', ignorecase=False) |regex_replace(find=''
+                ', replace='', ignorecase=False) |regex_replace(find='
 
-          ```'', replace='''', ignorecase=False)  ) | from_json).car_in_driveway }}'
-        enabled: true
-      sequence:
-      - target:
-          entity_id: input_boolean.car_in_driveway
-        data: {}
-        action: input_boolean.turn_on
-    default:
-    - target:
-        entity_id: input_boolean.car_in_driveway
-      data: {}
-      action: input_boolean.turn_off
-    enabled: true
+                ```', replace='', ignorecase=False)  ) | from_json).car_in_driveway }}"
+              enabled: true
+          sequence:
+            - target:
+                entity_id: input_boolean.car_in_driveway
+              data: {}
+              action: input_boolean.turn_on
+      default:
+        - target:
+            entity_id: input_boolean.car_in_driveway
+          data: {}
+          action: input_boolean.turn_off
+      enabled: true
   mode: single
-  description: ''
+  description: ""
 llv_prompt_test:
   alias: LLV Prompt Test
   fields:
@@ -86,83 +89,85 @@ llv_prompt_test:
       name: prompt
       required: true
   sequence:
-  - metadata: {}
-    data:
-      max_tokens: 100
-      model: gpt-4o
-      provider: 01J99F4T99PA1XGQ4CTQS3CP8H
-      target_width: 1280
-      include_filename: false
-      image_entity:
-      - camera.front_door
-      - camera.garage
-      message: '{{ prompt }}'
-    response_variable: response
-    action: llmvision.image_analyzer
-  - metadata: {}
-    data:
-      cache: true
-      media_player_entity_id: media_player.entity_id
-      message: '{{response.response_text}}'
-    target:
-      entity_id: tts.piper
-    action: tts.speak
-  description: ''
+    - metadata: {}
+      data:
+        max_tokens: 100
+        model: gpt-4o
+        provider: 01J99F4T99PA1XGQ4CTQS3CP8H
+        target_width: 1280
+        include_filename: false
+        image_entity:
+          - camera.front_door
+          - camera.garage
+        message: "{{ prompt }}"
+      response_variable: response
+      action: llmvision.image_analyzer
+    - metadata: {}
+      data:
+        cache: true
+        media_player_entity_id: media_player.entity_id
+        message: "{{response.response_text}}"
+      target:
+        entity_id: tts.piper
+      action: tts.speak
+  description: ""
 bring_clothes_in_when_it_rains:
   alias: Bring Clothes in when it rains
   sequence:
-  - action: llmvision.image_analyzer
-    metadata: {}
-    data:
-      remember: false
-      include_filename: false
-      detail: low
-      max_tokens: 100
-      expose_images: false
-      temperature: 0.5
-      message: Reply with a simple number, how many pictures of artwork are hanging
-        on the wall?
-      image_entity:
-      - camera.camera_1_q5_profile1
-      model: gemini-1.5-flash
-      target_width: 512
-  - if:
-    - condition: template
-      value_template: '"{{ gemini.response_text | int > 1 }}"'
-    then:
-    - action: persistent_notification.create
+    - action: llmvision.image_analyzer
       metadata: {}
       data:
-        message: 'The clothing items were counted.  COUNT: {{ gemini.response_text
-          | int }}'
+        remember: false
+        include_filename: false
+        detail: low
+        max_tokens: 100
+        expose_images: false
+        temperature: 0.5
+        message:
+          Reply with a simple number, how many pictures of artwork are hanging
+          on the wall?
+        image_entity:
+          - camera.camera_1_q5_profile1
+        model: gemini-1.5-flash
+        target_width: 512
+    - if:
+        - condition: template
+          value_template: '"{{ gemini.response_text | int > 1 }}"'
+      then:
+        - action: persistent_notification.create
+          metadata: {}
+          data:
+            message:
+              "The clothing items were counted.  COUNT: {{ gemini.response_text
+              | int }}"
   description: ddd
   icon: mdi:weather-lightning-rainy
 llv_numeric_question:
   alias: LLV Numeric Question
   sequence:
-  - variables:
-      camera_image_file: undefined
-      test_count: 0
-  - action: script.camera_snapshot_and_upload
-    metadata: {}
-    data:
-      capture_camera_stream:
-        entity_id: '{{capture_camera_stream.entity_id }}'
-      capture_mime_type: image/png
-    response_variable: camera_image_file
-  - action: llmvision.data_analyzer
-    metadata: {}
-    data:
-      message: '{{ questions_prompt }}'
-      include_filename: false
-      target_width: 1280
-      detail: high
-      max_tokens: 5
-      temperature: 0.1
-      provider: 01JDVNFP4KWD6XERDGQ5V3TY6W
-      sensor_entity: '{{ file_path_save_target.entity_id }}'
-      image_file: '{{camera_image_file.media_rel }}'
-  description: ''
+    - variables:
+        camera_image_file: undefined
+        test_count: 0
+    - action: script.camera_snapshot_and_upload
+      metadata: {}
+      data:
+        capture_camera_stream:
+          entity_id: "{{capture_camera_stream.entity_id }}"
+        capture_mime_type: image/png
+      response_variable: camera_image_file
+    - action: llmvision.data_analyzer
+      metadata: {}
+      data:
+        message: "{{ questions_prompt }}"
+        include_filename: false
+        target_width: 1280
+        detail: high
+        max_tokens: 5
+        temperature: 0.1
+        provider: 01JDVNFP4KWD6XERDGQ5V3TY6W
+        sensor_entity: "{{ file_path_save_target.entity_id }}"
+        image_file: "{{camera_image_file.media_rel }}"
+  description: ""
   fields:
     questions_prompt:
       selector:
@@ -187,730 +192,119 @@ llv_numeric_question:
       default:
         entity_id: camera.camera_1_q5_profile1
       required: true
-aquarium_selector_v2:
-  alias: Aquarium Selector v2
-  mode: parallel
-  sequence:
-  - variables:
-      lookup:
-        120g: switch.120g_pumps_heaters
-        55g: switch.55g_pumps_heaters
-        10g Male: switch.10g_m_pumps_heaters
-        20g Long: switch.20g_pumps_heaters
-        10g Upper: switch.20g_pumps_heaters
-        Quarantine: switch.20g_pumps_heaters
-      co2_list:
-      - switch.10g_m_pumps_heaters
-      - switch.20g_pumps_heaters
-    alias: CONST ENUM VARIABLES
-  - variables:
-      aq_list: '{{state_attr(''input_select.aquarium'',''options'')}}'
-      selected_value: '{{aquarium_picker}}'
-      selected_entities: "{%- set ns = namespace(entities=[]) %}\n  {%- for value
-        in selected_value %}\n  {%- set ns.entities = ns.entities + [lookup[value]]
-        %}\n{%- endfor %}{{- ns.entities }}"
-      do_notification: '{{ bool( end_notification_timer is defined , false )  and
-        bool(( end_notification_timer | int(999)  < delay_minutes | int(999) ),false)
-        }}'
-      first_delay: '{% if do_notification %}{{ ( delay_minutes | int(999) - end_notification_timer|int(999)
-        )| int(999) }}{% else %}{{ delay_minutes | int(999) }} {% endif %}'
-      second_delay: '{% if do_notification %}{{  end_notification_timer|int(999) }}{%
-        else %}{{ 0 | int(999) }} {% endif %}'
-      do_co2: '{{ selected_entities | select(''in'', co2_list) | list | length > 0
-        }}'
-      friendly_names: "{%- set ns = namespace(entities=[]) %}\n  {%- for value in
-        selected_value %}\n  {%- set ns.entities = ns.entities + [ state_attr( lookup[value],'friendly_name')]
-        %}\n{%- endfor %}{{- ns.entities | join(',')}}"
-      message: '"{{ second_delay |int(999) }} minute warning! {{ friendly_names  }}
-        have been off for {{ first_delay |int(999) }} and will be turning back on
-        in {{ second_delay |int(999) }} minutes!!"
-
-        '
-  - sequence:
-    - action: script.set_state_switch_light
-      metadata: {}
-      data:
-        select_state: 'Off'
-        bool_invert_state: 'Off'
-        target_entity_set:
-          entity_id: '{{selected_entities}}'
-      alias: Turn off pumps
-      enabled: true
-    - alias: Turn off C02 if needed
-      if:
-      - condition: template
-        value_template: '{{ bool( do_co2 ,false) and bool(states(''binary_sensor.aquarium_co2_schedule'',false
-          ))  }}'
-      then:
-      - action: script.set_state_switch_light
-        metadata: {}
-        data:
-          bool_invert_state: 'Off'
-          select_state: 'Off'
-          target_entity_set:
-            entity_id: switch.20g_rack_co2
-      enabled: true
-    - delay:
-        hours: 0
-        minutes: '{{ first_delay |int }}'
-        seconds: 0
-        milliseconds: 0
-      alias: first delay
-      enabled: true
-    - alias: if do notification
-      if:
-      - condition: template
-        value_template: '{{ bool(do_notification ,false)}}'
-      then:
-      - action: script.notification_dispatcher
-        metadata: {}
-        data:
-          notification_channel:
-          - alexa
-          bool_critical: 'OFF'
-          sound: default
-          sms_targets:
-          - 7188138156@mms.att.net
-          email_targets:
-          - gbtunney@mac.com
-          alexa_volume: Maximum Volume
-          alexa_sound: amzn_sfx_doorbell_chime_01
-          message: '{{message}}'
-        enabled: true
-      enabled: true
-    - delay:
-        hours: 0
-        minutes: '{{ second_delay|int }}'
-        seconds: 0
-        milliseconds: 0
-      alias: second delay
-      enabled: true
-    - action: script.set_state_switch_light
-      metadata: {}
-      data:
-        select_state: 'On'
-        bool_invert_state: 'Off'
-        target_entity_set:
-          entity_id: '{{selected_entities}}'
-      alias: Turn ON pumps
-      enabled: true
-    - alias: Turn ON C02 if needed and  if scheduled
-      if:
-      - condition: template
-        value_template: '{{ bool(do_co2 ,false) and bool(states(''binary_sensor.aquarium_co2_schedule'',false
-          )) }}'
-      then:
-      - alias: Turn on CO2 if scheduled
-        action: script.set_state_switch_light
-        metadata: {}
-        data:
-          bool_invert_state: 'Off'
-          select_state: 'Off'
-          target_entity_set:
-            entity_id: switch.20g_rack_co2
-          entity_trigger:
-            entity_id: binary_sensor.aquarium_co2_schedule
-      enabled: true
-    - if:
-      - condition: template
-        value_template: '{{ aquarium_clean_notes is defined }} '
-      then:
-      - repeat:
-          sequence:
-          - action: logbook.log
-            metadata: {}
-            data:
-              name: Aquarium Maintenance
-              message: 'Maintenance was logged: {{aquarium_clean_notes | join('','')
-                }}'
-              entity_id: '{{ repeat.item }}'
-          for_each: '{{selected_entities}}'
-      alias: 'Do logbook entries if filled in '
-    enabled: true
-  description: ''
-  fields:
-    aquarium_picker:
-      selector:
-        select:
-          options:
-          - 120g
-          - 55g
-          - 10g Male
-          - 20g Long
-          - 10g Upper
-          - Quarantine
-          multiple: true
-      required: true
-      name: Aquarium Picker
-    aquarium_clean_notes:
-      selector:
-        select:
-          options:
-          - Water Change (Vacuum)
-          - Trim Plants
-          - Remove algae
-          - Deep Clean
-          - Clean Filter
-          - Quick water Change (no vacuum)
-          multiple: true
-          custom_value: true
-      name: Aquarium Clean Notes
-    delay_minutes:
-      selector:
-        number:
-          min: 15
-          max: 245
-      name: Delay Minutes
-      required: true
-      default: 45
-    end_notification_timer:
-      selector:
-        number:
-          min: 1
-          max: 25
-          step: 1
-      name: End Notification Timer
-      required: false
-      default: 5
-      description: this cannot be greater than the total time.
-confirmable_notification:
-  mode: restart
-  sequence:
-  - alias: Set up variables
-    variables:
-      action_confirm: '{{ ''CONFIRM_'' ~ context.id }}'
-      action_dismiss: '{{ ''DISMISS_'' ~ context.id }}'
-  - alias: Send notification
-    domain: mobile_app
-    type: notify
-    device_id: 2edd307c906117471b35b8951c10e6a1
-    title: 'Test me '
-    message: 'Testing '
-    data:
-      actions:
-      - action: '{{ action_confirm }}'
-        title: Confirm
-      - action: '{{ action_dismiss }}'
-        title: Dismiss
-  - alias: Awaiting response
-    wait_for_trigger:
-    - trigger: event
-      event_type: mobile_app_notification_action
-      event_data:
-        action: '{{ action_confirm }}'
-    - trigger: event
-      event_type: mobile_app_notification_action
-      event_data:
-        action: '{{ action_dismiss }}'
-  - choose:
-    - conditions:
-      - condition: template
-        value_template: '{{ wait.trigger.event.data.action == action_confirm }}'
-      sequence: []
-    - conditions:
-      - condition: template
-        value_template: '{{ wait.trigger.event.data.action == action_dismiss }}'
-      sequence: []
-  alias: Confirmable Notification
-  description: ''
 rest_test_script:
   alias: Rest Test Script
   sequence:
-  - action: switch.turn_on
-    metadata: {}
-    data: {}
-    target:
-      entity_id: '{{mytarget.entity_id}}'
-  description: ''
+    - action: switch.turn_on
+      metadata: {}
+      data: {}
+      target:
+        entity_id: "{{mytarget.entity_id}}"
+  description: ""
   fields:
     mytarget:
       selector:
         target:
           entity:
             domain:
-            - switch
+              - switch
       name: my target
 testing_alert_confirmable_notification:
   mode: restart
   sequence:
-  - alias: Set up variables
-    variables:
-      action_confirm: '{{ ''CONFIRM_'' ~ context.id }}'
-      action_dismiss: '{{ ''DISMISS_'' ~ context.id }}'
-  - action: script.alexa_notification
-    metadata: {}
-    data:
-      target_alexa_speaker:
-        entity_id: media_player.alexa_s_baby
-      message: '{{message |default(message) }}'
-      volume: Normal Volume
-      sound: christmas_05
-    enabled: true
-  - alias: Send notification
-    domain: mobile_app
-    type: notify
-    device_id: 2edd307c906117471b35b8951c10e6a1
-    title: ''
-    message: this is a message
-    data:
-      actions:
-      - action: '{{ action_confirm }}'
-        title: Confirm
-      - action: '{{ action_dismiss }}'
-        title: Dismiss
-    enabled: false
-  - alias: Awaiting response
-    wait_for_trigger:
-    - trigger: event
-      event_type: mobile_app_notification_action
-      event_data:
-        action: '{{ action_confirm }}'
-    - trigger: event
-      event_type: mobile_app_notification_action
-      event_data:
-        action: '{{ action_dismiss }}'
-    enabled: false
-  - choose:
-    - conditions:
-      - condition: template
-        value_template: '{{ wait.trigger.event.data.action == action_confirm }}'
-      sequence:
-      - if:
-        - condition: template
-          value_template: '{{ bool( target_entity is defined , false ) }}'
-        then:
-        - action: script.clean_labels
-          metadata: {}
-          data:
-            set_labels: 'Off'
-            label_id: entity_watch_list
-    - conditions:
-      - condition: template
-        value_template: '{{ wait.trigger.event.data.action == action_dismiss }}'
-      sequence: []
-    enabled: false
+    - alias: Set up variables
+      variables:
+        action_confirm: "{{ 'CONFIRM_' ~ context.id }}"
+        action_dismiss: "{{ 'DISMISS_' ~ context.id }}"
+    - action: script.alexa_notification
+      metadata: {}
+      data:
+        target_alexa_speaker:
+          entity_id: media_player.alexa_s_baby
+        message: "{{message |default(message) }}"
+        volume: Normal Volume
+        sound: christmas_05
+      enabled: true
+    - alias: Send notification
+      domain: mobile_app
+      type: notify
+      device_id: 2edd307c906117471b35b8951c10e6a1
+      title: ""
+      message: this is a message
+      data:
+        actions:
+          - action: "{{ action_confirm }}"
+            title: Confirm
+          - action: "{{ action_dismiss }}"
+            title: Dismiss
+      enabled: false
+    - alias: Awaiting response
+      wait_for_trigger:
+        - trigger: event
+          event_type: mobile_app_notification_action
+          event_data:
+            action: "{{ action_confirm }}"
+        - trigger: event
+          event_type: mobile_app_notification_action
+          event_data:
+            action: "{{ action_dismiss }}"
+      enabled: false
+    - choose:
+        - conditions:
+            - condition: template
+              value_template: "{{ wait.trigger.event.data.action == action_confirm }}"
+          sequence:
+            - if:
+                - condition: template
+                  value_template: "{{ bool( target_entity is defined , false ) }}"
+              then:
+                - action: script.clean_labels
+                  metadata: {}
+                  data:
+                    set_labels: "Off"
+                    label_id: entity_watch_list
+        - conditions:
+            - condition: template
+              value_template: "{{ wait.trigger.event.data.action == action_dismiss }}"
+          sequence: []
+      enabled: false
   alias: Testing Alert Confirmable Notification
-  description: ''
+  description: ""
   fields:
     target_entity:
       selector:
         target:
           entity:
             domain:
-            - switch
+              - switch
       name: Target Entity
     inner_message:
       selector:
         text:
       name: message
       default: message from fields
-aquarium_selector_v2_5:
-  alias: Aquarium Selector v2.5
-  sequence:
-  - variables:
-      lookup:
-        120g: switch.120g_pumps_heaters
-        55g: switch.55g_pumps_heaters
-        10g Male: switch.10g_m_pumps_heaters
-        20g Long: switch.20g_pumps_heaters
-        10g Upper: switch.20g_pumps_heaters
-        Quarantine: switch.20g_pumps_heaters
-      co2_list:
-      - switch.10g_m_pumps_heaters
-      - switch.20g_pumps_heaters
-    alias: CONST ENUM VARIABLES
-  - variables:
-      aq_list: '{{state_attr(''input_select.aquarium'',''options'')}}'
-      selected_value: '{{aquarium_picker}}'
-      selected_entities: "{%- set ns = namespace(entities=[]) %}\n  {%- for value
-        in selected_value %}\n  {%- set ns.entities = ns.entities + [lookup[value]]
-        %}\n{%- endfor %}{{- ns.entities }}"
-      do_co2: '{{ selected_entities | select(''in'', co2_list) | list | length > 0
-        }}'
-      friendly_names: "{%- set ns = namespace(entities=[]) %}\n  {%- for value in
-        selected_value %}\n  {%- set ns.entities = ns.entities + [ state_attr( lookup[value],'friendly_name')]
-        %}\n{%- endfor %}{{- ns.entities | join(',')}}"
-  - sequence:
-    - action: script.set_state_switch_light
-      metadata: {}
-      data:
-        select_state: 'Off'
-        bool_invert_state: 'Off'
-        target_entity_set:
-          entity_id: '{{selected_entities}}'
-      alias: Turn off pumps
-      enabled: true
-    - alias: Turn off C02 if needed
-      if:
-      - condition: template
-        value_template: '{{ bool( do_co2 ,false) and bool(states(''binary_sensor.aquarium_co2_schedule'',false
-          ))  }}'
-      then:
-      - action: script.set_state_switch_light
-        metadata: {}
-        data:
-          bool_invert_state: 'Off'
-          select_state: 'Off'
-          target_entity_set:
-            entity_id: switch.20g_rack_co2
-      - action: homeassistant.add_label_to_entity
-        metadata: {}
-        data:
-          label_id:
-          - entity_watch_list
-          entity_id:
-          - switch.20g_rack_co2
-      enabled: true
-    - alias: if do notification
-      if:
-      - condition: template
-        value_template: '{{ bool(do_notification ,false)}}'
-      then:
-      - action: script.notification_dispatcher
-        metadata: {}
-        data:
-          notification_channel:
-          - alexa
-          bool_critical: 'OFF'
-          sound: default
-          sms_targets:
-          - 7188138156@mms.att.net
-          email_targets:
-          - gbtunney@mac.com
-          alexa_volume: Maximum Volume
-          alexa_sound: amzn_sfx_doorbell_chime_01
-          message: '{{message}}'
-        enabled: true
-      enabled: false
-    - alias: 'Do logbook entries if filled in '
-      if:
-      - condition: template
-        value_template: '{{ aquarium_clean_notes is defined }} '
-      then:
-      - repeat:
-          sequence:
-          - action: logbook.log
-            metadata: {}
-            data:
-              name: Aquarium Maintenance
-              message: 'Maintenance was logged: {{aquarium_clean_notes | join('','')
-                }}'
-              entity_id: '{{ repeat.item }}'
-          - action: homeassistant.add_label_to_entity
-            metadata: {}
-            data:
-              label_id:
-              - entity_watch_list
-              entity_id:
-              - '{{ repeat.item }}'
-          for_each: '{{selected_entities}}'
-    - action: script.set_state_switch_light
-      metadata: {}
-      data:
-        select_state: 'On'
-        bool_invert_state: 'Off'
-        target_entity_set:
-          entity_id: '{{selected_entities}}'
-      alias: Turn ON pumps
-      enabled: false
-    - alias: Turn ON C02 if needed and  if scheduled
-      if:
-      - condition: template
-        value_template: '{{ bool(do_co2 ,false) and bool(states(''binary_sensor.aquarium_co2_schedule'',false
-          )) }}'
-      then:
-      - alias: Turn on CO2 if scheduled
-        action: script.set_state_switch_light
-        metadata: {}
-        data:
-          bool_invert_state: 'Off'
-          select_state: 'Off'
-          target_entity_set:
-            entity_id: switch.20g_rack_co2
-          entity_trigger:
-            entity_id: binary_sensor.aquarium_co2_schedule
-      enabled: false
-    enabled: true
-  - delay:
-      hours: 0
-      minutes: '{{ first_delay |int }}'
-      seconds: 0
-      milliseconds: 0
-    alias: first delay
-    enabled: false
-  mode: parallel
-  description: ''
-  fields:
-    aquarium_picker:
-      selector:
-        select:
-          options:
-          - 120g
-          - 55g
-          - 10g Male
-          - 20g Long
-          - 10g Upper
-          - Quarantine
-          multiple: true
-      required: true
-      name: Aquarium Picker
-    aquarium_clean_notes:
-      selector:
-        select:
-          options:
-          - Water Change (Vacuum)
-          - Trim Plants
-          - Remove algae
-          - Deep Clean
-          - Clean Filter
-          - Quick water Change (no vacuum)
-          multiple: true
-          custom_value: true
-      name: Aquarium Clean Notes
-  icon: mdi:blinds-open
-confirmable_notification_2:
-  alias: Confirmable Notification
-  use_blueprint:
-    path: confirmable_notification.yaml
-    input:
-      notify_device: 2edd307c906117471b35b8951c10e6a1
-      message: 'Yess '
-  description: ''
-gbt_sample_script:
-  alias: GBT Entity List Manager
-  sequence:
-  - variables:
-      prefix: entity_list_
-      pre_label_id: '{{ list_slug | regex_replace(''[^a-zA-Z0-9-_ ]'', '''') }}'
-      inner_label_id: '{{ prefix}}{{- pre_label_id | replace(prefix, '''') }}'
-      slugged_id: '{{ inner_label_id | lower | regex_replace(''\s+'', '' '') | replace(''
-        '', ''_'') | regex_replace(''(^[-_]+|[-_]+$)'', '''') }}
 
-        '
-      full_label_id: '{{slugged_id}}'
-      create_label_mode: '{{ ''Disable'' if bool( field_create_label is not defined
-        ,false) else field_create_label }}'
-      do_change_target_labels: '{{ bool( ( target_entities is defined and add_or_remove_entities_from_list
-        is defined and  add_or_remove_entities_from_list != ''Disable''),false) }}'
-      change_label_mode: '{{ add_or_remove_entities_from_list }}'
-      change_label_list: '{{ [] if target_entities is not defined else target_entities.entity_id}}'
-      label_does_exist: '{{bool(( label_id( full_label_id ) is not none ) ,false)}}'
-      bool_clean_mode: '{{ bool(bool( (target_entities is not defined ),false) and
-        clean_mode is defined ,false) }}'
-  - alias: IF LABEL DOESNT EXCIST , mode
-    choose:
-    - conditions:
-      - condition: template
-        value_template: '{{bool (( bool(label_does_exist,false ) and create_label_mode
-          == "Remove" ),false) }}'
-      sequence:
-      - action: homeassistant.delete_label
-        metadata: {}
-        data:
-          label_id: '{{ full_label_id }}'
-      alias: REMOVE MODE
-    - conditions:
-      - alias: ADD MODE
-        condition: template
-        value_template: '{{bool (( bool(label_does_exist,false ) == false and create_label_mode
-          == "Add" ),false) }}'
-      sequence:
-      - action: homeassistant.create_label
-        metadata: {}
-        data:
-          name: '{{ full_label_id }}'
-          description: From entity list manager
-          icon: mdi:format-list-bulleted
-          color: '#FFFF00'
-  - variables:
-      label_does_exist: '{{bool(( label_id( full_label_id ) is not none ) ,false)}}'
-      labeled_entities:
-        all: '{{ label_entities(full_label_id) }}'
-        'off': '{{ label_entities(full_label_id) | select(''is_state'', ''off'') |
-          list}}'
-        'on': '{{label_entities(full_label_id) | select(''is_state'', ''on'') | list}}'
-      clean_list: "{% if clean_mode is not defined %}\n  []\n{% elif clean_mode ==
-        \"ALL\" %}\n {{ labeled_entities.all}}\n{% elif clean_mode == \"ON\" %}\n
-        \ {{labeled_entities.on}}\n{% elif clean_mode == \"OFF\" %}\n {{ labeled_entities.off}}\n{%
-        else %}\n  []\n{% endif %}\n"
-    alias: Update Variables
-  - alias: If CLEANMODE
-    choose:
-    - conditions:
-      - condition: template
-        value_template: '{{ bool( (clean_list | list | count > 0) and bool(label_does_exist,false)
-          and bool(bool_clean_mode,false) ,false )}}'
-      sequence:
-      - action: homeassistant.remove_label_from_entity
-        metadata: {}
-        data:
-          entity_id: '{{ clean_list }}'
-          label_id: '{{full_label_id}}'
-      alias: CLEAN MODE TRUE
-    - conditions:
-      - condition: template
-        value_template: '{{ bool(label_does_exist and do_change_target_labels and
-          ( change_label_list | list| count >0 ),false)}}'
-      sequence:
-      - choose:
-        - conditions:
-          - alias: ADD MODE
-            condition: template
-            value_template: '{{ bool(change_label_mode == "Add",false) }}'
-          sequence:
-          - action: logbook.log
-            metadata: {}
-            data:
-              name: Change Label
-              message: 'do_change_target_labels {{do_change_target_labels}} mode:
-                {{change_label_mode}} ADD TO LIST!!{{ change_label_list|join('','')
-                }} entity_id: script.gbt_sample_script'
-          - action: homeassistant.add_label_to_entity
-            metadata: {}
-            data:
-              entity_id: '{{ change_label_list }}'
-              label_id: '{{full_label_id}}'
-            enabled: true
-          alias: ADD MODE
-        - conditions:
-          - condition: template
-            value_template: '{{bool(change_label_mode == "Remove",false) }}'
-          sequence:
-          - action: homeassistant.remove_label_from_entity
-            metadata: {}
-            data:
-              entity_id: '{{ change_label_list }}'
-              label_id: '{{full_label_id}}'
-          - action: logbook.log
-            metadata: {}
-            data:
-              name: Change Label
-              message: 'do_change_target_labels {{do_change_target_labels}} mode:
-                {{change_label_mode}} REMOVE FROM LIST!!{{ change_label_list|join('','')
-                }} entity_id: script.gbt_sample_script'
-          alias: REMOVE MODE
-      alias: CHANGE  LABELED ENTITIES
-  - variables:
-      new_labeled_entities:
-        all: '{{ label_entities(full_label_id) }}'
-        'off': '{{ label_entities(full_label_id) | select(''is_state'', ''off'') |
-          list}}'
-        'on': '{{label_entities(full_label_id) | select(''is_state'', ''on'') | list}}'
-      prefixed_label_list: '{{ labels() | select(''search'', ''^'' + prefix) | list  }}'
-  - if:
-    - condition: template
-      value_template: '{{ bool(label_does_exist,false)}}'
-      alias: LABEL ALREADY EXCISTS
-    then:
-    - action: logbook.log
-      metadata: {}
-      data:
-        name: Initial Report Label List Members
-        entity_id: script.gbt_sample_script
-        message: "LIST: {{full_label_id}}\nCOUNT SUMMARY: ALL: {{ labeled_entities.all
-          |count}}  ON:{{\nlabeled_entities.on |count}} OFF: {{ labeled_entities.off
-          |count}}\nSTART_ALL: {{labeled_entities.all  | join(',') }}  \n</br>START_ON
-          LIST {{labeled_entities.on  |join(',')}} \nSTART_OFF LIST: {{labeled_entities.off|join(',')}}
-          \nAFTER_ALL: {{new_labeled_entities.all  | join(',') }}  \nAFTER__ON LIST
-          {{new_labeled_entities.on  |join(',')}} \nAFTER_LIST: {{new_labeled_entities.off|join(',')}}
-          \n"
-    - action: logbook.log
-      metadata: {}
-      data:
-        name: After Report Label List Members
-        entity_id: script.gbt_sample_script
-        message: "LIST: {{full_label_id}}\nAFTER COUNT SUMMARY: ALL: {{ new_labeled_entities.all
-          |count}}  ON:{{\n  new_labeled_entities.on |count}} OFF:  {{ new_labeled_entities.off
-          |count}}\nAFTER_ALL: {{new_labeled_entities.all  | join(',') }}  \nAFTER__ON
-          LIST {{new_labeled_entities.on  |join(',')}} \nAFTER_LIST: {{new_labeled_entities.off|join(',')}}
-          \n"
-    else:
-    - action: logbook.log
-      metadata: {}
-      data:
-        name: Report Label Not Found
-        message: 'LIST: {{full_label_id}} not found'
-        entity_id: script.gbt_sample_script
-  - action: logbook.log
-    metadata: {}
-    data:
-      name: Report Prefixed Labels List
-      message: 'PREFIX: {{prefix}} LABEL COUNT {{ prefixed_label_list |list|count}}
-        LIST: {{ prefixed_label_list  }}'
-      entity_id: script.gbt_sample_script
-    alias: report Prefixed Labels
-  description: Add an binary entity to a list
-  icon: mdi:plus
-  fields:
-    list_slug:
-      selector:
-        text:
-      name: 'List ID '
-      description: ID in slug format. Prefixed by entity_list_ so dont add that!!!
-      required: true
-      default: test_list
-    target_entities:
-      selector:
-        target:
-          entity:
-            domain:
-            - binary_sensor
-            - schedule
-            - switch
-            - light
-            - input_boolean
-      name: Target Entities to add/remove to an Entity List
-      required: false
-      description: Entities with binary states to add to list like binary_sensor,schedule,switch,light,
-        input_boolean. If left empty, it will just report list stats
-    add_or_remove_entities_from_list:
-      selector:
-        select:
-          options:
-          - Add
-          - Remove
-          - Disable
-      name: Add or remove entities from list
-      default: Add
-    field_create_label:
-      selector:
-        select:
-          options:
-          - Add
-          - Remove
-          - Disable
-      name: Create Label
-      description: Creates a label if it doesn't already excist
-      default: Add
-    clean_mode:
-      selector:
-        select:
-          options:
-          - ALL
-          - 'ON'
-          - 'OFF'
-      name: Clean Mode
 purge_logbook_by_entiity:
   alias: Purge Logbook by Entiity
   sequence:
-  - action: recorder.purge_entities
-    metadata: {}
-    data:
-      domains:
-      - logbook
-      entity_globs: '{{target_entities.entity_id}}'
-    enabled: false
+    - action: recorder.purge_entities
+      metadata: {}
+      data:
+        domains:
+          - logbook
+        entity_globs: "{{target_entities.entity_id}}"
+      enabled: false
   fields:
     target_entities:
       selector:
         target:
       name: Target Entities to purge
       required: true
-  description: ''
+  description: ""
 new_script:
   sequence:
-  - variables:
-      test_me: '{{state_picker | list}}'
+    - variables:
+        test_me: "{{state_picker | list}}"
   fields:
     label_id:
       selector:
@@ -927,10 +321,10 @@ new_script:
         select:
           multiple: true
           options:
-          - 'on'
-          - 'off'
-          - unavailable
-          - unknown
+            - "on"
+            - "off"
+            - unavailable
+            - unknown
       required: true
       name: State Picker
     field:

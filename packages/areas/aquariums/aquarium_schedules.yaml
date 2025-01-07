@@ -1,0 +1,73 @@
+#####
+# Area package: Aquarium schedules ( Lights and C02 )
+#####
+
+#####
+# Aquarium Lighting Schedule
+# times of day sensor
+#####
+binary_sensor:
+  - platform: tod
+    name: Aquarium Lighting Schedule
+    after: "15:15:00"
+    before: "00:00:00"
+    unique_id: aquarium_lighting_schedule
+
+  #####
+  # Aquarium CO2 Schedule
+  # times of day sensor
+  #####
+  - platform: tod
+    name: Aquarium CO2 Schedule
+    after: "13:30:00"
+    before: "22:30:00"
+    unique_id: aquarium_co2_schedule
+
+automation:
+  - id: "1733720729443"
+    alias: Aquarium Lighting Scheduled On/Off
+    description: Aquarium Lighting turned On/Off according to a schedule
+    triggers:
+      - trigger: state
+        entity_id:
+          - binary_sensor.aquarium_lighting_schedule
+        attribute: next_update
+        enabled: true
+    conditions:
+      - condition: template
+        value_template: "{{ trigger.to_state.state in ['on', 'off'] }}"
+        enabled: true
+    actions:
+      - action: script.set_state_switch_light
+        data:
+          bool_invert_state: "Off"
+          select_state: Unknown
+          target_entity_set:
+            entity_id: light.aquarium_lighting
+          entity_trigger:
+            entity_id: "{{trigger.entity_id}}"
+    mode: single
+
+  - id: "1733723752388"
+    alias: Aquarium CO2 Scheduled On/Off
+    description: Aquarium C02 turned On/Off according to a schedule
+    triggers:
+      - trigger: state
+        entity_id:
+          - binary_sensor.aquarium_co2_schedule
+        attribute: next_update
+        enabled: true
+    conditions:
+      - condition: template
+        value_template: "{{ trigger.to_state.state in ['on', 'off'] }}"
+        enabled: true
+    actions:
+      - action: script.set_state_switch_light
+        data:
+          bool_invert_state: "Off"
+          select_state: Unknown
+          target_entity_set:
+            entity_id: switch.20g_rack_co2
+          entity_trigger:
+            entity_id: "{{trigger.entity_id}}"
+    mode: single

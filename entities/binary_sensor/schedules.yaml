@@ -6,18 +6,3 @@
   before: sunset
   before_offset: "1:00"
   unique_id: reptile_lighting_schedule
-
-  # times of day sensor
-- platform: tod
-  name: Aquarium Lighting Schedule
-  after: "15:15:00"
-  before: "00:00:00"
-  unique_id:
-    aquarium_lighting_schedule
-
-    # times of day sensor
-- platform: tod
-  name: Aquarium CO2 Schedule
-  after: "13:30:00"
-  before: "22:30:00"
-  unique_id: aquarium_co2_schedule
