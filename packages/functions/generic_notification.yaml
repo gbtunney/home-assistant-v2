@@ -3,7 +3,7 @@ notify:
   - name: api_dispatch_notification
     platform: rest
     method: POST_JSON
-    target_param_name: notification_channel_list
+    #target_param_name: notification_channel_list
     title_param_name: callback
     resource: http://homeassistant.local:8123/api/services/script/api_adapter_notification_dispatcher
     #resource: http://homeassistant.local:8123/api/services/script/notification_dispatcher

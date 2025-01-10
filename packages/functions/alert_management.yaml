@@ -80,15 +80,12 @@ alert:
     repeat: 3
     can_acknowledge: true
     skip_first: true
-    title: "Warning - Devices are in an unexpected off state"
+    title: "ACK_WARN_IRREGULAR_OFF"
     notifiers:
       - api_dispatch_notification
-      #- persistent_notification
-      # - func_dispatch_notification
     done_message: "clear-notification"
-    #done_message: "Aquarium  Alert RESOLVED"
     data:
-      # tag: "ACK_WARN_IRREGULAR_OFF" # required for iOS notification replacement
+      tag: "ACK_WARN_IRREGULAR_OFF" # required for iOS notification replacement
       target: "iPhone,iPad,alexa,persistant"
       title: "ACK_WARN_IRREGULAR_OFF"
       actions:

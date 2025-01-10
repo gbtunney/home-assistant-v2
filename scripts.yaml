@@ -531,10 +531,12 @@ timer_test_new_script:
   description: ''
 api_adapter_notification_dispatcher:
   sequence:
+  - variables:
+      trying_title: '{{title}}'
   - alias: Set up variables
     variables:
       target_notification_channel: '{{notification_channel_list.split('','') }}'
-      notification_channel_count: '{{this_target |  list | count }}'
+      notification_channel_count: '{{target_notification_channel |  list | count }}'
       action_callback: '{{callback}}'
   - action: script.notification_dispatcher_ui
     metadata: {}
