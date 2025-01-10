@@ -417,7 +417,7 @@
     then:
     - action: alert.turn_off
       target:
-        entity_id: '{{ resolved.controlling_binary_sensor }}'
+        entity_id: '{{ resolved.alert }}'
       metadata: {}
       data: {}
   mode: single
@@ -426,3 +426,33 @@
       ACK_WARN_IRREGULAR_OFF:
         alert: alert.warn_irregular_off
         controlling_binary_sensor: binary_sensor.alert_state_warn_irregular_off
+- id: '1736498582544'
+  alias: Timer Test
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - timer.the_test_timer_alert
+    enabled: false
+  - trigger: event
+    event_type: timer.restarted
+    event_data:
+      entity_id: timer.the_test_timer_alert
+  conditions: []
+  actions:
+  - action: logbook.log
+    metadata: {}
+    data:
+      name: Timer testing
+      message: 'Trying to trigger '
+  - action: timer.cancel
+    metadata: {}
+    data: {}
+    target:
+      entity_id: timer.the_test_timer_alert
+    enabled: false
+  - action: timer.set_duration
+    metadata: {}
+    data: {}
+    enabled: false
+  mode: single

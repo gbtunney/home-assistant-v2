@@ -2,7 +2,7 @@
 # Alert & Notifications Package: Stuff
 #####
 automation:
-  - alias: "Alert: acknowledge irregular_off UI"
+  - alias: "Alert: acknowledge irregular_off"
     description: ""
     triggers:
       - event_type: mobile_app_notification_action
@@ -82,12 +82,15 @@ alert:
     skip_first: true
     title: "Warning - Devices are in an unexpected off state"
     notifiers:
-      - mobile_app_iphone
-      - persistent_notification
+      - api_dispatch_notification
+      #- persistent_notification
       # - func_dispatch_notification
-    done_message: "Aquarium  Alert RESOLVED"
+    done_message: "clear-notification"
+    #done_message: "Aquarium  Alert RESOLVED"
     data:
-      tag: "warn_irregular_off" # required for iOS notification replacement
+      # tag: "ACK_WARN_IRREGULAR_OFF" # required for iOS notification replacement
+      target: "iPhone,iPad,alexa,persistant"
+      title: "ACK_WARN_IRREGULAR_OFF"
       actions:
         - action: "ACK_WARN_IRREGULAR_OFF" #to trigger our automation
           title: "Acknowledge Alert (snooze)" #notification but
@@ -95,9 +98,11 @@ alert:
     message: |
       {%- set my_label = "entity_list_aquarium_group_switch" %}
       {%- set controlling_binary_sensor = 'binary_sensor.alert_state_warn_irregular_off' %}
+      Garage Door open for {{ relative_time(states[controlling_binary_sensor].last_changed) }} \ 
       {%- set label_list = label_entities(my_label) | select('is_state', 'off') |list %}    
       {%- for entity_id in label_list -%}
         {%- set entity_name = state_attr(entity_id,"friendly_name") %}
         {%- set entity_area_name = area_name(entity_id)  %}
-        Entity {{entity_name}} in Area: {{entity_area_name }} 
+        Entity {{entity_name}} in Area: {{entity_area_name }} \
       {%- endfor %}
+      Triggered: {{ as_timestamp(states[controlling_binary_sensor].last_changed) | timestamp_custom('%I:%M%p, %A %B %d') }}

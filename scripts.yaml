@@ -187,23 +187,6 @@ llv_numeric_question:
       default:
         entity_id: camera.camera_1_q5_profile1
       required: true
-rest_test_script:
-  alias: Rest Test Script
-  sequence:
-  - action: switch.turn_on
-    metadata: {}
-    data: {}
-    target:
-      entity_id: '{{mytarget.entity_id}}'
-  description: ''
-  fields:
-    mytarget:
-      selector:
-        target:
-          entity:
-            domain:
-            - switch
-      name: my target
 testing_alert_confirmable_notification:
   mode: restart
   sequence:
@@ -211,7 +194,7 @@ testing_alert_confirmable_notification:
     variables:
       this_target: '{{notification_channel_list.split('','') }}'
       spp_target: '{{this_target |  list | count }}'
-      callback: '{{action_callback}}'
+      action_callback: '{{callback}}'
       action_confirm: '{{ ''CONFIRM_'' ~ context.id }}'
       action_dismiss: '{{ ''DISMISS_'' ~ context.id }}'
   - action: script.notification_dispatcher_ui
@@ -219,59 +202,7 @@ testing_alert_confirmable_notification:
     data:
       message: '{{message}}'
       notification_channel: '{{this_target}}'
-      mobile_callback: '{{callback }}'
-  - action: script.custom_alexa_notification
-    metadata: {}
-    data:
-      target_alexa_speaker:
-        entity_id: media_player.alexa_s_baby
-      message: '{{message |default(message) }}'
-      volume: Normal Volume
-      sound: christmas_05
-    enabled: false
-  - alias: Send notification
-    domain: mobile_app
-    type: notify
-    device_id: 2edd307c906117471b35b8951c10e6a1
-    title: ''
-    message: this is a message
-    data:
-      actions:
-      - action: '{{ action_confirm }}'
-        title: Confirm
-      - action: '{{ action_dismiss }}'
-        title: Dismiss
-    enabled: false
-  - alias: Awaiting response
-    wait_for_trigger:
-    - trigger: event
-      event_type: mobile_app_notification_action
-      event_data:
-        action: '{{ action_confirm }}'
-    - trigger: event
-      event_type: mobile_app_notification_action
-      event_data:
-        action: '{{ action_dismiss }}'
-    enabled: false
-  - choose:
-    - conditions:
-      - condition: template
-        value_template: '{{ wait.trigger.event.data.action == action_confirm }}'
-      sequence:
-      - if:
-        - condition: template
-          value_template: '{{ bool( target_entity is defined , false ) }}'
-        then:
-        - action: script.clean_labels
-          metadata: {}
-          data:
-            set_labels: 'Off'
-            label_id: entity_watch_list
-    - conditions:
-      - condition: template
-        value_template: '{{ wait.trigger.event.data.action == action_dismiss }}'
-      sequence: []
-    enabled: false
+      mobile_callback: '{{action_callback }}'
   alias: Testing Alert Confirmable Notification
   description: ''
   fields:
@@ -340,6 +271,8 @@ notification_dispatcher_ui:
       callback_action:
       - action: '{{mobile_callback | default('''')}}'
         title: Acknowledge Alert (snooze)
+      persistant_id: '{{ mobile_callback if (mobile_callback is defined ) else ''''
+        }}'
       actions: '{{[] if (mobile_callback is not defined ) else callback_action}}'
       critical: '{{1 if (bool_critical is defined and bool_critical == ''ON'') else
         0 | int}}'
@@ -373,8 +306,13 @@ notification_dispatcher_ui:
       metadata: {}
       data:
         message: '{{message}}'
+        notification_id: '{{persistant_id}}'
         title: '{% if critical |int  == 1 %}CRITICAL : {% else %}{% endif %}{% if
-          title is defined %}{{ title }}{% else %}{% endif %}'
+          title is
+
+          defined %}{{ title }}{% else %}{% endif %}
+
+          '
     enabled: true
   - alias: If iPhone selected
     if:
@@ -389,6 +327,7 @@ notification_dispatcher_ui:
         title: '{{ title }}'
         data:
           actions: '{{actions}}'
+          tag: '{{persistant_id}}'
           push:
             sound:
               name: '{{ sound | default(''default'') }}'
@@ -579,3 +518,31 @@ notification_dispatcher_ui:
       selector:
         text:
       name: Mobile Callback
+      description: Callback id for mobile buttons, also being used for persistant
+        notification id
+timer_test_new_script:
+  sequence:
+  - action: timer.start
+    metadata: {}
+    data: {}
+    target:
+      entity_id: timer.the_test_timer_alert
+  alias: Timer test New Script
+  description: ''
+api_adapter_notification_dispatcher:
+  sequence:
+  - alias: Set up variables
+    variables:
+      target_notification_channel: '{{notification_channel_list.split('','') }}'
+      notification_channel_count: '{{this_target |  list | count }}'
+      action_callback: '{{callback}}'
+  - action: script.notification_dispatcher_ui
+    metadata: {}
+    data:
+      message: '{{message}}'
+      notification_channel: '{{target_notification_channel}}'
+      mobile_callback: '{{action_callback }}'
+  mode: restart
+  alias: API Adapter Notification Dispatcher
+  description: ''
+  fields: {}
