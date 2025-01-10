@@ -387,3 +387,42 @@
     target:
       entity_id: alert.aquarium_off_info_alert_active
   mode: single
+- id: '1736226197854'
+  alias: 'Alert: acknowledge irregular_off UI'
+  description: ''
+  triggers:
+  - event_type: mobile_app_notification_action
+    trigger: event
+    event_data: {}
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.event.data.action is defined and trigger.event.data.action
+      in action_mapping  }}'
+  actions:
+  - variables:
+      resolved:
+        alert: '{{ action_mapping[trigger.event.data.action].alert }}'
+        controlling_binary_sensor: '{{ action_mapping[trigger.event.data.action].controlling_binary_sensor
+          }}'
+  - action: logbook.log
+    data:
+      name: Alert Acknowledged
+      message: 'Alert: {{state_attr(''resolved.alert'',''friendly_name'')}} has been
+        acknowledged, Controlling sensor state: {{states(resolved.controlling_binary_sensor)}}'
+      entity_id: '{{resolved.alert}}'
+  - if:
+    - condition: template
+      value_template: '{{bool( is_state( resolved.controlling_binary_sensor ,[''on'']),false
+        )}}'
+    then:
+    - action: alert.turn_off
+      target:
+        entity_id: '{{ resolved.controlling_binary_sensor }}'
+      metadata: {}
+      data: {}
+  mode: single
+  variables:
+    action_mapping:
+      ACK_WARN_IRREGULAR_OFF:
+        alert: alert.warn_irregular_off
+        controlling_binary_sensor: binary_sensor.alert_state_warn_irregular_off

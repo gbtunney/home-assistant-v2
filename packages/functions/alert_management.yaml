@@ -2,35 +2,49 @@
 # Alert & Notifications Package: Stuff
 #####
 automation:
-  - alias: "Alert: acknowledge irregular_off"
+  - alias: "Alert: acknowledge irregular_off UI"
     description: ""
-    trigger:
-      - platform: event
-        event_type: mobile_app_notification_action
-    variables:
-      alert_entity: "alert.warn_irregular_off"
-      controlling_binary_sensor: "binary_sensor.alert_state_warn_irregular_off"
-      incoming_data: "{{trigger.event.data.action.data}}"
-      incoming_alert_entity: "{{trigger.event.data.action.data.controlling_binary_sensor}}"
-      outer_object: "{{ action_mapping[trigger.event.data.action] }}"
-      other_data: "{{ trigger.event.data }}"
-      action_mapping:
-        ACK_WARN_IRREGULAR_OFF: alert.warn_irregular_off
-        okalertfoo: alert.foo
-    condition:
+    triggers:
+      - event_type: mobile_app_notification_action
+        trigger: event
+        event_data: {}
+    conditions:
       - condition: template
-        value_template: "{{ trigger.event.data.action is defined and trigger.event.data.action in action_mapping }}"
-    action:
+        value_template: >-
+          {{ trigger.event.data.action is defined and trigger.event.data.action in
+          action_mapping  }}
+    actions:
+      - variables:
+          resolved:
+            alert: "{{ action_mapping[trigger.event.data.action].alert }}"
+            controlling_binary_sensor: >-
+              {{ action_mapping[trigger.event.data.action].controlling_binary_sensor
+              }}
       - action: logbook.log
         data:
-          name: ALERT TEST
-          message: testing this thing. !
-
-      - service: alert.toggle
-        enabled: false
-        target:
-          entity_id: "{{ action_mapping[trigger.event.data.action] }}"
+          name: Alert Acknowledged
+          message: >-
+            Alert: {{state_attr('resolved.alert','friendly_name')}} has been
+            acknowledged, Controlling sensor state:
+            {{states(resolved.controlling_binary_sensor)}}
+          entity_id: "{{resolved.alert}}"
+      - if:
+          - condition: template
+            value_template: >-
+              {{bool( is_state( resolved.controlling_binary_sensor ,['on']),false
+              )}}
+        then:
+          - action: alert.turn_off
+            target:
+              entity_id: "{{ resolved.controlling_binary_sensor }}"
+            metadata: {}
+            data: {}
     mode: single
+    variables:
+      action_mapping:
+        ACK_WARN_IRREGULAR_OFF:
+          alert: alert.warn_irregular_off
+          controlling_binary_sensor: binary_sensor.alert_state_warn_irregular_off
 
 input_boolean:
   alert_enabled_warn_irregular_off:
@@ -49,47 +63,41 @@ template:
 
   - binary_sensor:
       - name: "Alert State: Warning - Irregular Off"
-        unique_id: binary_sensor.alert_state_warn_irregular_off
+        unique_id: "alert_state_warn_irregular_off"
         state: |
-          {% set my_label = "entity_list_aquarium_group_switch" %}
-          {% set label_list = label_entities(my_label) | select('is_state', 'off') | list  %}    
-          {% set label_count = label_list | count %}
-          {{ bool( label_count | int > 0 ,false) }}
-alert:
+          {%- set my_enabled = bool(is_state( "input_boolean.alert_enabled_warn_irregular_off",'on') ,false) %}
+          {%- set my_label = "entity_list_aquarium_group_switch" %}
+          {%- set label_list = label_entities(my_label) | select('is_state', 'off') | list  %}    
+          {%- set label_count = label_list | count %}
+          {{- bool( bool(my_enabled,false) and  bool( label_count | int > 0 ,false) ,false) }}
+
   #TODO: fix timestamps
+alert:
   warn_irregular_off:
     name: "Alert Integration: Warning - Irregular Off" #name of the alert entity
     entity_id: binary_sensor.alert_state_warn_irregular_off
     state: "on"
-    repeat:
-      - 1
+    repeat: 3
     can_acknowledge: true
     skip_first: true
     title: "Warning - Devices are in an unexpected off state"
-    done_message: "Aquarium  Alert RESOLVED"
     notifiers:
       - mobile_app_iphone
+      - persistent_notification
       # - func_dispatch_notification
+    done_message: "Aquarium  Alert RESOLVED"
     data:
       tag: "warn_irregular_off" # required for iOS notification replacement
       actions:
         - action: "ACK_WARN_IRREGULAR_OFF" #to trigger our automation
-          title: "Acknowledge Alert (snooze)" #notification button text
-          data:
-            alert_entity: alert.warn_irregular_off
-            controlling_binary_sensor: binary_sensor.alert_state_warn_irregular_off
-            test_data: "hello i am a thing!!"
+          title: "Acknowledge Alert (snooze)" #notification but
 
     message: |
-      {% set my_label = "entity_list_aquarium_group_switch" %}
-      {% set controlling_binary_sensor = 'binary_sensor.alert_state_warn_irregular_off' %}
-      {% set label_list = label_entities(my_label) | select('is_state', 'off') |list %}    
+      {%- set my_label = "entity_list_aquarium_group_switch" %}
+      {%- set controlling_binary_sensor = 'binary_sensor.alert_state_warn_irregular_off' %}
+      {%- set label_list = label_entities(my_label) | select('is_state', 'off') |list %}    
       {%- for entity_id in label_list -%}
-        {% set entity_name = state_attr(entity_id,"friendly_name") %}
-        {% set entity_area_name = area_name(entity_id)  %}
-          Entity {{entity_name}} in Area: {{entity_area_name }} has been off since  {{states[entity_id].last_updated }}. Please fix immediately!!
-          Entity {{ entity_name }} off for {{ relative_time(states[entity_id].last_updated  ) }} 
-          Alerts on area {{entity_area_name}}
-      {% endfor %}
-      Triggered: {{ as_timestamp(states[controlling_binary_sensor].last_changed) | timestamp_custom('%a %d-%m-%Y %-I:%M %p')}}
-      Test self: {{ this.entity_id }} rntity: {{this.entity}}
+        {%- set entity_name = state_attr(entity_id,"friendly_name") %}
+        {%- set entity_area_name = area_name(entity_id)  %}
+        Entity {{entity_name}} in Area: {{entity_area_name }} 
+      {%- endfor %}

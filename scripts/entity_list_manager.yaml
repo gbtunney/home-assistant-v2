@@ -98,10 +98,10 @@ entity_list_manager:
                       metadata: {}
                       data:
                         name: Change Label
-                        message:
-                          "do_change_target_labels {{do_change_target_labels}} mode:
-                          {{change_label_mode}} ADD TO LIST!!{{ change_label_list|join(',')
-                          }} entity_id: script.gbt_sample_script"
+                        entity_id: script.entity_list_manager
+                        message: >
+                          "do_change_target_labels {{do_change_target_labels}} mode: {{change_label_mode}} ADD TO LIST!!{{ change_label_list|join(',')}}"
+
                     - action: homeassistant.add_label_to_entity
                       metadata: {}
                       data:
@@ -122,10 +122,9 @@ entity_list_manager:
                       metadata: {}
                       data:
                         name: Change Label
-                        message:
-                          "do_change_target_labels {{do_change_target_labels}} mode:
-                          {{change_label_mode}} REMOVE FROM LIST!!{{ change_label_list|join(',')
-                          }} entity_id: script.gbt_sample_script"
+                        message: >
+                          "do_change_target_labels {{do_change_target_labels}} mode: {{change_label_mode}} REMOVE FROM LIST!!{{ change_label_list|join(',')}}"
+                        entity_id: script.entity_list_manager
                   alias: REMOVE MODE
           alias: CHANGE  LABELED ENTITIES
     - variables:
@@ -144,7 +143,7 @@ entity_list_manager:
           metadata: {}
           data:
             name: Initial Report Label List Members
-            entity_id: script.gbt_sample_script
+            entity_id: script.entity_list_manager
             message:
               "LIST: {{full_label_id}}\nCOUNT SUMMARY: ALL: {{ labeled_entities.all
               |count}}  ON:{{\nlabeled_entities.on |count}} OFF: {{ labeled_entities.off
@@ -157,7 +156,7 @@ entity_list_manager:
           metadata: {}
           data:
             name: After Report Label List Members
-            entity_id: script.gbt_sample_script
+            entity_id: script.entity_list_manager
             message:
               "LIST: {{full_label_id}}\nAFTER COUNT SUMMARY: ALL: {{ new_labeled_entities.all
               |count}}  ON:{{\n  new_labeled_entities.on |count}} OFF:  {{ new_labeled_entities.off
@@ -170,7 +169,7 @@ entity_list_manager:
           data:
             name: Report Label Not Found
             message: "LIST: {{full_label_id}} not found"
-            entity_id: script.gbt_sample_script
+            entity_id: script.entity_list_manager
     - action: logbook.log
       metadata: {}
       data:
@@ -178,7 +177,7 @@ entity_list_manager:
         message:
           "PREFIX: {{prefix}} LABEL COUNT {{ prefixed_label_list |list|count}}
           LIST: {{ prefixed_label_list  }}"
-        entity_id: script.gbt_sample_script
+        entity_id: script.entity_list_manager
       alias: report Prefixed Labels
   description: Add an binary entity to a list
   icon: mdi:plus
