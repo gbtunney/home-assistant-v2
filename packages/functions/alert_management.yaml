@@ -83,9 +83,10 @@ alert:
     title: "ACK_WARN_IRREGULAR_OFF"
     notifiers:
       - api_dispatch_notification
+      # - func_dispatch_notification
     done_message: "clear-notification"
     data:
-      tag: "ACK_WARN_IRREGULAR_OFF" # required for iOS notification replacement
+      #tag: "ACK_WARN_IRREGULAR_OFF" # required for iOS notification replacement
       target: "iPhone,iPad,alexa,persistant"
       title: "ACK_WARN_IRREGULAR_OFF"
       actions:
