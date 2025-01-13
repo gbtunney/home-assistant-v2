@@ -1,0 +1,106 @@
+blueprint:
+  name: Alert Replacement Blueprint
+  description: "Because notify is annoying"
+  domain: automation
+  input:
+    title:
+      name: Title
+      selector:
+        text: null
+    label_id:
+      name: Label ID
+      selector:
+        text: null
+    notification_timer:
+      name: Notification Timer
+      selector:
+        target:
+          entity:
+            domain: timer
+    controlling_binary_sensor:
+      name: Controlling Binary Sensor
+      selector:
+        target:
+          entity:
+            domain:
+              - binary_sensor
+              - input_boolean
+    alert_type:
+      name: Alert Type
+      selector:
+        select:
+          options:
+            - INFO
+            - WARNING
+            - CRITICAL
+      default: INFO
+    event_name:
+      name: Event Name
+      description: ACK_WARN_IRREGULAR_OFF
+      selector:
+        text: null
+
+variables:
+  title: !input title
+  label_id: !input label_id
+  notification_timer: !input notification_timer.entity_id
+  controlling_binary_sensor: !input controlling_binary_sensor.entity_id
+  alert_type: !input alert_type
+  event_name: !input event_name
+
+trigger:
+  - platform: state
+    entity_id: !input controlling_binary_sensor.entity_id
+    to:
+      - "off"
+      - "on"
+  - platform: event
+    event_type: timer.finished
+    event_data:
+      entity_id: !input notification_timer.entity_id
+
+condition: []
+
+action:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ trigger.platform == 'event' and trigger.event.event_type == 'timer.finished' and trigger.event.data.entity_id == notification_timer }}
+        sequence:
+          - service: logbook.log
+            data:
+              name: Timer DONE
+              message: THE TIMER IS DONE
+              entity_id: "{{ notification_timer }}"
+        alias: The timer is finished
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ trigger.platform == 'state' and trigger.to_state.state == 'off' and trigger.from_state.state == 'on' }}
+        sequence:
+          - service: logbook.log
+            data:
+              name: Input Boolean OFF
+              message: The input boolean alert_enabled_warn_irregular_off is OFF
+              entity_id: "{{ controlling_binary_sensor }}"
+          - service: timer.start
+            target:
+              entity_id: "{{ notification_timer }}"
+            data:
+              duration: "00:05:00"
+        alias: Alert is active, starting the notification timer
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ trigger.platform == 'state' and trigger.to_state.state == 'on' and trigger.from_state.state == 'off' }}
+        sequence:
+          - service: logbook.log
+            data:
+              name: Input Boolean ON
+              message: stopping the timer
+              entity_id: "{{ controlling_binary_sensor }}"
+          - service: timer.cancel
+            target:
+              entity_id: "{{ notification_timer }}"
+mode: single
