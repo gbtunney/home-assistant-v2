@@ -456,3 +456,74 @@
     data: {}
     enabled: false
   mode: single
+- id: '1736553464893'
+  alias: Latest Irregular Off
+  description: ''
+  triggers:
+  - entity_id: input_boolean.alert_enabled_warn_irregular_off
+    to:
+    - 'off'
+    - 'on'
+    trigger: state
+  - event_type: timer.finished
+    event_data:
+      entity_id: timer.notification_warn_irregular_off
+    trigger: event
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: template
+        value_template: '{{ trigger.platform == ''event'' and trigger.event.event_type
+          == ''timer.finished'' and trigger.event.data.entity_id == ''timer.notification_warn_irregular_off''
+          }}
+
+          '
+      sequence:
+      - data:
+          name: Timer DONE
+          message: THE TIMER IS DONE
+          entity_id: timer.notification_warn_irregular_off
+        action: logbook.log
+      alias: The timer is finished
+    - conditions:
+      - condition: template
+        value_template: '{{ trigger.platform == ''state'' and trigger.to_state.state
+          == ''off'' and trigger.from_state.state == ''on'' }}'
+      sequence:
+      - data:
+          name: Input Boolean OFF
+          message: The input boolean alert_enabled_warn_irregular_off is OFF
+          entity_id: input_boolean.alert_enabled_warn_irregular_off
+        action: logbook.log
+      - action: timer.start
+        target:
+          entity_id: timer.notification_warn_irregular_off
+        data:
+          duration: 00:05:00
+      alias: The input boolean is off
+    - conditions:
+      - condition: template
+        value_template: '{{ trigger.platform == ''state'' and trigger.to_state.state
+          == ''on'' and trigger.from_state.state == ''off'' }}'
+      sequence:
+      - data:
+          name: Input Boolean ON
+          message: stoppinh the timer
+          entity_id: input_boolean.alert_enabled_warn_irregular_off
+        action: logbook.log
+      - action: timer.cancel
+        metadata: {}
+        data: {}
+        target:
+          entity_id: timer.notification_warn_irregular_off
+      alias: The input boolean is ""OFF (on)
+  variables:
+    label_id: entity_list_aquarium_group_switch
+    notification_timer:
+      entity_id: timer.notification_warn_irregular_off
+    controlling_binary_sensor:
+      entity_id:
+      - input_boolean.alert_enabled_warn_irregular_off
+    event_name: ACK_WARN_IRREGULAR_OFF
+  mode: single
