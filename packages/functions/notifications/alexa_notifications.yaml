@@ -134,7 +134,7 @@ script:
               domain: media_player
               integration: alexa_media
         name: Alexa Speaker
-        required: true
+        required: false
         default:
           entity_id: media_player.alexa_s_baby
       message:
@@ -206,7 +206,7 @@ script:
 
 #####
 notify:
-  - name: custom_alexa_notification
+  - name: api_custom_alexa_notification
     platform: rest
     method: POST_JSON
     resource: http://homeassistant.local:8123/api/services/script/custom_alexa_notification

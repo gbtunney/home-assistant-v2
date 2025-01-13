@@ -1,50 +1,6 @@
 #####
 # Alert & Notifications Package: Stuff
 #####
-automation:
-  - alias: "Alert: acknowledge irregular_off"
-    description: ""
-    triggers:
-      - event_type: mobile_app_notification_action
-        trigger: event
-        event_data: {}
-    conditions:
-      - condition: template
-        value_template: >-
-          {{ trigger.event.data.action is defined and trigger.event.data.action in
-          action_mapping  }}
-    actions:
-      - variables:
-          resolved:
-            alert: "{{ action_mapping[trigger.event.data.action].alert }}"
-            controlling_binary_sensor: >-
-              {{ action_mapping[trigger.event.data.action].controlling_binary_sensor
-              }}
-      - action: logbook.log
-        data:
-          name: Alert Acknowledged
-          message: >-
-            Alert: {{state_attr('resolved.alert','friendly_name')}} has been
-            acknowledged, Controlling sensor state:
-            {{states(resolved.controlling_binary_sensor)}}
-          entity_id: "{{resolved.alert}}"
-      - if:
-          - condition: template
-            value_template: >-
-              {{bool( is_state( resolved.controlling_binary_sensor ,['on']),false
-              )}}
-        then:
-          - action: alert.turn_off
-            target:
-              entity_id: "{{ resolved.controlling_binary_sensor }}"
-            metadata: {}
-            data: {}
-    mode: single
-    variables:
-      action_mapping:
-        ACK_WARN_IRREGULAR_OFF:
-          alert: alert.warn_irregular_off
-          controlling_binary_sensor: binary_sensor.alert_state_warn_irregular_off
 
 input_boolean:
   alert_enabled_warn_irregular_off:
@@ -52,8 +8,22 @@ input_boolean:
     # description: "used to supress warnings during clean event"
     icon: mdi:alert
 
+automation:
+  - id: "1736746261434"
+    alias: Gill BP New automation
+    description: ""
+    use_blueprint:
+      path: alert_replacement.yaml
+      input:
+        title: Alert Warn BP New Automation
+        label_id: entity_list_aquarium_group_switch
+        notification_timer: timer.notification_warn_irregular_off
+        controlling_binary_sensor: binary_sensor.alert_state_warn_irregular_off
+        alert_type: WARNING
+        event_name: ACK_WARN_IRREGULAR_OFF
+
 template:
-  #- use_blueprint:
+  #- use_blueprint:1
   #    path: "label_list_binary_sensor.yaml"
   #   input:
   #    label_id: entity_list_aquarium_group_switch
@@ -72,6 +42,7 @@ template:
           {{- bool( bool(my_enabled,false) and  bool( label_count | int > 0 ,false) ,false) }}
 
   #TODO: fix timestamps
+
 alert:
   warn_irregular_off:
     name: "Alert Integration: Warning - Irregular Off" #name of the alert entity
@@ -80,15 +51,16 @@ alert:
     repeat: 3
     can_acknowledge: true
     skip_first: true
-    title: "ACK_WARN_IRREGULAR_OFF"
+    #title: "ACK_WARN_IRREGULAR_OFF"
     notifiers:
       - api_dispatch_notification
-      # - func_dispatch_notification
-    done_message: "clear-notification"
+      - mobile_app_iphone
+      #- mobile_app_gillians_ipad
+    done_message: "clear_notification"
     data:
-      #tag: "ACK_WARN_IRREGULAR_OFF" # required for iOS notification replacement
-      target: "iPhone,iPad,alexa,persistant"
-      title: "ACK_WARN_IRREGULAR_OFF"
+      tag: "ACK_WARN_IRREGULAR_OFF" # required for iOS notification replacement
+      #target: "iPhone,iPad,alexa,persistant"
+      #title: "ACK_WARN_IRREGULAR_OFF"
       actions:
         - action: "ACK_WARN_IRREGULAR_OFF" #to trigger our automation
           title: "Acknowledge Alert (snooze)" #notification but
@@ -96,11 +68,9 @@ alert:
     message: |
       {%- set my_label = "entity_list_aquarium_group_switch" %}
       {%- set controlling_binary_sensor = 'binary_sensor.alert_state_warn_irregular_off' %}
-      Garage Door open for {{ relative_time(states[controlling_binary_sensor].last_changed) }} \ 
       {%- set label_list = label_entities(my_label) | select('is_state', 'off') |list %}    
       {%- for entity_id in label_list -%}
         {%- set entity_name = state_attr(entity_id,"friendly_name") %}
         {%- set entity_area_name = area_name(entity_id)  %}
         Entity {{entity_name}} in Area: {{entity_area_name }} \
       {%- endfor %}
-      Triggered: {{ as_timestamp(states[controlling_binary_sensor].last_changed) | timestamp_custom('%I:%M%p, %A %B %d') }}
