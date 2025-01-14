@@ -57,8 +57,11 @@ triggers:
   - trigger: state
     entity_id:
       - !input controlling_binary_sensor
-
     to: ["off", "on"]
+    for:
+      hours: 0
+      minutes: 4
+      seconds: 0
   - trigger: event
     event_type: timer.finished
     event_data:
@@ -88,7 +91,7 @@ action:
       - conditions:
           - condition: template
             value_template: >
-              {{ trigger.platform == 'state' and trigger.to_state.state == 'off' and trigger.from_state.state == 'on' }}
+              {{ trigger.platform == 'state' and trigger.from_state.state == 'off' and trigger.to_state.state == 'on'  }}
         sequence:
           - action: logbook.log
             data:
@@ -104,7 +107,7 @@ action:
       - conditions:
           - condition: template
             value_template: >
-              {{ trigger.platform == 'state' and trigger.to_state.state == 'on' and trigger.from_state.state == 'off' }}
+              {{ trigger.platform == 'state' and trigger.from_state.state == 'on' and  trigger.to_state.state == 'off' }}
         sequence:
           - action: logbook.log
             data:

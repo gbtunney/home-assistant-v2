@@ -22,6 +22,16 @@ automation:
         alert_type: WARNING
         event_name: ACK_WARN_IRREGULAR_OFF
 
+input_select:
+  alert_state_warn_irregular_off:
+    name: Alert State
+    options:
+      - "off"
+      - "idle"
+      - "active"
+      - "acknowledged"
+    initial: "off"
+
 template:
   #- use_blueprint:1
   #    path: "label_list_binary_sensor.yaml"
@@ -34,6 +44,7 @@ template:
   - binary_sensor:
       - name: "Alert State: Warning - Irregular Off"
         unique_id: "alert_state_warn_irregular_off"
+
         state: |
           {%- set my_enabled = bool(is_state( "input_boolean.alert_enabled_warn_irregular_off",'on') ,false) %}
           {%- set my_label = "entity_list_aquarium_group_switch" %}
@@ -42,35 +53,3 @@ template:
           {{- bool( bool(my_enabled,false) and  bool( label_count | int > 0 ,false) ,false) }}
 
   #TODO: fix timestamps
-
-alert:
-  warn_irregular_off:
-    name: "Alert Integration: Warning - Irregular Off" #name of the alert entity
-    entity_id: binary_sensor.alert_state_warn_irregular_off
-    state: "on"
-    repeat: 3
-    can_acknowledge: true
-    skip_first: true
-    #title: "ACK_WARN_IRREGULAR_OFF"
-    notifiers:
-      - api_dispatch_notification
-      - mobile_app_iphone
-      #- mobile_app_gillians_ipad
-    done_message: "clear_notification"
-    data:
-      tag: "ACK_WARN_IRREGULAR_OFF" # required for iOS notification replacement
-      #target: "iPhone,iPad,alexa,persistant"
-      #title: "ACK_WARN_IRREGULAR_OFF"
-      actions:
-        - action: "ACK_WARN_IRREGULAR_OFF" #to trigger our automation
-          title: "Acknowledge Alert (snooze)" #notification but
-
-    message: |
-      {%- set my_label = "entity_list_aquarium_group_switch" %}
-      {%- set controlling_binary_sensor = 'binary_sensor.alert_state_warn_irregular_off' %}
-      {%- set label_list = label_entities(my_label) | select('is_state', 'off') |list %}    
-      {%- for entity_id in label_list -%}
-        {%- set entity_name = state_attr(entity_id,"friendly_name") %}
-        {%- set entity_area_name = area_name(entity_id)  %}
-        Entity {{entity_name}} in Area: {{entity_area_name }} \
-      {%- endfor %}
