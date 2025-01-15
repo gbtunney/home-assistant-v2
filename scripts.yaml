@@ -239,32 +239,61 @@ new_script:
   sequence:
   - variables:
       test_me: '{{state_picker | list}}'
+      pre_notification_timer: '{{notification_timer}}'
+      my_notification_timer: '{{  ([pre_notification_timer ] if pre_notification_timer
+        is string else pre_notification_timer) |list }}'
+      inner: '{{ pre_notification_timer[0].entity_id if pre_notification_timer is
+        list else pre_notification_timer.entity_id }}'
+      pre_controlling_binary_sensor: '{{controlling_binary_sensor}}'
+      my_controlling_binary_sensor: '{{ [pre_controlling_binary_sensor] if pre_controlling_binary_sensor
+        is  string else pre_controlling_binary_sensor }}'
+      controlling_binary_sensor_single: '{{ pre_controlling_binary_sensor[0].entity_id
+        if pre_controlling_binary_sensor is list else pre_controlling_binary_sensor.entity_id
+        }}'
   fields:
+    title:
+      selector:
+        text:
+      required: true
+      name: Title
     label_id:
       selector:
         text:
       required: true
       name: Label ID
-    unique_id:
+    notification_timer:
+      selector:
+        target:
+          entity:
+            domain:
+            - timer
+      name: Notification Timer
+      required: true
+    controlling_binary_sensor:
+      selector:
+        target:
+          entity:
+            domain:
+            - binary_sensor
+            - input_boolean
+      name: Controlling Binary Sensor
+      required: true
+    event_name:
       selector:
         text:
+      name: Event Name
+      description: ACK_WARN_IRREGULAR_OFF
       required: true
-      name: Unique ID
-    state_picker:
+      default: ACK_WARN_IRREGULAR_OFF
+    alert_type:
       selector:
         select:
-          multiple: true
           options:
-          - 'on'
-          - 'off'
-          - unavailable
-          - unknown
-      required: true
-      name: State Picker
-    field:
-      selector:
-        state:
-          entity_id: switch.10g_m_pumps_heaters
+          - INFO
+          - WARNING
+          - CRITICAL
+      name: Alert Type
+      default: INFO
 notification_dispatcher_ui:
   sequence:
   - variables:
@@ -302,17 +331,13 @@ notification_dispatcher_ui:
       value_template: '{% if ''persistant'' in notification_channel %}true{% else
         %}false{% endif %}'
     then:
-    - action: persistent_notification.create
+    - action: script.custom_persistant_notification
       metadata: {}
       data:
         message: '{{message}}'
-        notification_id: '{{persistant_id}}'
-        title: '{% if critical |int  == 1 %}CRITICAL : {% else %}{% endif %}{% if
-          title is
-
-          defined %}{{ title }}{% else %}{% endif %}
-
-          '
+        title: '{{title}}'
+        bool_critical: '{{bool_critical}}'
+        mobile_callback: '{{mobile_callback}}'
     enabled: true
   - alias: If iPhone selected
     if:
@@ -531,20 +556,480 @@ timer_test_new_script:
   description: ''
 api_adapter_notification_dispatcher:
   sequence:
-  - variables:
-      trying_title: '{{title}}'
   - alias: Set up variables
     variables:
       target_notification_channel: '{{notification_channel_list.split('','') }}'
       notification_channel_count: '{{target_notification_channel |  list | count }}'
       action_callback: '{{callback}}'
+    enabled: false
   - action: script.notification_dispatcher_ui
     metadata: {}
     data:
       message: '{{message}}'
-      notification_channel: '{{target_notification_channel}}'
-      mobile_callback: '{{action_callback }}'
+      notification_channel:
+      - persistant
+      - alexa
+      alexa_sound: amzn_sfx_doorbell_01
   mode: restart
   alias: API Adapter Notification Dispatcher
   description: ''
   fields: {}
+alert_replacement_script:
+  sequence:
+  - variables:
+      resolved:
+        alert_name: '{{alert_name}}'
+        label_id: '{{label_id}}'
+        controlling_timer: '{{notification_timer}}'
+        controlling_binary_sensor: '{{controlling_binary_sensor}}'
+        alert_type: '{{alert_type}}'
+        event_uid: '{{event_uid}}'
+      controlling_sensor_state: '{{ bool( is_state(resolved.controlling_binary_sensor
+        ,[''on''] ) )}}'
+      controlling_timer_state: '{{ states( resolved.controlling_timer) }}'
+      error: '{{ bool( is_state(resolved.controlling_binary_sensor ,[''unavailable'',''unknown'']
+        ),false  ) or  bool( is_state(resolved.controlling_timer,[''unavailable'',''unknown'']
+        ),false  )}}'
+  - choose:
+    - conditions:
+      - condition: template
+        value_template: '{{ bool( controlling_sensor_state,false ) }}'
+        alias: Send Notification and Start Timer
+      sequence:
+      - variables:
+          message: "{% set label_list = label_entities(resolved.label_id) | select('is_state',
+            'off') |list %}    \n{%- for entity_id in label_list -%}\n  {% set entity_name
+            = state_attr(entity_id,\"friendly_name\") %}\n  {% set entity_area_name
+            = area_name(entity_id)  %}\n    Entity {{entity_name}} in Area: {{entity_area_name
+            }} has been off since  for {{ relative_time(states[entity_id].last_updated)
+            }}. Please fix immediately!!      \n{% endfor %}\nTriggered: {{as_timestamp(states[resolved.controlling_binary_sensor].last_changed)
+            | timestamp_custom('%a %d-%m-%Y %-I:%M %p')}}\n"
+        alias: Defined MESSAGE FIELD
+      - action: script.notification_dispatcher_ui
+        metadata: {}
+        data:
+          message: '{{message}}'
+          title: '{{alert_name}}'
+          notification_channel:
+          - iPhone
+          - alexa
+          - persistant
+          sound: default
+          alexa_volume: Normal Volume
+          alexa_sound: buzzers_pistols_01
+          mobile_callback: '{{resolved.event_uid}}'
+      - alias: START TIMER IF NEEDED
+        if:
+        - condition: template
+          value_template: '{{ controlling_timer_state== ''idle'' }}'
+        then:
+        - action: logbook.log
+          data:
+            name: ALERT REPLACEMENT
+            message: 'Starting Timer: Alert controlling
+
+              {{resolved.controlling_binary_sensor}}
+
+              ({{controlling_sensor_state|upper}}) | Timer
+
+              {{resolved.controlling_timer }}
+
+              ({{controlling_timer_state|upper}})
+
+              '
+            entity_id: '{{ resolved.controlling_binary_sensor }}'
+        - action: timer.start
+          target:
+            entity_id: '{{ resolved.controlling_timer }}'
+          data:
+            duration:
+              hours: 0
+              minutes: '{{repeat_minutes|int}}'
+              seconds: 0
+      alias: If CONTROLLER IS ON, send notification, start timer if needed
+    - conditions:
+      - condition: template
+        value_template: '{{ bool( controlling_sensor_state,false ) == false and  bool(controlling_timer_state
+          in [''active'',''paused''],false) }}'
+      sequence:
+      - action: logbook.log
+        data:
+          name: ALERT REPLACEMENT
+          message: 'Canceling Timer: Alert | Controller
+
+            {{resolved.controlling_binary_sensor}}
+
+            ({{controlling_sensor_state|upper}}) | Timer
+
+            {{resolved.controlling_timer }}
+
+            ({{controlling_timer_state|upper}})
+
+            '
+          entity_id: '{{ resolved.controlling_binary_sensor }}'
+        enabled: true
+      - action: timer.cancel
+        target:
+          entity_id: '{{ resolved.controlling_timer }}'
+      - action: script.notification_dispatcher_ui
+        metadata: {}
+        data:
+          message: clear_notification
+          title: '{{alert_name}}'
+          notification_channel:
+          - iPhone
+          - alexa
+          - persistant
+          sound: default
+          alexa_volume: Normal Volume
+          alexa_sound: buzzers_pistols_01
+          mobile_callback: '{{resolved.event_uid}}'
+        alias: Clear Notification
+      alias: CONTROLLER IS OFF AND  TIMER IS ACTIVE
+    - conditions:
+      - alias: IF POSIBLE ERROR STATE
+        condition: template
+        value_template: '{{bool(error,false)}}'
+      sequence:
+      - action: logbook.log
+        data:
+          name: INSERT TITLE
+          message: Possible error state. Doc issues.
+          entity_id: '{{ resolved.controlling_binary_sensor }}'
+        enabled: true
+    enabled: true
+    default:
+    - action: logbook.log
+      data:
+        name: INSERT TITLE
+        message: MISSED ALL CATCHES, need trace.
+        entity_id: '{{ resolved.controlling_binary_sensor }}'
+      enabled: true
+  alias: Alert Replacement Script
+  description: 'The core functionality is a pairing of an alert state binary_sensor
+    and a timer entity. It then runs on a cycle and sends notifications. Todo remove
+    testing defaults. '
+  fields:
+    alert_name:
+      name: Title
+      selector:
+        text:
+      required: true
+      default: 'WARNING Alert: Irregular_off'
+    label_id:
+      name: Label ID
+      selector:
+        text:
+      required: true
+      default: entity_list_aquarium_group_switch
+    notification_timer:
+      name: Notification Timer
+      selector:
+        entity:
+          filter:
+          - domain:
+            - timer
+          multiple: false
+      default: timer.notification_warn_irregular_off
+      required: true
+    controlling_binary_sensor:
+      name: Controlling Binary Sensor
+      selector:
+        entity:
+          filter:
+          - domain:
+            - binary_sensor
+            - input_boolean
+          multiple: false
+      default: binary_sensor.alert_state_warn_irregular_off
+      required: true
+    alert_type:
+      name: Alert Type
+      selector:
+        select:
+          options:
+          - INFO
+          - WARNING
+          - CRITICAL
+          - TEST
+      default: WARNING
+      required: true
+    event_uid:
+      name: Event UID
+      description: For actionable notificcations and clearing example- ACK_WARN_IRREGULAR_OFF
+      selector:
+        text:
+      required: true
+      default: ACK_WARN_IRREGULAR_OFF
+    trigger_state:
+      selector:
+        text:
+      name: Trigger State
+      description: like alert.state="on" in alert integration exccept idk message
+        field
+    repeat_minutes:
+      selector:
+        number:
+          min: 2
+          max: 500
+          step: 1
+      name: Repeat Minutes
+      description: like "repeat" in alert integration
+      required: true
+      default: 5
+alexa_custom_notification_ui:
+  sequence:
+  - variables:
+      bool_local_mute: '{{  bool( ''Off'' if local_mute is not defined else bool(
+        local_mute,false),false) }}'
+      global_mute: '{{ bool(states(''input_boolean.bool_mute_alexa_notifications''),false)
+        }}'
+      bool_mute: '{{bool(( global_mute or local_mute ),false)}}'
+      bool_clear_message: '{{ bool((''clear_notification'' in message) ,false )}}'
+      speaker_id: '{{ target_alexa_speaker.entity_id }}'
+      previous_volume: '{{ state_attr(speaker_id,''volume_level'') }}'
+      quiet_hours: '{{bool( is_state(''binary_sensor.quiet_hours'', ''on'' ),false)}}'
+      do_volume_change: '{{ bool( volume != ''Current'', false ) or ( bool( volume
+        == ''Current'', false ) and bool(quiet_hours,false) )}}'
+      volume_float: "{% if  bool(quiet_hours,false) %}\n  {% if volume == 'Maximum
+        Volume'%}\n    0.5\n  {%- elif volume == \"Normal Volume\" -%}\n    0.35\n
+        \ {%- else -%}\n    0.35\n  {%- endif -%}\n{% else %}\n  {% if volume == 'Maximum
+        Volume'%}\n    1.0\n  {%- elif volume == \"Normal Volume\" -%}\n    .65\n
+        \ {%- else -%}\n    {{previous_volume}}\n  {%- endif -%}\n{% endif %}"
+      play_sound: '{{ false if sound is not defined or sound == ''no_sound'' else
+        true }}'
+      message_real: '"{{ message | regex_replace(find=''(\\d+)\\s*g\\s+'', replace=''\\1
+        gallon '', ignorecase=True) }}"
+
+        '
+  - alias: Clear the message if contains "clear_notification"
+    if:
+    - condition: template
+      value_template: '{{ bool( bool_clear_message,false)}}'
+    then:
+    - action: logbook.log
+      metadata: {}
+      data:
+        entity_id: '{{ speaker_id }}'
+        name: Alexa Clear_Notification
+        message: Alexa was MUTED bc the notification is being cleared.
+    else:
+    - choose:
+      - conditions:
+        - condition: template
+          value_template: '{{ bool(bool_mute,false )  }}'
+        sequence:
+        - action: logbook.log
+          metadata: {}
+          data:
+            entity_id: '{{ speaker_id }}'
+            name: Alexa Muted
+            message: 'Alexa was MUTED and is not allowed to say the following message,
+              {{ message_real }} | Sound: {{play_sound}} {{ sound }} | Volume: {{volume_float}}
+              | Quiet Hrs: {{quiet_hours}} | Prev Volume: {{previous_volume}}'
+        alias: If alexa is MUTED
+      default:
+      - if:
+        - condition: template
+          value_template: '{{ bool(do_volume_change, false)}}'
+        then:
+        - action: media_player.volume_set
+          metadata: {}
+          data:
+            volume_level: '{{ volume_float| float (0.5) }}'
+          target:
+            entity_id: '{{ speaker_id }}'
+        alias: Set temporary vol
+        enabled: true
+      - alias: play a sound!
+        if:
+        - condition: template
+          value_template: '{{ bool(play_sound , false )}}'
+        then:
+        - target:
+            entity_id: '{{ speaker_id }}'
+          data:
+            media_content_type: sound
+            media_content_id: '{{ sound }}'
+          action: media_player.play_media
+      - action: notify.alexa_media
+        metadata: {}
+        data:
+          target: '{{speaker_id}}'
+          message: '{{message_real}}'
+        enabled: true
+        alias: send notification, replace 'g' with gallon
+      - alias: 'Restore orig. volume '
+        if:
+        - condition: template
+          value_template: '{{ bool(do_volume_change, false)}}'
+        then:
+        - action: media_player.volume_set
+          metadata: {}
+          data:
+            volume_level: '{{   previous_volume | float (0.5) }}'
+          target:
+            entity_id: '{{ speaker_id }}'
+      - alias: play sound again
+        if:
+        - condition: template
+          value_template: '{{ bool(play_sound , false )}}'
+        then:
+        - target:
+            entity_id: '{{ speaker_id }}'
+          data:
+            media_content_type: sound
+            media_content_id: '{{ sound }}'
+          action: media_player.play_media
+      - action: logbook.log
+        metadata: {}
+        data:
+          entity_id: '{{ speaker_id }}'
+          name: Alexa Notification Dispatched
+          message: 'Alexa was dispatched to say the following message, {{ message_real
+            }} | Sound: {{play_sound}} {{ sound }} | Volume: {{volume_float}} | Quiet
+            Hrs: {{quiet_hours}} | Prev Volume: {{previous_volume}} '
+  alias: Alexa Custom Notification ui
+  description: Send an alexa notification with louder volume. Respects a 'quiet hours'
+    policy
+  fields:
+    target_alexa_speaker:
+      selector:
+        target:
+          entity:
+            domain: media_player
+            integration: alexa_media
+      name: Alexa Speaker
+      required: false
+      default:
+        entity_id: media_player.alexa_s_baby
+    message:
+      selector:
+        text:
+      name: Message
+      default: 'No message set. '
+      required: true
+    volume:
+      selector:
+        select:
+          options:
+          - Maximum Volume
+          - Normal Volume
+          - Current
+      description: If it is quiet hours, vol will only be set to .5 max, and .2 for
+        same
+      default: Normal Volume
+      required: true
+      name: Volume
+    sound:
+      selector:
+        select:
+          options:
+          - amzn_sfx_doorbell_chime_01
+          - bell_02
+          - buzzers_pistols_01
+          - amzn_sfx_church_bell_1x_02
+          - amzn_sfx_doorbell_01
+          - amzn_sfx_doorbell_chime_01
+          - amzn_sfx_doorbell_chime_02
+          - christmas_05
+          - horror_10
+          - air_horn_03
+          - boing_01
+          - boing_03
+          - camera_01
+          - squeaky_12
+          - clock_01
+          - amzn_sfx_trumpet_bugle_04
+          - amzn_sfx_cat_meow_1x_01
+          - amzn_sfx_dog_med_bark_1x_02
+          - amzn_sfx_lion_roar_02
+          - amzn_sfx_rooster_crow_01
+          - amzn_sfx_wolf_howl_02
+          - futuristic_10
+          - amzn_sfx_scifi_engines_on_02
+          - amzn_sfx_scifi_alarm_04
+          - amzn_sfx_scifi_sheilds_up_01
+          - amzn_sfx_scifi_alarm_01
+          - zap_01
+          - amzn_sfx_crowd_applause_01
+          - amzn_sfx_large_crowd_cheer_01
+      name: Sound
+      description: Be annoying!!
+    local_mute:
+      selector:
+        select:
+          options:
+          - 'On'
+          - 'Off'
+      name: Local Mute
+      description: Mute for testing purposes. Global alexa mute entity is input_boolean.bool_mute_alexa_notifications
+  icon: mdi:bullhorn-outline
+custom_persistant_notification:
+  sequence:
+  - variables:
+      persistant_id: '{{ mobile_callback if (mobile_callback is defined ) else ''''
+        }}'
+      critical: '{{1 if (bool_critical is defined and bool_critical == ''ON'') else
+        0 | int}}'
+      bool_clear_message: '{{ bool((''clear_notification'' in message) ,false )}}'
+  - choose:
+    - conditions:
+      - condition: template
+        value_template: '{{ bool( bool_clear_message == false,false )}}'
+      sequence:
+      - action: persistent_notification.create
+        metadata: {}
+        data:
+          message: '{{message}}'
+          notification_id: '{{persistant_id}}'
+          title: '{% if critical |int  == 1 %}CRITICAL : {% else %}{% endif %}{% if
+            title is
+
+            defined %}{{ title }}{% else %}{% endif %}
+
+            '
+      alias: Create Persistent Notification
+    - conditions:
+      - condition: template
+        value_template: '{{ bool(bool_clear_message,false)}}'
+        alias: Clear Persistent Notification
+      sequence:
+      - action: persistent_notification.dismiss
+        metadata: {}
+        data:
+          notification_id: '{{persistant_id}}'
+      - action: logbook.log
+        metadata: {}
+        data:
+          name: PERSISTENT NOTIFICATION CLEARED
+          message: The {{persistant_id}} message is being cleared!
+  alias: Custom Persistent Notification
+  description: ''
+  fields:
+    message:
+      selector:
+        text:
+      name: Message
+      required: true
+      description: Required!
+      default: no message set
+    title:
+      selector:
+        text:
+      name: Title
+      required: false
+    bool_critical:
+      selector:
+        select:
+          options:
+          - 'ON'
+          - 'OFF'
+      name: Critical
+      required: false
+    mobile_callback:
+      selector:
+        text:
+      name: Mobile Callback
+      description: Callback id for mobile buttons, also being used for persistant
+        notification id

@@ -363,99 +363,6 @@
     target:
       entity_id: input_datetime.ha_last_start
   mode: single
-- id: '1736126771525'
-  alias: 'Notify: acknowledge test alert'
-  description: ''
-  triggers:
-  - event_type: mobile_app_notification_action
-    event_data:
-      action: okalerttest
-    trigger: event
-  conditions: []
-  actions:
-  - action: alert.turn_off
-    metadata: {}
-    data: {}
-    target:
-      entity_id: alert.aquarium_off_info_alert_active
-  - delay:
-      hours: 0
-      minutes: 5
-      seconds: 0
-  - action: alert.turn_on
-    data: {}
-    target:
-      entity_id: alert.aquarium_off_info_alert_active
-  mode: single
-- id: '1736226197854'
-  alias: 'Alert: acknowledge irregular_off UI'
-  description: ''
-  triggers:
-  - event_type: mobile_app_notification_action
-    trigger: event
-    event_data: {}
-  conditions:
-  - condition: template
-    value_template: '{{ trigger.event.data.action is defined and trigger.event.data.action
-      in action_mapping  }}'
-  actions:
-  - variables:
-      resolved:
-        alert: '{{ action_mapping[trigger.event.data.action].alert }}'
-        controlling_binary_sensor: '{{ action_mapping[trigger.event.data.action].controlling_binary_sensor
-          }}'
-  - action: logbook.log
-    data:
-      name: Alert Acknowledged
-      message: 'Alert: {{state_attr(''resolved.alert'',''friendly_name'')}} has been
-        acknowledged, Controlling sensor state: {{states(resolved.controlling_binary_sensor)}}'
-      entity_id: '{{resolved.alert}}'
-  - if:
-    - condition: template
-      value_template: '{{bool( is_state( resolved.controlling_binary_sensor ,[''on'']),false
-        )}}'
-    then:
-    - action: alert.turn_off
-      target:
-        entity_id: '{{ resolved.alert }}'
-      metadata: {}
-      data: {}
-  mode: single
-  variables:
-    action_mapping:
-      ACK_WARN_IRREGULAR_OFF:
-        alert: alert.warn_irregular_off
-        controlling_binary_sensor: binary_sensor.alert_state_warn_irregular_off
-- id: '1736498582544'
-  alias: Timer Test
-  description: ''
-  triggers:
-  - trigger: state
-    entity_id:
-    - timer.the_test_timer_alert
-    enabled: false
-  - trigger: event
-    event_type: timer.restarted
-    event_data:
-      entity_id: timer.the_test_timer_alert
-  conditions: []
-  actions:
-  - action: logbook.log
-    metadata: {}
-    data:
-      name: Timer testing
-      message: 'Trying to trigger '
-  - action: timer.cancel
-    metadata: {}
-    data: {}
-    target:
-      entity_id: timer.the_test_timer_alert
-    enabled: false
-  - action: timer.set_duration
-    metadata: {}
-    data: {}
-    enabled: false
-  mode: single
 - id: '1736553464893'
   alias: Latest Irregular Off
   description: ''
@@ -527,3 +434,134 @@
       - input_boolean.alert_enabled_warn_irregular_off
     event_name: ACK_WARN_IRREGULAR_OFF
   mode: single
+- id: '1736734609929'
+  alias: Mobile App acknowledge push notification UI
+  description: ''
+  triggers:
+  - event_type: mobile_app_notification_action
+    trigger: event
+    event_data: {}
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.event.data.action is defined and trigger.event.data.action
+      in action_mapping  }}'
+  actions:
+  - variables:
+      resolved:
+        alert: '{{ action_mapping[trigger.event.data.action].alert }}'
+        controlling_binary_sensor: '{{ action_mapping[trigger.event.data.action].controlling_binary_sensor}}'
+        controlling_timer: '{{ action_mapping[trigger.event.data.action].controlling_timer}}'
+      controlling_sensor_state: '{{ bool( is_state(resolved.controlling_binary_sensor
+        ,[''on''] ) )}}'
+      controlling_timer_state: '{{ states( resolved.controlling_timer) }}'
+      error: '{{ bool( is_state(resolved.controlling_binary_sensor ,[''unavailable'',''unknown'']
+        ),false  ) or  bool( is_state(resolved.controlling_timer,[''unavailable'',''unknown'']
+        ),false  )}}'
+  - if:
+    - condition: template
+      value_template: '{{bool( is_state( resolved.controlling_binary_sensor ,[''on'']),false
+        )}}'
+    then:
+    - action: timer.pause
+      metadata: {}
+      data: {}
+      target:
+        entity_id: '{{resolved.controlling_timer}}'
+    - action: logbook.log
+      data:
+        name: ALERT REPLACEMENT ACKNOWLEDGE
+        message: 'Pausing Timer: Alert has been acknowledged. Controlling sensor {{resolved.controlling_binary_sensor}}
+
+          ({{controlling_sensor_state|upper}}) | Timer
+
+          {{resolved.controlling_timer }}
+
+          ({{controlling_timer_state|upper}})
+
+          '
+        entity_id: '{{ resolved.controlling_binary_sensor }}'
+      enabled: true
+    else:
+    - action: timer.cancel
+      metadata: {}
+      data: {}
+      target:
+        entity_id: '{{resolved.controlling_timer}}'
+    - action: logbook.log
+      data:
+        name: ALERT REPLACEMENT ACKNOWLEDGE
+        message: 'Canceling Timer:  Alert has been canceled via acknowledge script
+          | Controller
+
+          {{resolved.controlling_binary_sensor}}
+
+          ({{controlling_sensor_state|upper}}) | Timer
+
+          {{resolved.controlling_timer }}
+
+          ({{controlling_timer_state|upper}})
+
+          '
+        entity_id: '{{ resolved.controlling_binary_sensor }}'
+      enabled: true
+  mode: single
+  variables:
+    action_mapping:
+      ACK_WARN_IRREGULAR_OFF:
+        alert: alert.warn_irregular_off
+        controlling_timer: timer.notification_warn_irregular_off
+        controlling_binary_sensor: binary_sensor.alert_state_warn_irregular_off
+- id: '1736748943979'
+  alias: Gill BP New BK UI
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.alert_state_warn_irregular_off
+    to: 'on'
+    from: 'off'
+    for:
+      hours: 0
+      minutes: 2
+      seconds: 0
+  - trigger: state
+    entity_id:
+    - binary_sensor.alert_state_warn_irregular_off
+    to: 'off'
+    from: 'on'
+    for:
+      hours: 0
+      minutes: 2
+      seconds: 0
+  - trigger: event
+    event_type: timer.finished
+    event_data:
+      entity_id: timer.notification_warn_irregular_off
+  conditions: []
+  actions:
+  - variables:
+      my_trigger: '{{trigger}}'
+      my_platform: '{{trigger.platform }}'
+      my_event: '{{trigger.event }}'
+      my_timer: '{{notification_timer}}'
+      newevent: '{{trigger.from_state}}'
+      newqevent: '{{trigger.to_state}}'
+      timerstatus: '{{ states(notification_timer) }}'
+  - action: script.alert_replacement_script
+    metadata: {}
+    data:
+      alert_name: 'WARNING Alert: Irregular_off'
+      label_id: entity_list_aquarium_group_switch
+      notification_timer: timer.notification_warn_irregular_off
+      controlling_binary_sensor: binary_sensor.alert_state_warn_irregular_off
+      alert_type: WARNING
+      event_uid: ACK_WARN_IRREGULAR_OFF
+      repeat_minutes: 5
+  mode: single
+  variables:
+    title: Alert Warn BP New Automation
+    label_id: entity_list_aquarium_group_switch
+    notification_timer: timer.notification_warn_irregular_off
+    controlling_binary_sensor: binary_sensor.alert_state_warn_irregular_off
+    alert_type: WARNING
+    event_name: ACK_WARN_IRREGULAR_OFF
