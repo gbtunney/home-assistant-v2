@@ -1,0 +1,28 @@
+#timer.notification_warn_irregular_off
+
+timer:
+  othhernotification_warn_tuya_disconnect:
+    duration: "00:25:00"
+
+template:
+  - use_blueprint:
+      path: blueprints/template/inverted_binary_sensor.yaml
+      name: "THIS IS A invert LIGHT"
+      input:
+        reference_entity: binary_sensor.bathroom_light_status
+homeassistant:
+  packages:
+    testme:
+      template:
+        - use_blueprint:
+            path: blueprints/template/inverted_binary_sensor.yaml
+            name: "THIS IS A invert LIGHT"
+            input:
+              reference_entity: binary_sensor.bathroom_light_status
+      use_blueprint:
+        path: label_list_binary_sensor.yaml
+        input:
+          label_id: entity_list_tuya_connectivity_status
+          unique_id: notification_warn_tuya_disconnect
+          state_picker: ["off"]
+          name: Alert State Warn Tuya Disconnect

@@ -1,0 +1,77 @@
+#####
+# Notifications Package: Persistant
+#####
+
+script:
+  custom_persistant_notification:
+    sequence:
+      - variables:
+          persistant_id:
+            "{{ mobile_callback if (mobile_callback is defined ) else ''
+            }}"
+          critical:
+            "{{1 if (bool_critical is defined and bool_critical == 'ON') else
+            0 | int}}"
+          bool_clear_message: "{{ bool(('clear_notification' in message) ,false )}}"
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ bool( bool_clear_message == false,false )}}"
+            sequence:
+              - action: persistent_notification.create
+                metadata: {}
+                data:
+                  message: "{{message}}"
+                  notification_id: "{{persistant_id}}"
+                  title:
+                    "{% if critical |int  == 1 %}CRITICAL : {% else %}{% endif %}{% if
+                    title is
+
+                    defined %}{{ title }}{% else %}{% endif %}
+
+                    "
+            alias: Create Persistent Notification
+          - conditions:
+              - condition: template
+                value_template: "{{ bool(bool_clear_message,false)}}"
+                alias: Clear Persistent Notification
+            sequence:
+              - action: persistent_notification.dismiss
+                metadata: {}
+                data:
+                  notification_id: "{{persistant_id}}"
+              - action: logbook.log
+                metadata: {}
+                data:
+                  name: PERSISTENT NOTIFICATION CLEARED
+                  message: The {{persistant_id}} message is being cleared!
+    alias: Custom Persistent Notification
+    description: ""
+    fields:
+      message:
+        selector:
+          text:
+        name: Message
+        required: true
+        description: Required!
+        default: no message set
+      title:
+        selector:
+          text:
+        name: Title
+        required: false
+      bool_critical:
+        selector:
+          select:
+            options:
+              - "ON"
+              - "OFF"
+        name: Critical
+        required: false
+      mobile_callback:
+        selector:
+          text:
+        name: Mobile Callback
+        description:
+          Callback id for mobile buttons, also being used for persistant
+          notification id
