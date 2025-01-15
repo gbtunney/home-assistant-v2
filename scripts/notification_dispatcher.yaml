@@ -2,21 +2,31 @@
 # SCRIPTS: Notification Dispatcher
 #####
 notification_dispatcher:
-  alias: Notification Dispatcher
   sequence:
     - variables:
-        critical: "{{1 if (bool_critical is defined and bool_critical == 'ON') else 0 | int}}"
-        alexa_volume_level:
-          "{%- if alexa_volume is not defined -%}\n  {%- if critical |int
-          == 1 -%}\n    Maximum Volume\n  {%- else -%}\n    Normal Volume\n  {%-
-          endif -%}\n{%- else -%}\n  {{ alexa_volume }}\n{%- endif -%}\n"
+        callback_action:
+          - action: "{{mobile_callback | default('')}}"
+            title: Acknowledge Alert (snooze)
+        persistant_id: "{{ mobile_callback if (mobile_callback is defined ) else '' }}"
+        actions: "{{[] if (mobile_callback is not defined ) else callback_action}}"
+        critical: >-
+          {{1 if (bool_critical is defined and bool_critical == 'ON') else 0 |
+          int}}
+        alexa_volume_level: |
+          {%- if alexa_volume is not defined -%}
+            {%- if critical |int == 1 -%}
+              Maximum Volume
+            {%- else -%}
+              Normal Volume
+            {%- endif -%}
+          {%- else -%}
+            {{ alexa_volume }}
+          {%- endif -%}
         sound: "{{ 'no_sound' if alexa_sound is not defined else alexa_sound }}"
     - alias: If alexa selected
       if:
         - condition: template
-          value_template:
-            "{% if 'alexa' in notification_channel %}true{% else %}false{%
-            endif %}"
+          value_template: "{% if 'alexa' in notification_channel %}true{% else %}false{% endif %}"
       then:
         - action: script.custom_alexa_notification
           metadata: {}
@@ -31,24 +41,24 @@ notification_dispatcher:
     - alias: If persistant selected
       if:
         - condition: template
-          value_template:
-            "{% if 'persistant' in notification_channel %}true{% else
-            %}false{% endif %}"
+          value_template: >-
+            {% if 'persistant' in notification_channel %}true{% else %}false{%
+            endif %}
       then:
-        - action: persistent_notification.create
+        - action: script.custom_persistant_notification
           metadata: {}
           data:
             message: "{{message}}"
-            title:
-              "{% if critical |int  == 1 %}CRITICAL : {% else %}{% endif %}{%
-              if title is defined %}{{ title }}{% else %}{% endif %}"
+            title: "{{title}}"
+            bool_critical: "{{bool_critical}}"
+            mobile_callback: "{{mobile_callback}}"
       enabled: true
     - alias: If iPhone selected
       if:
         - condition: template
-          value_template:
-            "{% if 'iPhone' in notification_channel %}true{% else %}false{%
-            endif %}"
+          value_template: >-
+            {% if 'iPhone' in notification_channel %}true{% else %}false{% endif
+            %}
       then:
         - action: notify.mobile_app_iphone
           metadata: {}
@@ -56,6 +66,8 @@ notification_dispatcher:
             message: "{{ message }}"
             title: "{{ title }}"
             data:
+              actions: "{{actions}}"
+              tag: "{{persistant_id}}"
               push:
                 sound:
                   name: "{{ sound | default('default') }}"
@@ -64,9 +76,7 @@ notification_dispatcher:
     - alias: If iPad selected
       if:
         - condition: template
-          value_template:
-            "{% if 'iPad' in notification_channel %}true{% else %}false{%
-            endif %}"
+          value_template: "{% if 'iPad' in notification_channel %}true{% else %}false{% endif %}"
       then:
         - action: notify.mobile_app_gillians_ipad
           metadata: {}
@@ -74,6 +84,7 @@ notification_dispatcher:
             message: "{{ message }}"
             title: "{{ title }}"
             data:
+              actions: "{{actions}}"
               push:
                 sound:
                   name: "{{ sound | default('default') }}"
@@ -82,9 +93,9 @@ notification_dispatcher:
     - alias: If macBook selected
       if:
         - condition: template
-          value_template:
-            "{% if 'macBook' in notification_channel %}true{% else %}false{%
-            endif %}"
+          value_template: >-
+            {% if 'macBook' in notification_channel %}true{% else %}false{% endif
+            %}
       then:
         - action: notify.mobile_app_gillians_macbook_pro_624
           metadata: {}
@@ -101,44 +112,41 @@ notification_dispatcher:
       if:
         - alias: "note:  email title == subject. Inserts critical warning in subject"
           condition: template
-          value_template:
-            "{% if 'email' in notification_channel %}true{% else %}false{%
-            endif %}"
+          value_template: "{% if 'email' in notification_channel %}true{% else %}false{% endif %}"
       then:
         - action: notify.gbtunney_gmail_com
           metadata: {}
           data:
             message: "{{message}}"
-            title:
-              "{% if critical |int == 1 %}CRITICAL {% else %}{% endif %}Notification
-              from Homeassistant{% if title is defined %}: {{ title }}{% else %}{% endif
-              %}"
+            title: >-
+              {% if critical |int == 1 %}CRITICAL {% else %}{% endif
+              %}Notification from Homeassistant{% if title is defined %}: {{ title
+              }}{% else %}{% endif %}
             target: "{{ email_targets }}"
       enabled: true
     - alias: If sms selected
       if:
         - condition: template
-          value_template:
-            "{% if 'sms' in notification_channel %}true{% else %}false{%
-            endif %}"
+          value_template: "{% if 'sms' in notification_channel %}true{% else %}false{% endif %}"
           alias: "note: sms does not have a title so it inserts it before message"
       then:
         - action: notify.gbtunney_gmail_com
           metadata: {}
           data:
-            message:
-              "{% if critical|int == 1 %}CRITICAL {% else %}{% endif %}Notification
-              from Homeassistant: {% if title is defined %}{{ title }} :{% else %}{% endif
-              %}{{ message }}"
+            message: >-
+              {% if critical|int == 1 %}CRITICAL {% else %}{% endif %}Notification
+              from Homeassistant: {% if title is defined %}{{ title }} :{% else
+              %}{% endif %}{{ message }}
             title: "{{ title }}"
             target: "{{ sms_targets }}"
       enabled: true
+  alias: Notification Dispatcher
   description: Send to multiple notification types
   icon: mdi:bullhorn-variant-outline
   fields:
     message:
       selector:
-        text:
+        text: null
       name: Message
       required: true
       description: Required!
@@ -164,7 +172,7 @@ notification_dispatcher:
         - persistant
     title:
       selector:
-        text:
+        text: null
       name: Title
       required: false
     bool_critical:
@@ -177,11 +185,11 @@ notification_dispatcher:
       required: false
     sound:
       selector:
-        text:
+        text: null
       name: Sound
-      description:
-        "To get sound: go to settings > companion app > notification >
-        system and click copy."
+      description: >-
+        To get sound: go to settings > companion app > notification > system and
+        click copy.
       required: false
       default: default
     sms_targets:
@@ -209,9 +217,7 @@ notification_dispatcher:
             - Maximum Volume
             - Normal Volume
             - Current
-      description:
-        If it is quiet hours, vol will only be set to .5 max, and .2 for
-        same
+      description: If it is quiet hours, vol will only be set to .5 max, and .2 for same
       name: Override Alexa Volume
     alexa_sound:
       selector:
@@ -248,3 +254,10 @@ notification_dispatcher:
             - amzn_sfx_large_crowd_cheer_01
       name: Alexa Sound
       description: "Be annoying!! TODO: fix this in script doesnt work"
+    mobile_callback:
+      selector:
+        text: null
+      name: Mobile Callback
+      description: >-
+        Callback id for mobile buttons, also being used for persistant
+        notification id
