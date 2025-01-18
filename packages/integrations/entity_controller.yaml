@@ -1,0 +1,9 @@
+#entity_controller:
+#fake_alert:
+#  sensor_type: duration
+# sensors:
+#    - binary_sensor.ffmpeg_motion_detection_camera_1
+# entities:
+#    - light.bedroom_string_light_socket_1
+#   delay: 120
+{}

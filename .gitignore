@@ -194,7 +194,7 @@ production_auth.json
 OZW_Log.txt
 www
 .esphome
-
+cozylife_getconfig.py
 snapshots
 storage
 # Scratch Files

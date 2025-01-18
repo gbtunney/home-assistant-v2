@@ -4,6 +4,8 @@ domains:
   #- update
 entity_globs:
   - "switch.*g*light"
+  - "*.*clone*"
+  - "*clone*"
   #  - sensor.sun*
   # - weather.*
 entities:
