@@ -507,6 +507,10 @@
   mode: single
   variables:
     action_mapping:
+      ACK_WARN_TUYA_DISCONNECT:
+        alert: alert.warn_irregular_off
+        controlling_timer: timer.timer_warn_tuya_disconnect
+        controlling_binary_sensor: binary_sensor.alert_state_warning_tuya_disconnect
       ACK_WARN_IRREGULAR_OFF:
         alert: alert.warn_irregular_off
         controlling_timer: timer.notification_warn_irregular_off
@@ -565,3 +569,33 @@
     controlling_binary_sensor: binary_sensor.alert_state_warn_irregular_off
     alert_type: WARNING
     event_name: ACK_WARN_IRREGULAR_OFF
+- id: '1736910115749'
+  alias: BP TEST
+  description: ''
+  use_blueprint:
+    path: alert_replacement.yaml
+    input:
+      alert_name: 'Info Alert: Irregular_off'
+      label_id: entity_list_aquarium_group_switch
+      notification_timer: timer.notification_warn_irregular_off
+      controlling_binary_sensor: binary_sensor.alert_state_warn_irregular_off
+      alert_type: WARNING
+      event_uid: ACK_WARN_IRREGULAR_OFF
+      trigger_state: 'ON'
+      trigger_offset_minutes: 45
+      repeat_minutes: 45
+- id: '1736918165710'
+  alias: Auto Tuya Disconnect
+  description: ''
+  use_blueprint:
+    path: alert_replacement.yaml
+    input:
+      alert_name: warning Tuya disconnect
+      label_id: entity_list_tuya_connectivity_status
+      notification_timer: timer.timer_warn_tuya_disconnect
+      controlling_binary_sensor: binary_sensor.alert_state_warning_tuya_disconnect
+      alert_type: WARNING
+      event_uid: ACK_WARN_TUYA_DISCONNECT
+      trigger_state: 'on'
+      trigger_offset_minutes: 2
+      repeat_minutes: 5

@@ -301,20 +301,22 @@ alert_replacement_script:
         ),false  )}}'
   - choose:
     - conditions:
-      - condition: template
-        value_template: '{{ bool( controlling_sensor_state,false ) }}'
-        alias: Send Notification and Start Timer
+      - alias: Send Notification and Start Timer
+        condition: template
+        value_template: '{{ bool(controlling_sensor_state, false) and not bool(controlling_timer_state
+          in [''paused''], false) }}'
       sequence:
       - variables:
           message: "{% set label_list = label_entities(resolved.label_id) | select('is_state',
-            'off') |list %}    \n{%- for entity_id in label_list -%}\n  {% set entity_name
-            = state_attr(entity_id,\"friendly_name\") %}\n  {% set entity_area_name
-            = area_name(entity_id)  %}\n    Entity {{entity_name}} in Area: {{entity_area_name
-            }} has been off since  for {{ relative_time(states[entity_id].last_updated)
-            }}. Please fix immediately!!      \n{% endfor %}\nTriggered: {{as_timestamp(states[resolved.controlling_binary_sensor].last_changed)
-            | timestamp_custom('%a %d-%m-%Y %-I:%M %p')}}\n"
+            'off') | list %}    \n{%- for entity_id in label_list -%}\n  {% set entity_name
+            = state_attr(entity_id, \"friendly_name\") %}\n  {% set entity_area_name
+            = area_name(entity_id) %}\n  {% if entity_area_name is none %}\n    {%
+            set device_id = device_id(entity_id) %}\n    {% set entity_area_name =
+            area_name(device_id) %}\n  {% endif %}\n  Entity {{ entity_name }} in
+            Area: {{ entity_area_name }} has been off for {{ relative_time(states[entity_id].last_updated)
+            }}. Please fix immediately!!      \n{%- endfor %}\n"
         alias: Defined MESSAGE FIELD
-      - action: script.notification_dispatcher_ui
+      - action: script.notification_dispatcher
         metadata: {}
         data:
           message: '{{message}}'
@@ -380,7 +382,7 @@ alert_replacement_script:
       - action: timer.cancel
         target:
           entity_id: '{{ resolved.controlling_timer }}'
-      - action: script.notification_dispatcher_ui
+      - action: script.notification_dispatcher
         metadata: {}
         data:
           message: clear_notification
@@ -486,71 +488,3 @@ alert_replacement_script:
       description: like "repeat" in alert integration
       required: true
       default: 5
-custom_persistant_notification:
-  sequence:
-  - variables:
-      persistant_id: '{{ mobile_callback if (mobile_callback is defined ) else ''''
-        }}'
-      critical: '{{1 if (bool_critical is defined and bool_critical == ''ON'') else
-        0 | int}}'
-      bool_clear_message: '{{ bool((''clear_notification'' in message) ,false )}}'
-  - choose:
-    - conditions:
-      - condition: template
-        value_template: '{{ bool( bool_clear_message == false,false )}}'
-      sequence:
-      - action: persistent_notification.create
-        metadata: {}
-        data:
-          message: '{{message}}'
-          notification_id: '{{persistant_id}}'
-          title: '{% if critical |int  == 1 %}CRITICAL : {% else %}{% endif %}{% if
-            title is
-
-            defined %}{{ title }}{% else %}{% endif %}
-
-            '
-      alias: Create Persistent Notification
-    - conditions:
-      - condition: template
-        value_template: '{{ bool(bool_clear_message,false)}}'
-        alias: Clear Persistent Notification
-      sequence:
-      - action: persistent_notification.dismiss
-        metadata: {}
-        data:
-          notification_id: '{{persistant_id}}'
-      - action: logbook.log
-        metadata: {}
-        data:
-          name: PERSISTENT NOTIFICATION CLEARED
-          message: The {{persistant_id}} message is being cleared!
-  alias: Custom Persistent Notification
-  description: ''
-  fields:
-    message:
-      selector:
-        text:
-      name: Message
-      required: true
-      description: Required!
-      default: no message set
-    title:
-      selector:
-        text:
-      name: Title
-      required: false
-    bool_critical:
-      selector:
-        select:
-          options:
-          - 'ON'
-          - 'OFF'
-      name: Critical
-      required: false
-    mobile_callback:
-      selector:
-        text:
-      name: Mobile Callback
-      description: Callback id for mobile buttons, also being used for persistant
-        notification id

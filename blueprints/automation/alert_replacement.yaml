@@ -1,9 +1,9 @@
 blueprint:
   name: Alert Replacement Blueprint
-  description: "Because notify is annoying"
+  description: "The core functionality is a pairing of an alert state binary_sensor and a timer entity. It then runs on a cycle and sends notifications. Todo remove testing defaults. "
   domain: automation
   input:
-    title:
+    alert_name:
       name: Title
       selector:
         text: null
@@ -39,82 +39,82 @@ blueprint:
             - WARNING
             - CRITICAL
       default: INFO
-    event_name:
-      name: Event Name
-      description: ACK_WARN_IRREGULAR_OFF
+    event_uid:
+      name: Event UID
+      description: For actionable notificcations and clearing example- ACK_WARN_IRREGULAR_OFF
       selector:
         text: null
 
+    trigger_state:
+      selector:
+        text: null
+      name: Trigger State
+      description: like alert.state="on" in alert integration exccept idk message field TODO - implement
+    trigger_offset_minutes:
+      selector:
+        number:
+          min: 2
+          max: 10
+          step: 1
+      name: Trigger Offset Minutes
+
+    repeat_minutes:
+      selector:
+        number:
+          min: 2
+          max: 500
+          step: 1
+      name: Repeat Minutes
+      description: like "repeat" in alert integration
 variables:
-  title: !input title
-  label_id: !input label_id
-  notification_timer: !input notification_timer
-  controlling_binary_sensor: !input controlling_binary_sensor
-  alert_type: !input alert_type
-  event_name: !input event_name
+  bp_variables:
+    alert_name: !input alert_name
+    label_id: !input label_id
+    notification_timer: !input notification_timer
+    controlling_binary_sensor: !input controlling_binary_sensor
+    alert_type: !input alert_type
+    event_uid: !input event_uid
+    trigger_state: !input trigger_state
+    trigger_offset_minutes: !input trigger_offset_minutes
+    repeat_minutes: !input repeat_minutes
 
 triggers:
   - trigger: state
     entity_id:
       - !input controlling_binary_sensor
-    to: ["off", "on"]
+    to: "on"
+    from: "off"
     for:
       hours: 0
-      minutes: 4
+      minutes: !input trigger_offset_minutes
+      seconds: 0
+  - trigger: state
+    entity_id:
+      - !input controlling_binary_sensor
+    to: "off"
+    from: "on"
+    for:
+      hours: 0
+      minutes: !input trigger_offset_minutes
       seconds: 0
   - trigger: event
     event_type: timer.finished
     event_data:
       entity_id: !input notification_timer
-
 condition: []
 
 action:
   - variables:
-      my_trigger: "{{trigger}}"
       my_platform: "{{trigger.platform }}"
       my_event: "{{trigger.event }}"
-      newevent: "{{trigger.from_state}}"
-      newqevent: "{{trigger.to_state}}"
-  - choose:
-      - conditions:
-          - condition: template
-            value_template: >
-              {{ trigger.platform == 'event' and trigger.event.event_type == 'timer.finished' }}
-        sequence:
-          - action: logbook.log
-            data:
-              name: Timer DONE
-              message: THE TIMER IS DONE
-              entity_id: "{{ notification_timer }}"
-        alias: The timer is finished
-      - conditions:
-          - condition: template
-            value_template: >
-              {{ trigger.platform == 'state' and trigger.from_state.state == 'off' and trigger.to_state.state == 'on'  }}
-        sequence:
-          - action: logbook.log
-            data:
-              name: Input Boolean OFF
-              message: The input boolean alert_enabled_warn_irregular_off is OFF
-              entity_id: "{{ controlling_binary_sensor }}"
-          - action: timer.start
-            target:
-              entity_id: "{{ notification_timer }}"
-            data:
-              duration: "00:05:00"
-        alias: Alert is active, starting the notification timer
-      - conditions:
-          - condition: template
-            value_template: >
-              {{ trigger.platform == 'state' and trigger.from_state.state == 'on' and  trigger.to_state.state == 'off' }}
-        sequence:
-          - action: logbook.log
-            data:
-              name: Input Boolean ON
-              message: stopping the timer
-              entity_id: "{{ controlling_binary_sensor }}"
-          - action: timer.cancel
-            target:
-              entity_id: "{{ notification_timer }}"
+  - action: script.alert_replacement_script
+    metadata: {}
+    data:
+      alert_name: "{{bp_variables.alert_name}}"
+      label_id: "{{bp_variables.label_id}}"
+      notification_timer: "{{bp_variables.notification_timer}}"
+      controlling_binary_sensor: "{{bp_variables.controlling_binary_sensor}}"
+      alert_type: "{{bp_variables.alert_type}}"
+      event_uid: "{{bp_variables.event_uid}}"
+      repeat_minutes: "{{bp_variables.repeat_minutes}}"
 mode: single
