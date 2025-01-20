@@ -1,82 +1,85 @@
 llm_vision_describe_scene:
   alias: LLM Vision Describe Scene
-  description: 'LLM Vision: Describe the Camera Feed in Sentence'
+  description: "LLM Vision: Describe the Camera Feed in Sentence"
   fields:
     prompt:
       selector:
         text:
       name: prompt
       required: true
-      default: "\"Summarize what's happening in the camera feed (one sentence max).\n
+      default:
+        "\"Summarize what's happening in the camera feed (one sentence max).\n
         Don't describe the scene! If there is a person, describe what they're\n doing
         and what they look like. If they look like a courier mention that!\n If nothing
         is happening, say so.\"\n"
   sequence:
-  - variables:
-      llv_response: undefined
-  - action: llmvision.image_analyzer
-    metadata: {}
-    data:
-      include_filename: false
-      target_width: 800
-      detail: low
-      max_tokens: 100
-      temperature: 0.5
-      provider: 01JDVNFP4KWD6XERDGQ5V3TY6W
-      message: '{{ prompt }}'
-      remember: false
-      expose_images: false
-      image_file: /media/{{ states( 'input_text.url_llv')  }}
-    response_variable: llv_response
-  - action: input_text.set_value
-    metadata: {}
-    data:
-      value: '{{ llv_response }}'
-    target:
-      entity_id: input_text.llm_response
+    - variables:
+        llv_response: undefined
+    - action: llmvision.image_analyzer
+      metadata: {}
+      data:
+        include_filename: false
+        target_width: 800
+        detail: low
+        max_tokens: 100
+        temperature: 0.5
+        provider: 01JDVNFP4KWD6XERDGQ5V3TY6W
+        message: "{{ prompt }}"
+        remember: false
+        expose_images: false
+        image_file: /media/{{ states( 'input_text.url_llv')  }}
+      response_variable: llv_response
+    - action: input_text.set_value
+      metadata: {}
+      data:
+        value: "{{ llv_response }}"
+      target:
+        entity_id: input_text.llm_response
   icon: mdi:camera
 llm_car_in_driveway:
   alias: LLM Car in Driveway
   sequence:
-  - data:
-      max_tokens: 100
-      image_entity:
-      - camera.carport
-      provider: 01J99F4T99PA1XGQ4CTQS3CP8H
-      model: gpt-4o
-      target_width: 512
-      temperature: 0.5
-      detail: low
-      include_filename: false
-      message: Please check if there is a car in the driveway with the license plate
-        "<your_license_plate_number>" and respond with a JSON object. The JSON object
-        should have a single key, "car_in_driveway," which should be set to true if
-        - and only  if - there is a car with the license number provided above in
-        the  driveway and false otherwise.
-    response_variable: response
-    action: llmvision.image_analyzer
-  - choose:
-    - conditions:
-      - condition: template
-        value_template: '{{ (( response.response_text |regex_replace(find=''```json
+    - data:
+        max_tokens: 100
+        image_entity:
+          - camera.carport
+        provider: 01J99F4T99PA1XGQ4CTQS3CP8H
+        model: gpt-4o
+        target_width: 512
+        temperature: 0.5
+        detail: low
+        include_filename: false
+        message:
+          Please check if there is a car in the driveway with the license plate
+          "<your_license_plate_number>" and respond with a JSON object. The JSON object
+          should have a single key, "car_in_driveway," which should be set to true if
+          - and only  if - there is a car with the license number provided above in
+          the  driveway and false otherwise.
+      response_variable: response
+      action: llmvision.image_analyzer
+    - choose:
+        - conditions:
+            - condition: template
+              value_template:
+                "{{ (( response.response_text |regex_replace(find='```json
 
-          '', replace='''', ignorecase=False) |regex_replace(find=''
+                ', replace='', ignorecase=False) |regex_replace(find='
 
-          ```'', replace='''', ignorecase=False)  ) | from_json).car_in_driveway }}'
-        enabled: true
-      sequence:
-      - target:
-          entity_id: input_boolean.car_in_driveway
-        data: {}
-        action: input_boolean.turn_on
-    default:
-    - target:
-        entity_id: input_boolean.car_in_driveway
-      data: {}
-      action: input_boolean.turn_off
-    enabled: true
+                ```', replace='', ignorecase=False)  ) | from_json).car_in_driveway }}"
+              enabled: true
+          sequence:
+            - target:
+                entity_id: input_boolean.car_in_driveway
+              data: {}
+              action: input_boolean.turn_on
+      default:
+        - target:
+            entity_id: input_boolean.car_in_driveway
+          data: {}
+          action: input_boolean.turn_off
+      enabled: true
   mode: single
-  description: ''
+  description: ""
 llv_prompt_test:
   alias: LLV Prompt Test
   fields:
@@ -86,83 +89,85 @@ llv_prompt_test:
       name: prompt
       required: true
   sequence:
-  - metadata: {}
-    data:
-      max_tokens: 100
-      model: gpt-4o
-      provider: 01J99F4T99PA1XGQ4CTQS3CP8H
-      target_width: 1280
-      include_filename: false
-      image_entity:
-      - camera.front_door
-      - camera.garage
-      message: '{{ prompt }}'
-    response_variable: response
-    action: llmvision.image_analyzer
-  - metadata: {}
-    data:
-      cache: true
-      media_player_entity_id: media_player.entity_id
-      message: '{{response.response_text}}'
-    target:
-      entity_id: tts.piper
-    action: tts.speak
-  description: ''
+    - metadata: {}
+      data:
+        max_tokens: 100
+        model: gpt-4o
+        provider: 01J99F4T99PA1XGQ4CTQS3CP8H
+        target_width: 1280
+        include_filename: false
+        image_entity:
+          - camera.front_door
+          - camera.garage
+        message: "{{ prompt }}"
+      response_variable: response
+      action: llmvision.image_analyzer
+    - metadata: {}
+      data:
+        cache: true
+        media_player_entity_id: media_player.entity_id
+        message: "{{response.response_text}}"
+      target:
+        entity_id: tts.piper
+      action: tts.speak
+  description: ""
 bring_clothes_in_when_it_rains:
   alias: Bring Clothes in when it rains
   sequence:
-  - action: llmvision.image_analyzer
-    metadata: {}
-    data:
-      remember: false
-      include_filename: false
-      detail: low
-      max_tokens: 100
-      expose_images: false
-      temperature: 0.5
-      message: Reply with a simple number, how many pictures of artwork are hanging
-        on the wall?
-      image_entity:
-      - camera.camera_1_q5_profile1
-      model: gemini-1.5-flash
-      target_width: 512
-  - if:
-    - condition: template
-      value_template: '"{{ gemini.response_text | int > 1 }}"'
-    then:
-    - action: persistent_notification.create
+    - action: llmvision.image_analyzer
       metadata: {}
       data:
-        message: 'The clothing items were counted.  COUNT: {{ gemini.response_text
-          | int }}'
+        remember: false
+        include_filename: false
+        detail: low
+        max_tokens: 100
+        expose_images: false
+        temperature: 0.5
+        message:
+          Reply with a simple number, how many pictures of artwork are hanging
+          on the wall?
+        image_entity:
+          - camera.camera_1_q5_profile1
+        model: gemini-1.5-flash
+        target_width: 512
+    - if:
+        - condition: template
+          value_template: '"{{ gemini.response_text | int > 1 }}"'
+      then:
+        - action: persistent_notification.create
+          metadata: {}
+          data:
+            message:
+              "The clothing items were counted.  COUNT: {{ gemini.response_text
+              | int }}"
   description: ddd
   icon: mdi:weather-lightning-rainy
 llv_numeric_question:
   alias: LLV Numeric Question
   sequence:
-  - variables:
-      camera_image_file: undefined
-      test_count: 0
-  - action: script.camera_snapshot_and_upload
-    metadata: {}
-    data:
-      capture_camera_stream:
-        entity_id: '{{capture_camera_stream.entity_id }}'
-      capture_mime_type: image/png
-    response_variable: camera_image_file
-  - action: llmvision.data_analyzer
-    metadata: {}
-    data:
-      message: '{{ questions_prompt }}'
-      include_filename: false
-      target_width: 1280
-      detail: high
-      max_tokens: 5
-      temperature: 0.1
-      provider: 01JDVNFP4KWD6XERDGQ5V3TY6W
-      sensor_entity: '{{ file_path_save_target.entity_id }}'
-      image_file: '{{camera_image_file.media_rel }}'
-  description: ''
+    - variables:
+        camera_image_file: undefined
+        test_count: 0
+    - action: script.camera_snapshot_and_upload
+      metadata: {}
+      data:
+        capture_camera_stream:
+          entity_id: "{{capture_camera_stream.entity_id }}"
+        capture_mime_type: image/png
+      response_variable: camera_image_file
+    - action: llmvision.data_analyzer
+      metadata: {}
+      data:
+        message: "{{ questions_prompt }}"
+        include_filename: false
+        target_width: 1280
+        detail: high
+        max_tokens: 5
+        temperature: 0.1
+        provider: 01JDVNFP4KWD6XERDGQ5V3TY6W
+        sensor_entity: "{{ file_path_save_target.entity_id }}"
+        image_file: "{{camera_image_file.media_rel }}"
+  description: ""
   fields:
     questions_prompt:
       selector:
@@ -190,35 +195,39 @@ llv_numeric_question:
 purge_logbook_by_entiity:
   alias: Purge Logbook by Entiity
   sequence:
-  - action: recorder.purge_entities
-    metadata: {}
-    data:
-      domains:
-      - logbook
-      entity_globs: '{{target_entities.entity_id}}'
-    enabled: false
+    - action: recorder.purge_entities
+      metadata: {}
+      data:
+        domains:
+          - logbook
+        entity_globs: "{{target_entities.entity_id}}"
+      enabled: false
   fields:
     target_entities:
       selector:
         target:
       name: Target Entities to purge
       required: true
-  description: ''
+  description: ""
 new_script:
   sequence:
-  - variables:
-      test_me: '{{state_picker | list}}'
-      pre_notification_timer: '{{notification_timer}}'
-      my_notification_timer: '{{  ([pre_notification_timer ] if pre_notification_timer
-        is string else pre_notification_timer) |list }}'
-      inner: '{{ pre_notification_timer[0].entity_id if pre_notification_timer is
-        list else pre_notification_timer.entity_id }}'
-      pre_controlling_binary_sensor: '{{controlling_binary_sensor}}'
-      my_controlling_binary_sensor: '{{ [pre_controlling_binary_sensor] if pre_controlling_binary_sensor
-        is  string else pre_controlling_binary_sensor }}'
-      controlling_binary_sensor_single: '{{ pre_controlling_binary_sensor[0].entity_id
-        if pre_controlling_binary_sensor is list else pre_controlling_binary_sensor.entity_id
-        }}'
+    - variables:
+        test_me: "{{state_picker | list}}"
+        pre_notification_timer: "{{notification_timer}}"
+        my_notification_timer:
+          "{{  ([pre_notification_timer ] if pre_notification_timer
+          is string else pre_notification_timer) |list }}"
+        inner:
+          "{{ pre_notification_timer[0].entity_id if pre_notification_timer is
+          list else pre_notification_timer.entity_id }}"
+        pre_controlling_binary_sensor: "{{controlling_binary_sensor}}"
+        my_controlling_binary_sensor:
+          "{{ [pre_controlling_binary_sensor] if pre_controlling_binary_sensor
+          is  string else pre_controlling_binary_sensor }}"
+        controlling_binary_sensor_single:
+          "{{ pre_controlling_binary_sensor[0].entity_id
+          if pre_controlling_binary_sensor is list else pre_controlling_binary_sensor.entity_id
+          }}"
   fields:
     title:
       selector:
@@ -235,7 +244,7 @@ new_script:
         target:
           entity:
             domain:
-            - timer
+              - timer
       name: Notification Timer
       required: true
     controlling_binary_sensor:
@@ -243,8 +252,8 @@ new_script:
         target:
           entity:
             domain:
-            - binary_sensor
-            - input_boolean
+              - binary_sensor
+              - input_boolean
       name: Controlling Binary Sensor
       required: true
     event_name:
@@ -258,233 +267,28 @@ new_script:
       selector:
         select:
           options:
-          - INFO
-          - WARNING
-          - CRITICAL
+            - INFO
+            - WARNING
+            - CRITICAL
       name: Alert Type
       default: INFO
 api_adapter_notification_dispatcher:
   sequence:
-  - alias: Set up variables
-    variables:
-      target_notification_channel: '{{notification_channel_list.split('','') }}'
-      notification_channel_count: '{{target_notification_channel |  list | count }}'
-      action_callback: '{{callback}}'
-    enabled: false
-  - action: script.notification_dispatcher_ui
-    metadata: {}
-    data:
-      message: '{{message}}'
-      notification_channel:
-      - persistant
-      - alexa
-      alexa_sound: amzn_sfx_doorbell_01
+    - alias: Set up variables
+      variables:
+        target_notification_channel: "{{notification_channel_list.split(',') }}"
+        notification_channel_count: "{{target_notification_channel |  list | count }}"
+        action_callback: "{{callback}}"
+      enabled: false
+    - action: script.notification_dispatcher_ui
+      metadata: {}
+      data:
+        message: "{{message}}"
+        notification_channel:
+          - persistant
+          - alexa
+        alexa_sound: amzn_sfx_doorbell_01
   mode: restart
   alias: API Adapter Notification Dispatcher
-  description: ''
+  description: ""
   fields: {}
-alert_replacement_script:
-  sequence:
-  - variables:
-      resolved:
-        alert_name: '{{alert_name}}'
-        label_id: '{{label_id}}'
-        controlling_timer: '{{notification_timer}}'
-        controlling_binary_sensor: '{{controlling_binary_sensor}}'
-        alert_type: '{{alert_type}}'
-        event_uid: '{{event_uid}}'
-      controlling_sensor_state: '{{ bool( is_state(resolved.controlling_binary_sensor
-        ,[''on''] ) )}}'
-      controlling_timer_state: '{{ states( resolved.controlling_timer) }}'
-      error: '{{ bool( is_state(resolved.controlling_binary_sensor ,[''unavailable'',''unknown'']
-        ),false  ) or  bool( is_state(resolved.controlling_timer,[''unavailable'',''unknown'']
-        ),false  )}}'
-  - choose:
-    - conditions:
-      - alias: Send Notification and Start Timer
-        condition: template
-        value_template: '{{ bool(controlling_sensor_state, false) and not bool(controlling_timer_state
-          in [''paused''], false) }}'
-      sequence:
-      - variables:
-          message: "{% set label_list = label_entities(resolved.label_id) | select('is_state',
-            'off') | list %}    \n{%- for entity_id in label_list -%}\n  {% set entity_name
-            = state_attr(entity_id, \"friendly_name\") %}\n  {% set entity_area_name
-            = area_name(entity_id) %}\n  {% if entity_area_name is none %}\n    {%
-            set device_id = device_id(entity_id) %}\n    {% set entity_area_name =
-            area_name(device_id) %}\n  {% endif %}\n  Entity {{ entity_name }} in
-            Area: {{ entity_area_name }} has been off for {{ relative_time(states[entity_id].last_updated)
-            }}. Please fix immediately!!      \n{%- endfor %}\n"
-        alias: Defined MESSAGE FIELD
-      - action: script.notification_dispatcher
-        metadata: {}
-        data:
-          message: '{{message}}'
-          title: '{{alert_name}}'
-          notification_channel:
-          - iPhone
-          - alexa
-          - persistant
-          sound: default
-          alexa_volume: Normal Volume
-          alexa_sound: buzzers_pistols_01
-          mobile_callback: '{{resolved.event_uid}}'
-      - alias: START TIMER IF NEEDED
-        if:
-        - condition: template
-          value_template: '{{ controlling_timer_state== ''idle'' }}'
-        then:
-        - action: logbook.log
-          data:
-            name: ALERT REPLACEMENT
-            message: 'Starting Timer: Alert controlling
-
-              {{resolved.controlling_binary_sensor}}
-
-              ({{controlling_sensor_state|upper}}) | Timer
-
-              {{resolved.controlling_timer }}
-
-              ({{controlling_timer_state|upper}})
-
-              '
-            entity_id: '{{ resolved.controlling_binary_sensor }}'
-        - action: timer.start
-          target:
-            entity_id: '{{ resolved.controlling_timer }}'
-          data:
-            duration:
-              hours: 0
-              minutes: '{{repeat_minutes|int}}'
-              seconds: 0
-      alias: If CONTROLLER IS ON, send notification, start timer if needed
-    - conditions:
-      - condition: template
-        value_template: '{{ bool( controlling_sensor_state,false ) == false and  bool(controlling_timer_state
-          in [''active'',''paused''],false) }}'
-      sequence:
-      - action: logbook.log
-        data:
-          name: ALERT REPLACEMENT
-          message: 'Canceling Timer: Alert | Controller
-
-            {{resolved.controlling_binary_sensor}}
-
-            ({{controlling_sensor_state|upper}}) | Timer
-
-            {{resolved.controlling_timer }}
-
-            ({{controlling_timer_state|upper}})
-
-            '
-          entity_id: '{{ resolved.controlling_binary_sensor }}'
-        enabled: true
-      - action: timer.cancel
-        target:
-          entity_id: '{{ resolved.controlling_timer }}'
-      - action: script.notification_dispatcher
-        metadata: {}
-        data:
-          message: clear_notification
-          title: '{{alert_name}}'
-          notification_channel:
-          - iPhone
-          - alexa
-          - persistant
-          sound: default
-          alexa_volume: Normal Volume
-          alexa_sound: buzzers_pistols_01
-          mobile_callback: '{{resolved.event_uid}}'
-        alias: Clear Notification
-      alias: CONTROLLER IS OFF AND  TIMER IS ACTIVE
-    - conditions:
-      - alias: IF POSIBLE ERROR STATE
-        condition: template
-        value_template: '{{bool(error,false)}}'
-      sequence:
-      - action: logbook.log
-        data:
-          name: INSERT TITLE
-          message: Possible error state. Doc issues.
-          entity_id: '{{ resolved.controlling_binary_sensor }}'
-        enabled: true
-    enabled: true
-    default:
-    - action: logbook.log
-      data:
-        name: INSERT TITLE
-        message: MISSED ALL CATCHES, need trace.
-        entity_id: '{{ resolved.controlling_binary_sensor }}'
-      enabled: true
-  alias: Alert Replacement Script
-  description: 'The core functionality is a pairing of an alert state binary_sensor
-    and a timer entity. It then runs on a cycle and sends notifications. Todo remove
-    testing defaults. '
-  fields:
-    alert_name:
-      name: Title
-      selector:
-        text:
-      required: true
-      default: 'WARNING Alert: Irregular_off'
-    label_id:
-      name: Label ID
-      selector:
-        text:
-      required: true
-      default: entity_list_aquarium_group_switch
-    notification_timer:
-      name: Notification Timer
-      selector:
-        entity:
-          filter:
-          - domain:
-            - timer
-          multiple: false
-      default: timer.notification_warn_irregular_off
-      required: true
-    controlling_binary_sensor:
-      name: Controlling Binary Sensor
-      selector:
-        entity:
-          filter:
-          - domain:
-            - binary_sensor
-            - input_boolean
-          multiple: false
-      default: binary_sensor.alert_state_warn_irregular_off
-      required: true
-    alert_type:
-      name: Alert Type
-      selector:
-        select:
-          options:
-          - INFO
-          - WARNING
-          - CRITICAL
-          - TEST
-      default: WARNING
-      required: true
-    event_uid:
-      name: Event UID
-      description: For actionable notificcations and clearing example- ACK_WARN_IRREGULAR_OFF
-      selector:
-        text:
-      required: true
-      default: ACK_WARN_IRREGULAR_OFF
-    trigger_state:
-      selector:
-        text:
-      name: Trigger State
-      description: like alert.state="on" in alert integration exccept idk message
-        field
-    repeat_minutes:
-      selector:
-        number:
-          min: 2
-          max: 500
-          step: 1
-      name: Repeat Minutes
-      description: like "repeat" in alert integration
-      required: true
-      default: 5

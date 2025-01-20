@@ -2,4 +2,39 @@
 # Warning for Devices that should not be off for long period of time. (mostly aquarium stuff)
 #####
 
-{}
+automation:
+  - id: "1736910115749"
+    alias: Alert Warn Irregular Off
+    description: ""
+    use_blueprint:
+      path: alert_replacement.yaml
+      input:
+        alert_name: "Info Alert: Irregular_off"
+        label_id: entity_list_`aquarium_group_switch
+        notification_timer: timer.notification_warn_irregular_off
+        controlling_binary_sensor: binary_sensor.alert_state_warn_irregular_off
+        alert_type: WARNING
+        event_uid: ACK_WARN_IRREGULAR_OFF
+        trigger_state: "ON"
+        trigger_offset_minutes: 45
+        repeat_minutes: 45
+
+input_boolean:
+  alert_enabled_warn_irregular_off:
+    name: "Alert Enabled: Warning - Irregular Off"
+    # description: "used to supress warnings during clean event"
+    icon: mdi:alert
+
+template:
+  - binary_sensor:
+      - name: "Alert State: Warning - Irregular Off"
+        unique_id: "alert_state_warn_irregular_off"
+
+        state: |
+          {%- set my_enabled = bool(is_state( "input_boolean.alert_enabled_warn_irregular_off",'on') ,false) %}
+          {%- set my_label = "entity_list_aquarium_group_switch" %}
+          {%- set label_list = label_entities(my_label) | select('is_state', 'off') | list  %}    
+          {%- set label_count = label_list | count %}
+          {{- bool( bool(my_enabled,false) and  bool( label_count | int > 0 ,false) ,false) }}
+
+  #TODO: fix timestamps

@@ -356,7 +356,6 @@ ios-dark-mode-blue-red:
   input-hover-line-color: var(--secondary-text-color)
   codemirror-property: var(--accent-color)
 
-#
 # iOS Light Mode Theme - dark-blue
 #
 ios-light-mode-dark-blue-alternative:
