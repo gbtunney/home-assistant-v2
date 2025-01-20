@@ -1,0 +1,16 @@
+#####
+# AQUARIUM DEFAULTs
+#####
+
+# Aquarium Default Icons
+"switch.*heater*":
+  icon: mdi:heat-wave
+
+"switch.*filter*":
+  icon: mdi:air-filter
+
+"switch.*powerhead*":
+  icon: mdi:water-pump
+
+"switch.*pump*":
+  icon: mdi:water-pump

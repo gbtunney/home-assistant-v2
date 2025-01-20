@@ -1,7 +1,8 @@
-- name: "55g Pumps /Heaters YAML"
-  platform: group
-  unique_id: 55g_pumps_heatersv2
-  entities:
-    - switch.55_gallon_long_socket_2
-    - switch.55_gallon_long_socket_3
-    - switch.55_gallon_socket_4
+#- name: "55g Pumps /Heaters YAML"
+# platform: group
+# unique_id: 55g_pumps_heatersv2
+#entities:
+# - switch.55_gallon_long_socket_2
+#- switch.55_gallon_long_socket_3
+#- switch.55_gallon_socket_4
+[]

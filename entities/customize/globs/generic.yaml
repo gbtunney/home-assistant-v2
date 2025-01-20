@@ -1,0 +1,31 @@
+
+
+"switch.*light*":
+  #friendly_name: ""
+  icon: mdi:lightbulb
+
+# STATUS ( Likely to be a binary sensor )
+"*.*status*":
+  #friendly_name: ""
+  icon: mdi:check-network-outline
+  device_class: connectivity
+
+# unoccupied
+"*.*unoccupied*":
+  icon: mdi:beaker-question-outline
+
+# unoccupied
+"*.*alert*":
+  icon: mdi:alert-outline
+
+"*.*dummy*":
+  icon: mdi:ab-testing
+
+"*.*test*":
+  icon: mdi:ab-testing
+
+"camera.*":
+  icon: mdi:camera-outline
+
+"*.*profile*":
+  icon: mdi:camera-outline

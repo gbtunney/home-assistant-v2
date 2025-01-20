@@ -39,6 +39,8 @@ wifi:
 captive_portal:
 
 esp32_ble_tracker:
+  scan_parameters:
+    active: false
 
 bluetooth_proxy:
   active: true
@@ -49,10 +51,6 @@ binary_sensor:
     name: "${atc_1_friendly_name} Presence"
 
 sensor:
-  - platform: ble_rssi
-    mac_address: ${atc_1_mac}
-    name: "${atc_1_friendly_name} RSSI value"
-
   ### =====ESP32 BLE Tracker Wifi Signal Strength===== ###
   - platform: wifi_signal # Reports the WiFi signal strength/RSSI in dB\
     name: "${proxy_friendly_name} WiFi Signal dB"
