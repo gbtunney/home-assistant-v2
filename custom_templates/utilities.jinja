@@ -1,0 +1,12 @@
+{% macro get_hex_color(entity_id, default_color='ffffff') -%}
+  {%- set rgb_color = state_attr(entity_id, 'rgb_color') -%}
+  {%- if rgb_color -%}
+    {%- set red = '%02x' % rgb_color[0] -%}
+    {%- set green = '%02x' % rgb_color[1] -%}
+    {%- set blue = '%02x' % rgb_color[2] -%}
+    {%- set hex_color = red + green + blue -%}
+    #{{ hex_color }}
+  {%- else -%}
+    #{{ default_color }}
+  {%- endif -%}
+{%- endmacro %}
