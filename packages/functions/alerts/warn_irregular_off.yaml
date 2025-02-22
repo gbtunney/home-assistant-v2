@@ -29,12 +29,68 @@ template:
   - binary_sensor:
       - name: "Alert State: Warning - Irregular Off"
         unique_id: "alert_state_warn_irregular_off"
-
         state: |
-          {%- set my_enabled = bool(is_state( "input_boolean.alert_enabled_warn_irregular_off",'on') ,false) %}
-          {%- set my_label = "entity_list_aquarium_group_switch" %}
-          {%- set label_list = label_entities(my_label) | select('is_state', 'off') | list  %}    
+          {%- set enabled_entity = "input_boolean.alert_enabled_warn_irregular_off" %}
+          {%- set label_id = "entity_list_aquarium_group_switch" %}
+          {%- set my_enabled = bool(is_state(enabled_entity, 'on'), false) %}
+          {%- set my_label = label_id %}
+          {%- set label_list = label_entities(my_label) | select('is_state', 'off') | list %}
           {%- set label_count = label_list | count %}
-          {{- bool( bool(my_enabled,false) and  bool( label_count | int > 0 ,false) ,false) }}
-
-  #TODO: fix timestamps
+          {{- bool(bool(my_enabled, false) and bool(label_count | int > 0, false), false) }}
+        attributes:
+          alert_level: |
+            {%- set thresholds = [
+                {'min': 0, 'max': 1, 'label': 'OFF'},
+                {'min': 1, 'max': 2, 'label': 'WARN'},
+                {'min': 2, 'max': 30, 'label': 'CRITICAL'}
+              ] %}
+            {%- set entity_self = 'binary_sensor.alert_state_warn_irregular_off' %}
+            {%- if is_state(entity_self, 'on') %}
+              {%- set _maxminutes = state_attr(entity_self, 'max_minutes_invalid_state') %}
+              {%- from 'utilities.jinja' import get_alert_level -%}
+              {{ get_alert_level(_maxminutes, thresholds) }}
+            {%- else %}
+              OFF
+            {%- endif %}
+          enabled_entity: "input_boolean.alert_enabled_warn_irregular_off"
+          label_id: "entity_list_aquarium_group_switch"
+          max_minutes_invalid_state: |
+            {%- set entity_self = 'binary_sensor.alert_state_warn_irregular_off' %}
+            {%- if is_state(entity_self, 'on') %}
+              {%- set label_id = "entity_list_aquarium_group_switch" %}
+              {%- set label_list = label_entities(label_id) | select('is_state', 'off') | list %}
+              {%- set ns = namespace(max_minutes=0) %}
+              {%- for entity_id in label_list %}
+                {%- set last_updated = states[entity_id].last_updated %}
+                {%- if last_updated %}
+                  {%- set minutes = ((as_timestamp(now()) - as_timestamp(last_updated)) / 60) | int %}
+                  {%- if minutes > ns.max_minutes %}
+                    {%- set ns.max_minutes = minutes %}
+                  {%- endif %}
+                {%- endif %}
+              {%- endfor %}
+              {{ ns.max_minutes|int }}
+            {%- else %}
+              0
+            {%- endif %}
+          message: |
+            {%- set entity_self = 'binary_sensor.alert_state_warn_irregular_off' %}
+            {%- if is_state(entity_self, 'on') %}
+              {%- set label_id = "entity_list_aquarium_group_switch" %}
+              {%- set label_list = label_entities(label_id) | select('is_state', 'off') | list %}
+              {%- if label_list | length == 0 %}
+                false
+              {%- else %}
+                {%- for entity_id in label_list -%}
+                  {%- set entity_name = state_attr(entity_id, "friendly_name") %}
+                  {%- set entity_area_name = area_name(entity_id) %}
+                  {%- if entity_area_name is none %}
+                    {%- set device_id = device_id(entity_id) %}
+                    {%- set entity_area_name = area_name(device_id) %}
+                  {%- endif %}
+                  Entity {{ entity_name }} in Area: {{ entity_area_name }} has been off for {{ relative_time(states[entity_id].last_updated) }}. Please fix immediately!!
+                {%- endfor %}
+              {%- endif %}
+            {%- else %}
+            false
+            {%- endif %}
