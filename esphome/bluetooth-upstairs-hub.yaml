@@ -2,9 +2,6 @@ substitutions:
   proxy_id: bluetooth_upstairs_hub
   proxy_friendly_name: Bluetooth Upstairs Hub
 
-  atc_1_id: atc_hygrometer_library
-  atc_1_friendly_name: "ATC Hygrometer Library"
-  atc_1_mac: A4:C1:38:91:3B:D8
 esphome:
   name: ${proxy_id}
   friendly_name: ${proxy_friendly_name}
@@ -46,18 +43,14 @@ bluetooth_proxy:
   active: true
 
 binary_sensor:
-  - platform: ble_presence
-    mac_address: ${atc_1_mac}
-    name: "${atc_1_friendly_name} Presence"
+  - platform: status
+    id: ${proxy_id}_status
+    name: "${proxy_friendly_name} Status"
 
 sensor:
   ### =====ESP32 BLE Tracker Wifi Signal Strength===== ###
-  - platform: wifi_signal # Reports the WiFi signal strength/RSSI in dB\
-    name: "${proxy_friendly_name} WiFi Signal dB"
+  - platform: wifi_signal # Reports the WiFi signal strength/RSSI in dB
     id: ${proxy_id}wifi_signal_db
+    name: "${proxy_friendly_name} WiFi Signal dB"
     update_interval: 360s
     entity_category: "diagnostic"
-#text_sensor:
-# - platform: ble_scanner
-# name: "BLE Devices Scanner"
-
