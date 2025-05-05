@@ -1,7 +1,8 @@
-
-
 "switch.*light*":
   #friendly_name: ""
+  icon: mdi:lightbulb
+
+"light.*":
   icon: mdi:lightbulb
 
 # STATUS ( Likely to be a binary sensor )

@@ -204,65 +204,6 @@ purge_logbook_by_entiity:
       name: Target Entities to purge
       required: true
   description: ''
-new_script:
-  sequence:
-  - variables:
-      test_me: '{{state_picker | list}}'
-      pre_notification_timer: '{{notification_timer}}'
-      my_notification_timer: '{{  ([pre_notification_timer ] if pre_notification_timer
-        is string else pre_notification_timer) |list }}'
-      inner: '{{ pre_notification_timer[0].entity_id if pre_notification_timer is
-        list else pre_notification_timer.entity_id }}'
-      pre_controlling_binary_sensor: '{{controlling_binary_sensor}}'
-      my_controlling_binary_sensor: '{{ [pre_controlling_binary_sensor] if pre_controlling_binary_sensor
-        is  string else pre_controlling_binary_sensor }}'
-      controlling_binary_sensor_single: '{{ pre_controlling_binary_sensor[0].entity_id
-        if pre_controlling_binary_sensor is list else pre_controlling_binary_sensor.entity_id
-        }}'
-  fields:
-    title:
-      selector:
-        text:
-      required: true
-      name: Title
-    label_id:
-      selector:
-        text:
-      required: true
-      name: Label ID
-    notification_timer:
-      selector:
-        target:
-          entity:
-            domain:
-            - timer
-      name: Notification Timer
-      required: true
-    controlling_binary_sensor:
-      selector:
-        target:
-          entity:
-            domain:
-            - binary_sensor
-            - input_boolean
-      name: Controlling Binary Sensor
-      required: true
-    event_name:
-      selector:
-        text:
-      name: Event Name
-      description: ACK_WARN_IRREGULAR_OFF
-      required: true
-      default: ACK_WARN_IRREGULAR_OFF
-    alert_type:
-      selector:
-        select:
-          options:
-          - INFO
-          - WARNING
-          - CRITICAL
-      name: Alert Type
-      default: INFO
 api_adapter_notification_dispatcher:
   sequence:
   - alias: Set up variables
@@ -346,3 +287,303 @@ test_parent_resp:
       message: RESULT MER {{result}}///
   alias: Test Parent Resp
   description: ''
+alert_replacement_script_ui:
+  sequence:
+  - variables:
+      resolved:
+        alert_name: '{{alert_name}}'
+        label_id: '{{label_id}}'
+        controlling_timer: '{{notification_timer}}'
+        controlling_binary_sensor: '{{controlling_binary_sensor}}'
+        alert_type: '{{alert_type}}'
+        event_uid: '{{event_uid}}'
+      controlling_sensor_state: '{{ bool( is_state(resolved.controlling_binary_sensor
+        ,[''on''] ) )}}'
+      controlling_timer_state: '{{ states( resolved.controlling_timer) }}'
+      error: '{{ bool( is_state(resolved.controlling_binary_sensor ,[''unavailable'',''unknown'']
+        ),false  ) or  bool( is_state(resolved.controlling_timer,[''unavailable'',''unknown'']
+        ),false  )}}'
+  - choose:
+    - conditions:
+      - alias: Send Notification and Start Timer
+        condition: template
+        value_template: '{{ bool(controlling_sensor_state, false) and not bool(controlling_timer_state
+          in [''paused''], false) }}'
+      sequence:
+      - variables:
+          message: "{% set label_list = label_entities(resolved.label_id) | select('is_state',
+            'off') | list %}    \n{%- for entity_id in label_list -%}\n  {% set entity_name
+            = state_attr(entity_id, \"friendly_name\") %}\n  {% set entity_area_name
+            = area_name(entity_id) %}\n  {% if entity_area_name is none %}\n    {%
+            set device_id = device_id(entity_id) %}\n    {% set entity_area_name =
+            area_name(device_id) %}\n  {% endif %}\n  Entity {{ entity_name }} in
+            Area: {{ entity_area_name }} has been off for {{ relative_time(states[entity_id].last_updated)
+            }}. Please fix immediately!!      \n{%- endfor %}\n"
+        alias: Defined MESSAGE FIELD
+      - action: script.notification_dispatcher
+        metadata: {}
+        data:
+          message: '{{message}}'
+          title: '{{alert_name}}'
+          notification_channel:
+          - iPhone
+          - alexa
+          - persistant
+          sound: default
+          alexa_volume: Normal Volume
+          alexa_sound: buzzers_pistols_01
+          mobile_callback: '{{resolved.event_uid}}'
+      - alias: START TIMER IF NEEDED
+        if:
+        - condition: template
+          value_template: '{{ controlling_timer_state== ''idle'' }}'
+        then:
+        - action: logbook.log
+          data:
+            name: ALERT REPLACEMENT
+            message: 'Starting Timer: Alert controlling
+
+              {{resolved.controlling_binary_sensor}}
+
+              ({{controlling_sensor_state|upper}}) | Timer
+
+              {{resolved.controlling_timer }}
+
+              ({{controlling_timer_state|upper}})
+
+              '
+            entity_id: '{{ resolved.controlling_binary_sensor }}'
+        - action: timer.start
+          target:
+            entity_id: '{{ resolved.controlling_timer }}'
+          data:
+            duration:
+              hours: 0
+              minutes: '{{repeat_minutes|int}}'
+              seconds: 0
+      alias: If CONTROLLER IS ON, send notification, start timer if needed
+    - conditions:
+      - condition: template
+        value_template: '{{ bool( controlling_sensor_state,false ) == false and  bool(controlling_timer_state
+          in [''active'',''paused''],false) }}'
+      sequence:
+      - action: logbook.log
+        data:
+          name: ALERT REPLACEMENT
+          message: 'Canceling Timer: Alert | Controller
+
+            {{resolved.controlling_binary_sensor}}
+
+            ({{controlling_sensor_state|upper}}) | Timer
+
+            {{resolved.controlling_timer }}
+
+            ({{controlling_timer_state|upper}})
+
+            '
+          entity_id: '{{ resolved.controlling_binary_sensor }}'
+        enabled: true
+      - action: timer.cancel
+        target:
+          entity_id: '{{ resolved.controlling_timer }}'
+      - action: script.notification_dispatcher
+        metadata: {}
+        data:
+          message: clear_notification
+          title: '{{alert_name}}'
+          notification_channel:
+          - iPhone
+          - alexa
+          - persistant
+          sound: default
+          alexa_volume: Normal Volume
+          alexa_sound: buzzers_pistols_01
+          mobile_callback: '{{resolved.event_uid}}'
+        alias: Clear Notification
+      alias: CONTROLLER IS OFF AND  TIMER IS ACTIVE
+    - conditions:
+      - alias: IF POSIBLE ERROR STATE
+        condition: template
+        value_template: '{{bool(error,false)}}'
+      sequence:
+      - action: logbook.log
+        data:
+          name: INSERT TITLE
+          message: Possible error state. Doc issues.
+          entity_id: '{{ resolved.controlling_binary_sensor }}'
+        enabled: true
+    enabled: true
+    default:
+    - action: logbook.log
+      data:
+        name: INSERT TITLE
+        message: MISSED ALL CATCHES, need trace.
+        entity_id: '{{ resolved.controlling_binary_sensor }}'
+      enabled: true
+  alias: Alert Replacement Script UI
+  description: 'The core functionality is a pairing of an alert state binary_sensor
+    and a timer entity. It then runs on a cycle and sends notifications. Todo remove
+    testing defaults. '
+  fields:
+    alert_name:
+      name: Title
+      selector:
+        text:
+      required: true
+      default: 'WARNING Alert: Irregular_off'
+    label_id:
+      name: Label ID
+      selector:
+        text:
+      required: true
+      default: entity_list_aquarium_group_switch
+    notification_timer:
+      name: Notification Timer
+      selector:
+        entity:
+          filter:
+          - domain:
+            - timer
+          multiple: false
+      default: timer.notification_warn_irregular_off
+      required: true
+    controlling_binary_sensor:
+      name: Controlling Binary Sensor
+      selector:
+        entity:
+          filter:
+          - domain:
+            - binary_sensor
+            - input_boolean
+          multiple: false
+      default: binary_sensor.alert_state_warn_irregular_off
+      required: true
+    alert_type:
+      name: Alert Type
+      selector:
+        select:
+          options:
+          - INFO
+          - WARNING
+          - CRITICAL
+          - TEST
+      default: WARNING
+      required: true
+    event_uid:
+      name: Event UID
+      description: For actionable notificcations and clearing example- ACK_WARN_IRREGULAR_OFF
+      selector:
+        text:
+      required: true
+      default: ACK_WARN_IRREGULAR_OFF
+    trigger_state:
+      selector:
+        text:
+      name: Trigger State
+      description: like alert.state="on" in alert integration exccept idk message
+        field
+    repeat_minutes:
+      selector:
+        number:
+          min: 2
+          max: 500
+          step: 1
+      name: Repeat Minutes
+      description: like "repeat" in alert integration
+      required: true
+      default: 5
+tv_remote_volume_2:
+  sequence:
+  - variables:
+      cmd: '{{ "VolumeUp" if ( command is not defined ) else command }}'
+      value: '{{ ( states(''input_number.tv_remote_volume'') | int )  if ( units is
+        not defined ) else ( units | int )}}'
+  - action: remote.send_command
+    metadata: {}
+    data:
+      num_repeats: '{{value}}'
+      command: '{{cmd}}'
+      device: TV
+      delay_secs: 0.4
+    target:
+      entity_id: remote.infrared_rf_remote_control
+  fields:
+    command:
+      selector:
+        select:
+          options:
+          - VolumeUp
+          - VolumeDown
+      name: Command
+      default: VolumeUp
+    units:
+      selector:
+        number:
+          min: 1
+          max: 12
+          step: 1
+      name: Units
+  alias: TV Remote Volume
+  description: ''
+set_speaker_volume:
+  sequence:
+  - variables:
+      _max: '{{ 100 / ( 100 if (max is not defined) else max ) | int  }}'
+      __inc: '{{ ( 10 if ( step is not defined) else step ) | int }}'
+      _inc: '{{ (100 / __inc ) if (__inc > 0 ) else 0 }}'
+    alias: define variables defaults
+  fields:
+    value:
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 1
+      default: 1
+      name: Value
+    step:
+      selector:
+        number:
+          min: 0
+          max: 20
+          step: 1
+      name: Step
+      default: 10
+    max:
+      selector:
+        number:
+          min: 1
+          max: 100
+          step: 1
+      name: Maximum Volume
+      default: 100
+  alias: Set Speaker Volume
+  description: ''
+roku_test:
+  sequence:
+  - action: media_player.play_media
+    target:
+      entity_id: '{{target_roku_player.entity_id}}'
+    data:
+      media_content_id: '837'
+      media_content_type: app
+      extra:
+        content_id: '{{ youtube_video_id }}'
+        media_type: live
+  alias: Roku Youtube
+  description: ''
+  fields:
+    target_roku_player:
+      selector:
+        target:
+          entity:
+            domain: media_player
+      name: Roku Player
+      required: true
+      default:
+        entity_id: media_player.little_tv_bitch
+    youtube_video_id:
+      selector:
+        text:
+      name: YouTube Video ID
+      required: true

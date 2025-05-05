@@ -2,7 +2,7 @@
 - platform: tod
   name: Reptile Lighting Schedule
   after: sunrise
-  after_offset: "2:00"
+  after_offset: "2:30"
   before: sunset
-  before_offset: "1:00"
+  before_offset: "-0:30"
   unique_id: reptile_lighting_schedule
