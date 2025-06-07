@@ -587,3 +587,37 @@ roku_test:
         text:
       name: YouTube Video ID
       required: true
+bird_camera:
+  sequence:
+  - action: script.roku_test
+    metadata: {}
+    data:
+      target_roku_player:
+        entity_id: media_player.little_tv_bitch
+      youtube_video_id: fLf9GPm2vIc
+  alias: Bird Camera
+  description: ''
+junk_test_sccript:
+  sequence:
+  - variables:
+      llm_response: undefined
+  - action: llmvision.stream_analyzer
+    metadata: {}
+    data:
+      remember: false
+      use_memory: false
+      duration: 5
+      max_frames: 5
+      include_filename: false
+      target_width: 1280
+      max_tokens: 100
+      temperature: 0.2
+      generate_title: false
+      expose_images: false
+      provider: 01JDVKCP2N9XZ6BQYGS518Q79N
+      message: do u see a bird in the frame?
+      image_entity:
+      - camera.camera_2_q5_profile1
+    response_variable: llm_response
+  alias: Junk test sccript
+  description: ''

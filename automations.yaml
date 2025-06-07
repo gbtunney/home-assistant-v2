@@ -216,7 +216,6 @@
     - binary_sensor.hallway_light_status
     - binary_sensor.living_room_light_status
     - binary_sensor.bedroom_light_status
-    - binary_sensor.bathroom_light_status
     - binary_sensor.seafoam_light_status
     - binary_sensor.dorn_lighting_status
     - binary_sensor.10g_m_powerstrip_status
@@ -460,7 +459,7 @@
       for_each: '{{ list_status | list }}'
   mode: single
 - id: '1744768566586'
-  alias: Staging Motion Detect
+  alias: Staging LED Strip  Motion Detect
   description: ''
   triggers:
   - trigger: state
@@ -485,18 +484,20 @@
       data:
         rgb_color:
         - 255
-        - 0
-        - 51
+        - 204
+        - 2
+        brightness_step_pct: 100
       target:
-        entity_id: light.smart_bulb_1
+        entity_id: light.led_strip_color
     else:
     - action: light.turn_on
       metadata: {}
       data:
         rgb_color:
-        - 30
-        - 255
-        - 0
+        - 1
+        - 97
+        - 253
+        brightness_step_pct: 0
       target:
-        entity_id: light.smart_bulb_1
+        entity_id: light.led_strip_color
   mode: single
