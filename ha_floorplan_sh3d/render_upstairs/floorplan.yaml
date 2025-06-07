@@ -1,0 +1,263 @@
+type: picture-elements
+image: /local/ha_floorplan_sh3d/render_upstairs/floorplan/base.png
+elements:
+  - type: conditional
+    conditions:
+      - entity: light.bathroom_lights_switch_1
+        state: 'on'
+    elements:
+      - type: image
+        tap_action:
+          action: none
+        hold_action:
+          action: none
+        entity:
+          - light.bathroom_lights_switch_1
+        image: /local/ha_floorplan_sh3d/render_upstairs/floorplan/light.bathroom_lights_switch_1.png
+        filter: none
+        style:
+          left: 50%
+          top: 50%
+          width: 100%
+          mix-blend-mode: lighten
+  - type: conditional
+    conditions:
+      - entity: light.seafoam_styx_lighting_switch_1
+        state: 'on'
+    elements:
+      - type: image
+        tap_action:
+          action: none
+        hold_action:
+          action: none
+        entity:
+          - light.seafoam_styx_lighting_switch_1
+        image: /local/ha_floorplan_sh3d/render_upstairs/floorplan/light.seafoam_styx_lighting_switch_1.png
+        filter: none
+        style:
+          left: 50%
+          top: 50%
+          width: 100%
+          mix-blend-mode: lighten
+  - type: conditional
+    conditions:
+      - entity: light.bedroom_lights
+        state: 'on'
+    elements:
+      - type: image
+        tap_action:
+          action: none
+        hold_action:
+          action: none
+        entity:
+          - light.bedroom_lights
+        image: /local/ha_floorplan_sh3d/render_upstairs/floorplan/light.bedroom_lights.png
+        filter: none
+        style:
+          left: 50%
+          top: 50%
+          width: 100%
+          mix-blend-mode: lighten
+  - type: conditional
+    conditions:
+      - entity: light.hallway_lights_switch_1
+        state: 'on'
+    elements:
+      - type: image
+        tap_action:
+          action: none
+        hold_action:
+          action: none
+        entity:
+          - light.hallway_lights_switch_1
+        image: /local/ha_floorplan_sh3d/render_upstairs/floorplan/light.hallway_lights_switch_1.png
+        filter: none
+        style:
+          left: 50%
+          top: 50%
+          width: 100%
+          mix-blend-mode: lighten
+  - type: conditional
+    conditions:
+      - entity: lights.living_room_lights_switch_1
+        state: 'on'
+    elements:
+      - type: image
+        tap_action:
+          action: none
+        hold_action:
+          action: none
+        entity:
+          - lights.living_room_lights_switch_1
+        image: /local/ha_floorplan_sh3d/render_upstairs/floorplan/lights.living_room_lights_switch_1.png
+        filter: none
+        style:
+          left: 50%
+          top: 50%
+          width: 100%
+          mix-blend-mode: lighten
+  - type: custom:config-template-card
+    variables:
+      LIGHT_STATE: states['light.led_strip_color'].state
+      COLOR_MODE: states['light.led_strip_color'].attributes.color_mode
+      LIGHT_COLOR: states['light.led_strip_color'].attributes.hs_color
+      BRIGHTNESS: states['light.led_strip_color'].attributes.brightness
+    entities:
+      - light.led_strip_color
+    element:
+      type: image
+      image: /local/ha_floorplan_sh3d/render_upstairs/floorplan/transparent.png
+      state_image:
+        'on': >-
+          ${COLOR_MODE === 'color_temp' || (COLOR_MODE === 'rgb' && LIGHT_COLOR && LIGHT_COLOR[0] == 0 && LIGHT_COLOR[1] == 0) ?
+          '/local/ha_floorplan_sh3d/render_upstairs/floorplan/light.led_strip_color.png' :
+          '/local/ha_floorplan_sh3d/render_upstairs/floorplan/light.led_strip_color.red.png' }
+      entity: light.led_strip_color
+    style:
+      filter: '${ "hue-rotate(" + (LIGHT_COLOR ? LIGHT_COLOR[0] : 0) + "deg)"}'
+      opacity: '${LIGHT_STATE === ''on'' ? (BRIGHTNESS / 255) : ''100''}'
+      mix-blend-mode: lighten
+      pointer-events: none
+      left: 50%
+      top: 50%
+      width: 100%
+  - type: conditional
+    conditions:
+      - entity: light.cozy_life_1
+        state: 'on'
+    elements:
+      - type: image
+        tap_action:
+          action: none
+        hold_action:
+          action: none
+        entity:
+          - light.cozy_life_1
+        image: /local/ha_floorplan_sh3d/render_upstairs/floorplan/light.cozy_life_1.png
+        filter: none
+        style:
+          left: 50%
+          top: 50%
+          width: 100%
+          mix-blend-mode: lighten
+  - type: state-icon
+    entity: light.bathroom_lights_switch_1
+    title: null
+    style:
+      top: 34.37%
+      left: 31.47%
+      border-radius: 50%
+      text-align: center
+      background-color: rgba(255, 255, 255, 0.3)
+    tap_action:
+      action: toggle
+  - type: state-icon
+    entity: light.seafoam_styx_lighting_switch_1
+    title: null
+    style:
+      top: 52.21%
+      left: 33.84%
+      border-radius: 50%
+      text-align: center
+      background-color: rgba(255, 255, 255, 0.3)
+    tap_action:
+      action: toggle
+  - type: state-icon
+    entity: light.bedroom_lights
+    title: null
+    style:
+      top: 65.89%
+      left: 63.14%
+      border-radius: 50%
+      text-align: center
+      background-color: rgba(255, 255, 255, 0.3)
+    tap_action:
+      action: none
+  - type: state-icon
+    entity: light.hallway_lights_switch_1
+    title: null
+    style:
+      top: 43.70%
+      left: 47.08%
+      border-radius: 50%
+      text-align: center
+      background-color: rgba(255, 255, 255, 0.3)
+    tap_action:
+      action: toggle
+  - type: state-icon
+    entity: lights.living_room_lights_switch_1
+    title: null
+    style:
+      top: 15.04%
+      left: 66.51%
+      border-radius: 50%
+      text-align: center
+      background-color: rgba(255, 255, 255, 0.3)
+    tap_action:
+      action: toggle
+  - type: state-label
+    entity: sensor.cat_fountain_water_volume
+    title: null
+    style:
+      top: 54.01%
+      left: 57.47%
+      border-radius: 50%
+      text-align: center
+      background-color: rgba(255, 255, 255, 0.3)
+    tap_action:
+      action: more-info
+  - type: state-icon
+    entity: camera.camera_2_q5_profile1
+    title: null
+    style:
+      top: 51.58%
+      left: 38.49%
+      border-radius: 50%
+      text-align: center
+      background-color: rgba(255, 255, 255, 0.3)
+    tap_action:
+      action: more-info
+  - type: state-icon
+    entity: light.led_strip_color
+    title: null
+    style:
+      top: 10.69%
+      left: 45.39%
+      border-radius: 50%
+      text-align: center
+      background-color: rgba(255, 255, 255, 0.3)
+    tap_action:
+      action: toggle
+  - type: state-label
+    entity: sensor.cat_feeder
+    title: TODO: add cat feeder control
+    style:
+      top: 54.89%
+      left: 59.91%
+      border-radius: 50%
+      text-align: center
+      background-color: rgba(255, 255, 255, 0.3)
+    tap_action:
+      action: more-info
+  - type: state-icon
+    entity: light.cozy_life_1
+    title: null
+    style:
+      top: 75.86%
+      left: 35.69%
+      border-radius: 50%
+      text-align: center
+      background-color: rgba(255, 255, 255, 0.3)
+    tap_action:
+      action: toggle
+  - type: state-label
+    entity: sensor.reptile_room_hygrometer_temperature
+    title: null
+    style:
+      top: 51.82%
+      left: 28.22%
+      border-radius: 50%
+      text-align: center
+      background-color: rgba(255, 255, 255, 0.3)
+    tap_action:
+      action: more-info
