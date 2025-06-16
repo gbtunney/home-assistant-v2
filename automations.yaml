@@ -501,3 +501,28 @@
       target:
         entity_id: light.led_strip_color
   mode: single
+- id: '1749869580049'
+  alias: Aquarium Lighting Scheduled On/Off 120
+  description: Aquarium Lighting turned On/Off according to a schedule
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.120g_aquarium_lighting_schedule
+    attribute: next_update
+    enabled: true
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.to_state.state in [''on'', ''off''] }}'
+    enabled: true
+  actions:
+  - action: script.set_state_switch_light
+    data:
+      bool_invert_state: 'Off'
+      select_state: Unknown
+      entity_trigger:
+        entity_id: '{{trigger.entity_id}}'
+      target_entity_set:
+        entity_id:
+        - light.120g_aquarium_light
+        - switch.120g_aquarium_pump
+  mode: single
