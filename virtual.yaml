@@ -1,0 +1,11 @@
+version: 1
+devices:
+  "Wave Light Projector":
+    - platform: switch
+      name: Wave Light Projector
+  "TV Remote Controller":
+    - platform: switch
+      name: TV Remote
+  "Roku Controller":
+    - platform: switch
+      name: Roku Remote

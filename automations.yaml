@@ -4,7 +4,7 @@
   triggers:
   - trigger: state
     entity_id:
-    - binary_sensor.leak_sensor
+    - binary_sensor.leak_sensor_group
     from: 'off'
     to: 'on'
     for:
@@ -14,13 +14,14 @@
   conditions: []
   actions:
   - variables:
-      expand_group: '{% from ''formatter.jinja'' import leak_detector_format_list
-        %} {{ leak_detector_format_list(trigger.entity_id) }}'
+      message: '{% from ''notifications.jinja'' import leak_detector_notification
+        %} {{ leak_detector_notification(trigger.entity_id) }}'
   - action: logbook.log
     metadata: {}
     data:
       name: leak test problem
-      message: there is a leak!!!! {{ expand_group}}
+      message: '{{message}}'
+      entity_id: '{{ trigger.entity_id }}'
   - action: script.notification_dispatcher
     metadata: {}
     data:
@@ -37,10 +38,6 @@
         Area: {{ area_name(trigger.entity_id) }} is detecting moisture. Please fix
         immediately!!'
     enabled: false
-  - action: logbook.log
-    metadata: {}
-    data:
-      name: leak test problem
   mode: single
 - id: '1733535410225'
   alias: Temperature Alert
@@ -49,12 +46,12 @@
   - trigger: numeric_state
     entity_id:
     - input_number.dummy_thermometer
-    - sensor.hygrometer_temperature
+    - sensor.reptile_room_hygrometer_temperature
     below: 65
   - trigger: numeric_state
     entity_id:
     - input_number.dummy_thermometer
-    - sensor.hygrometer_temperature
+    - sensor.reptile_room_hygrometer_temperature
     above: 85
   conditions: []
   actions:
@@ -170,8 +167,7 @@
   triggers:
   - trigger: state
     entity_id:
-    - binary_sensor.connectivity_status_group
-    - switch.cozy_life_outlet_2
+    - binary_sensor.aq_and_rept_connectivity_status_group
     for:
       hours: 0
       minutes: 6
@@ -185,6 +181,11 @@
     entity_id: alarm_control_panel.home_alarm
     state: armed_home
   actions:
+  - variables:
+      message: '{% from ''notifications.jinja'' import device_unavailable_notification
+        %} {{ device_unavailable_notification(trigger.entity_id) }}'
+      message_bk: "Device {{ state_attr(trigger.entity_id,'friendly_name' )  }} in
+        Area: {{\n area_name(trigger.entity_id) }} is disconnected. Please fix immediately!!"
   - action: script.notification_dispatcher
     metadata: {}
     data:
@@ -200,8 +201,11 @@
       - 7188138156@mms.att.net
       email_targets:
       - gbtunney@mac.com
-      message: "Device {{ state_attr(trigger.entity_id,'friendly_name' )  }} in Area:
-        {{\n area_name(trigger.entity_id) }} is disconnected. Please fix immediately!!"
+      message: '{{message}}'
+  - choose:
+    - conditions: []
+      sequence: []
+    enabled: false
   mode: single
 - id: '1733605050618'
   alias: Lighting & Powerstrip Connectivity Warning
@@ -212,7 +216,6 @@
     - binary_sensor.hallway_light_status
     - binary_sensor.living_room_light_status
     - binary_sensor.bedroom_light_status
-    - binary_sensor.bathroom_light_status
     - binary_sensor.seafoam_light_status
     - binary_sensor.dorn_lighting_status
     - binary_sensor.10g_m_powerstrip_status
@@ -344,10 +347,182 @@
       target:
         entity_id: light.smart_bulb_1
   mode: single
-- id: '1734858357880'
-  alias: KnmNotifications & Announcements
+- id: '1735089085485'
+  alias: 'Sensor: Home Assistant Last Started'
   description: ''
-  use_blueprint:
-    path: Blackshome/notifications-and-announcements.yaml
-    input:
-      persistent_message: Hihi
+  triggers:
+  - trigger: homeassistant
+    event: start
+  conditions: []
+  actions:
+  - action: input_datetime.set_datetime
+    metadata: {}
+    data:
+      timestamp: '{{float(as_timestamp(now()),0)}}'
+    target:
+      entity_id: input_datetime.ha_last_start
+  mode: single
+- id: '1744261059099'
+  alias: Reptile Lighting Schedule UI
+  description: Uses Time of day sensor now
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.reptile_lighting_schedule
+    enabled: true
+    attribute: next_update
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.to_state.state in [''on'', ''off''] }}'
+  actions:
+  - variables:
+      list_lights:
+      - light.dorn_and_marceline_lighting
+      - light.seafoam_styx_lighting_switch_1
+      list_status:
+      - binary_sensor.dorn_lighting_status
+      - binary_sensor.seafoam_light_status
+  - repeat:
+      sequence:
+      - if:
+        - condition: template
+          value_template: '{{  is_state( repeat.item ,[''on'',''off''])     }}  '
+          enabled: true
+        then:
+        - alias: if disconnected,
+          if:
+          - condition: template
+            value_template: '{{ bool( is_state( repeat.item ,''off'' ) ,false )  }}'
+          then:
+          - variables:
+              message: Reptile Schedule Error! {{ state_attr( repeat.item,'friendly_name'
+                ) }} is disconnected. Cannot turn device to {{ trigger.to_state.state
+                }}
+          - action: logbook.log
+            metadata: {}
+            data:
+              name: Reptile Schedule Error!
+              message: '{{message}}||||'
+              entity_id: automation.reptile_lighting_schedule_ui
+          - action: script.custom_alexa_notification
+            metadata: {}
+            data:
+              target_alexa_speaker:
+                entity_id: media_player.alexa_s_baby
+              message: '{{message}}'
+              volume: Normal Volume
+              sound: christmas_05
+          else:
+          - if:
+            - condition: template
+              value_template: '{{ is_state( list_lights[(repeat.index - 1) | int  ]
+                , [''on'',''off''])  }}'
+            then:
+            - variables:
+                message: Reptile lights schedule executed, setting {{ state_attr(
+                  list_lights[(repeat.index - 1) | int  ],'friendly_name' ) }} to
+                  {{ trigger.to_state.state }}
+            - action: logbook.log
+              metadata: {}
+              data:
+                name: Reptile Schedule Executed
+                message: '{{message}}|||'
+                entity_id: automation.reptile_lighting_schedule_ui
+              enabled: false
+            - action: script.custom_alexa_notification
+              metadata: {}
+              data:
+                target_alexa_speaker:
+                  entity_id: media_player.alexa_s_baby
+                message: '{{message}}'
+                volume: Normal Volume
+                sound: christmas_05
+              enabled: false
+            - action: script.set_state_switch_light
+              data:
+                bool_invert_state: 'Off'
+                select_state: Unknown
+                target_entity_set:
+                  entity_id: '{{list_lights[(repeat.index - 1) | int  ]}}'
+                entity_trigger:
+                  entity_id: '{{trigger.entity_id}}'
+              enabled: true
+            else:
+            - action: logbook.log
+              metadata: {}
+              data:
+                name: Reptile Schedule Error!
+                message: Problem with reptile lights schedule, {{ state_attr(list_lights[(repeat.index
+                  - 1) | int  ], 'friendly_name') }} is unavailable, Cannot turn device
+                  to {{ trigger.to_state.state }}
+                entity_id: automation.reptile_lighting_schedule_ui
+      for_each: '{{ list_status | list }}'
+  mode: single
+- id: '1744768566586'
+  alias: Staging LED Strip  Motion Detect
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.motion_sensor_29_motion
+    from: 'off'
+    to: 'on'
+  - trigger: state
+    entity_id:
+    - binary_sensor.motion_sensor_29_motion
+    from: 'on'
+    to: 'off'
+  conditions: []
+  actions:
+  - if:
+    - condition: template
+      value_template: '{{ bool( is_state(''binary_sensor.motion_sensor_29_motion'',[''on''])
+        ,false) }}'
+    then:
+    - action: light.turn_on
+      metadata: {}
+      data:
+        rgb_color:
+        - 255
+        - 204
+        - 2
+        brightness_step_pct: 100
+      target:
+        entity_id: light.led_strip_color
+    else:
+    - action: light.turn_on
+      metadata: {}
+      data:
+        rgb_color:
+        - 1
+        - 97
+        - 253
+        brightness_step_pct: 0
+      target:
+        entity_id: light.led_strip_color
+  mode: single
+- id: '1749869580049'
+  alias: Aquarium Lighting Scheduled On/Off 120
+  description: Aquarium Lighting turned On/Off according to a schedule
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.120g_aquarium_lighting_schedule
+    attribute: next_update
+    enabled: true
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.to_state.state in [''on'', ''off''] }}'
+    enabled: true
+  actions:
+  - action: script.set_state_switch_light
+    data:
+      bool_invert_state: 'Off'
+      select_state: Unknown
+      entity_trigger:
+        entity_id: '{{trigger.entity_id}}'
+      target_entity_set:
+        entity_id:
+        - light.120g_aquarium_light
+        - switch.120g_aquarium_pump
+  mode: single

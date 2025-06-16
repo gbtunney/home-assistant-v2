@@ -1,0 +1,5 @@
+#sensor.hygrometer_humidity:
+#  friendly_name: "Temperature Sensor"
+# icon: mdi:thermometer
+
+{}

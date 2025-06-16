@@ -1,0 +1,109 @@
+template_tile_list:
+  default:
+    - area: 120g*
+    - label: entity_list_*
+    - title: Derp2
+    - exclude:
+        hidden_by: "*"
+labeled_tile_list:
+  default:
+    - area: "*"
+    - label: "*"
+    - title: Derp2
+    - state: "*"
+    - exclude:
+        - hidden_by: "*"
+  card:
+    type: vertical-stack
+    cards:
+      - type: custom:auto-entities
+        card_mod: null
+        style: |
+          ha-card  {
+              background-color: [[bg_color]];
+              --ha-card-header-font-size: 18px;
+            }
+        card:
+          type: custom:layout-card
+          layout_type: horizontal
+          layout:
+            card_margin: "-6px -6px"
+          cards: []
+          view_layout: {}
+        filter:
+          exclude: "[[exclude]]"
+          include:
+            - label: "[[label]]"
+              area: "[[area]]"
+              state: "[[state]]"
+              options:
+                type: custom:auto-entities
+                card:
+                  type: custom:layout-card
+                filter:
+                  template: |
+                    {{ [
+                      {
+                        "type": "tile",
+                        "entity":  config.entity,
+                        "state_content":  ["state","last_updated"],
+                        "styles": "ha-card { --ha-card-header-font-size: 18px; opacity: .2!important; background-color: red!important; }",
+                        "button_action": {
+                          "tap_action": {
+                            "action": "none"
+                          },
+                          "double_tap_action": {
+                            "action": "none"
+                          }
+                        },
+                        "tap_action": {
+                            "action": "none"
+                        },
+                        "double_tap_action": {
+                          "action": "none"
+                        },
+                        "hold_action": {
+                          "action": "more-info"
+                        }
+                      }
+                    ] }}
+    title: "[[title]]"
+labeled_entity_list:
+  default:
+    - title: active warnings
+    - area: "*"
+    - state: "*"
+    - label: entity_list_*
+    - bg_color: inherit
+    - exclude:
+        - hidden_by: "*"
+  card:
+    type: custom:auto-entities
+    card:
+      type: entities
+      title: "[[title]]"
+      show_header_toggle: false
+      card_mod:
+        style: |
+          ha-card  {
+             background-color: [[bg_color]];
+             border-radius: 5px;
+             --primary-color: white;
+             --secondary-color: red;
+             --paper-item-icon-color: white;
+             --secondary-text-color: white;
+             --switch-checked-color:red;
+             --ha-card-header-font-size: 18px;
+           }
+    show_empty: false
+    sort:
+      method: last_changed
+      reverse: true
+    filter:
+      include:
+        - label: "[[label]]"
+          state: "[[state]]"
+          area: "[[area]]"
+          options:
+            secondary_info: last-changed
+      exclude: "[[exclude]]"

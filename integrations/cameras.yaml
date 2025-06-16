@@ -1,6 +1,0 @@
-#####
-# Cameras
-# cameras and xiomi map extractor
-#####
-
-camera: !include_dir_merge_list ../entities/cameras

@@ -1,0 +1,41 @@
+#####
+# Alert & Notifications Package: Stuff
+#####
+
+# Example configuration.yaml entry
+notify:
+  - name: api_dispatch_notification
+    platform: rest
+    method: POST_JSON
+    #target_param_name: notification_channel_list
+    title_param_name: callback
+    resource: http://homeassistant.local:8123/api/services/script/api_adapter_notification_dispatcher
+    #resource: http://homeassistant.local:8123/api/services/script/notification_dispatcher
+    headers:
+      Authorization: !secret rest_token
+      Content-Type: "application/json"
+
+  - name: STD_Testing
+    platform: group
+    services:
+      - action: func_dispatch_notification
+      - action: persistent_notification
+  - name: STD_Information
+    platform: group
+    services:
+  - name: STD_Warning
+    platform: group
+    services:
+  - name: STD_Critical
+    platform: group
+    services:
+
+input_select:
+  alert_state_warn_irregular_off:
+    name: Alert State
+    options:
+      - "off"
+      - "idle"
+      - "active"
+      - "acknowledged"
+    initial: "off"

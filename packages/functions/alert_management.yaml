@@ -1,0 +1,309 @@
+#####
+# Alert & Notifications Package
+#####
+
+#####
+#  Acknowledge Push Notification
+####
+automation:
+  - id: "1736734609929"
+    alias: Alert Acknowledge Push Notification
+    description: ""
+    triggers:
+      - event_type: mobile_app_notification_action
+        trigger: event
+        event_data: {}
+    conditions:
+      - condition: template
+        value_template:
+          "{{ trigger.event.data.action is defined and trigger.event.data.action
+          in action_mapping  }}"
+    actions:
+      - variables:
+          resolved:
+            alert: "{{ action_mapping[trigger.event.data.action].alert }}"
+            controlling_binary_sensor: "{{ action_mapping[trigger.event.data.action].controlling_binary_sensor}}"
+            controlling_timer: "{{ action_mapping[trigger.event.data.action].controlling_timer}}"
+          controlling_sensor_state:
+            "{{ bool( is_state(resolved.controlling_binary_sensor
+            ,['on'] ) )}}"
+          controlling_timer_state: "{{ states( resolved.controlling_timer) }}"
+          error:
+            "{{ bool( is_state(resolved.controlling_binary_sensor ,['unavailable','unknown']
+            ),false  ) or  bool( is_state(resolved.controlling_timer,['unavailable','unknown']
+            ),false  )}}"
+      - if:
+          - condition: template
+            value_template:
+              "{{bool( is_state( resolved.controlling_binary_sensor ,['on']),false
+              )}}"
+        then:
+          - action: timer.pause
+            metadata: {}
+            data: {}
+            target:
+              entity_id: "{{resolved.controlling_timer}}"
+          - action: logbook.log
+            data:
+              name: ALERT REPLACEMENT ACKNOWLEDGE
+              message:
+                "Pausing Timer: Alert has been acknowledged. Controlling sensor {{resolved.controlling_binary_sensor}}
+
+                ({{controlling_sensor_state|upper}}) | Timer
+
+                {{resolved.controlling_timer }}
+
+                ({{controlling_timer_state|upper}})
+
+                "
+              entity_id: "{{ resolved.controlling_binary_sensor }}"
+            enabled: true
+        else:
+          - action: timer.cancel
+            metadata: {}
+            data: {}
+            target:
+              entity_id: "{{resolved.controlling_timer}}"
+          - action: logbook.log
+            data:
+              name: ALERT REPLACEMENT ACKNOWLEDGE
+              message:
+                "Canceling Timer:  Alert has been canceled via acknowledge script
+                | Controller
+
+                {{resolved.controlling_binary_sensor}}
+
+                ({{controlling_sensor_state|upper}}) | Timer
+
+                {{resolved.controlling_timer }}
+
+                ({{controlling_timer_state|upper}})
+
+                "
+              entity_id: "{{ resolved.controlling_binary_sensor }}"
+            enabled: true
+    mode: single
+    variables:
+      action_mapping:
+        ACK_WARN_TUYA_DISCONNECT:
+          alert: alert.warn_irregular_off
+          controlling_timer: timer.timer_warn_tuya_disconnect
+          controlling_binary_sensor: binary_sensor.alert_state_warning_tuya_disconnect
+        ACK_WARN_IRREGULAR_OFF:
+          alert: alert.warn_irregular_off
+          controlling_timer: timer.notification_warn_irregular_off
+          controlling_binary_sensor: binary_sensor.alert_state_warn_irregular_off
+
+script:
+  alert_replacement_script:
+    sequence:
+      - variables:
+          resolved:
+            alert_name: "{{alert_name}}"
+            label_id: "{{label_id}}"
+            controlling_timer: "{{notification_timer}}"
+            controlling_binary_sensor: "{{controlling_binary_sensor}}"
+            alert_type: "{{alert_type}}"
+            event_uid: "{{event_uid}}"
+          controlling_sensor_state:
+            "{{ bool( is_state(resolved.controlling_binary_sensor
+            ,['on'] ) )}}"
+          controlling_timer_state: "{{ states( resolved.controlling_timer) }}"
+          error:
+            "{{ bool( is_state(resolved.controlling_binary_sensor ,['unavailable','unknown']
+            ),false  ) or  bool( is_state(resolved.controlling_timer,['unavailable','unknown']
+            ),false  )}}"
+      - choose:
+          - conditions:
+              - alias: Send Notification and Start Timer
+                condition: template
+                value_template:
+                  "{{ bool(controlling_sensor_state, false) and not bool(controlling_timer_state
+                  in ['paused'], false) }}"
+            sequence:
+              - variables:
+                  message:
+                    "{% set label_list = label_entities(resolved.label_id) | select('is_state',
+                    'off') | list %}    \n{%- for entity_id in label_list -%}\n  {% set entity_name
+                    = state_attr(entity_id, \"friendly_name\") %}\n  {% set entity_area_name
+                    = area_name(entity_id) %}\n  {% if entity_area_name is none %}\n    {%
+                    set device_id = device_id(entity_id) %}\n    {% set entity_area_name =
+                    area_name(device_id) %}\n  {% endif %}\n  Entity {{ entity_name }} in
+                    Area: {{ entity_area_name }} has been off for {{ relative_time(states[entity_id].last_updated)
+                    }}. Please fix immediately!!      \n{%- endfor %}\n"
+                alias: Defined MESSAGE FIELD
+              - action: script.notification_dispatcher
+                metadata: {}
+                data:
+                  message: "{{message}}"
+                  title: "{{alert_name}}"
+                  notification_channel:
+                    - iPhone
+                    - alexa
+                    - persistant
+                  sound: default
+                  alexa_volume: Normal Volume
+                  alexa_sound: buzzers_pistols_01
+                  mobile_callback: "{{resolved.event_uid}}"
+              - alias: START TIMER IF NEEDED
+                if:
+                  - condition: template
+                    value_template: "{{ controlling_timer_state== 'idle' }}"
+                then:
+                  - action: logbook.log
+                    data:
+                      name: ALERT REPLACEMENT
+                      message: "Starting Timer: Alert controlling
+
+                        {{resolved.controlling_binary_sensor}}
+
+                        ({{controlling_sensor_state|upper}}) | Timer
+
+                        {{resolved.controlling_timer }}
+
+                        ({{controlling_timer_state|upper}})
+
+                        "
+                      entity_id: "{{ resolved.controlling_binary_sensor }}"
+                  - action: timer.start
+                    target:
+                      entity_id: "{{ resolved.controlling_timer }}"
+                    data:
+                      duration:
+                        hours: 0
+                        minutes: "{{repeat_minutes|int}}"
+                        seconds: 0
+            alias: If CONTROLLER IS ON, send notification, start timer if needed
+          - conditions:
+              - condition: template
+                value_template:
+                  "{{ bool( controlling_sensor_state,false ) == false and  bool(controlling_timer_state
+                  in ['active','paused'],false) }}"
+            sequence:
+              - action: logbook.log
+                data:
+                  name: ALERT REPLACEMENT
+                  message: "Canceling Timer: Alert | Controller
+
+                    {{resolved.controlling_binary_sensor}}
+
+                    ({{controlling_sensor_state|upper}}) | Timer
+
+                    {{resolved.controlling_timer }}
+
+                    ({{controlling_timer_state|upper}})
+
+                    "
+                  entity_id: "{{ resolved.controlling_binary_sensor }}"
+                enabled: true
+              - action: timer.cancel
+                target:
+                  entity_id: "{{ resolved.controlling_timer }}"
+              - action: script.notification_dispatcher
+                metadata: {}
+                data:
+                  message: clear_notification
+                  title: "{{alert_name}}"
+                  notification_channel:
+                    - iPhone
+                    - alexa
+                    - persistant
+                  sound: default
+                  alexa_volume: Normal Volume
+                  alexa_sound: buzzers_pistols_01
+                  mobile_callback: "{{resolved.event_uid}}"
+                alias: Clear Notification
+            alias: CONTROLLER IS OFF AND  TIMER IS ACTIVE
+          - conditions:
+              - alias: IF POSIBLE ERROR STATE
+                condition: template
+                value_template: "{{bool(error,false)}}"
+            sequence:
+              - action: logbook.log
+                data:
+                  name: INSERT TITLE
+                  message: Possible error state. Doc issues.
+                  entity_id: "{{ resolved.controlling_binary_sensor }}"
+                enabled: true
+        enabled: true
+        default:
+          - action: logbook.log
+            data:
+              name: INSERT TITLE
+              message: MISSED ALL CATCHES, need trace.
+              entity_id: "{{ resolved.controlling_binary_sensor }}"
+            enabled: true
+    alias: Alert Replacement Script
+    description:
+      "The core functionality is a pairing of an alert state binary_sensor
+      and a timer entity. It then runs on a cycle and sends notifications. Todo remove
+      testing defaults. "
+    fields:
+      alert_name:
+        name: Title
+        selector:
+          text:
+        required: true
+        default: "WARNING Alert: Irregular_off"
+      label_id:
+        name: Label ID
+        selector:
+          text:
+        required: true
+        default: entity_list_aquarium_group_switch
+      notification_timer:
+        name: Notification Timer
+        selector:
+          entity:
+            filter:
+              - domain:
+                  - timer
+            multiple: false
+        default: timer.notification_warn_irregular_off
+        required: true
+      controlling_binary_sensor:
+        name: Controlling Binary Sensor
+        selector:
+          entity:
+            filter:
+              - domain:
+                  - binary_sensor
+                  - input_boolean
+            multiple: false
+        default: binary_sensor.alert_state_warn_irregular_off
+        required: true
+      alert_type:
+        name: Alert Type
+        selector:
+          select:
+            options:
+              - INFO
+              - WARNING
+              - CRITICAL
+              - TEST
+        default: WARNING
+        required: true
+      event_uid:
+        name: Event UID
+        description: For actionable notificcations and clearing example- ACK_WARN_IRREGULAR_OFF
+        selector:
+          text:
+        required: true
+        default: ACK_WARN_IRREGULAR_OFF
+      trigger_state:
+        selector:
+          text:
+        name: Trigger State
+        description:
+          like alert.state="on" in alert integration exccept idk message
+          field
+      repeat_minutes:
+        selector:
+          number:
+            min: 2
+            max: 500
+            step: 1
+        name: Repeat Minutes
+        description: like "repeat" in alert integration
+        required: true
+        default: 5

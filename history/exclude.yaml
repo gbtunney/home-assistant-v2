@@ -1,0 +1,17 @@
+domains:
+  - sun2
+  #- automation
+  #- update
+entity_globs:
+  - "switch.*g*light"
+  - "*.*clone*"
+  - "*clone*"
+  #  - sensor.sun*
+  # - weather.*
+entities:
+  - sensor.ha_uptime
+  - sun.sun # Don't record sun data
+
+
+  #- sensor.date
+  #- sensor.last_boot # Comes from 'systemmonitor' sensor platform

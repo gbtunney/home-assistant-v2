@@ -1,0 +1,8 @@
+#####
+# SCRIPTS: This handles the loading of my scripts via ui and manual config
+# https://www.home-assistant.io/integrations/script/
+# https://www.home-assistant.io/docs/configuration/splitting_configuration/
+#####
+script manual: !include_dir_merge_named ./../../scripts
+
+script ui: !include ./../../scripts.yaml

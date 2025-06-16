@@ -1,0 +1,234 @@
+#####
+# Notifications Package: Alexa
+#####
+
+#####
+# Shut her up and do message in logbook instead
+#####
+input_boolean:
+  bool_mute_alexa_notifications:
+    name: Mute Alexa Notification
+    # description: "used to supress warnings during clean event"
+    icon: mdi:speaker-off
+
+#####
+# Alexa Notification
+#####
+script:
+  custom_alexa_notification:
+    sequence:
+      - variables:
+          bool_local_mute: >-
+            {{  bool( 'Off' if local_mute is not defined else bool(
+            local_mute,false),false) }}
+          global_mute: "{{ bool(states('input_boolean.bool_mute_alexa_notifications'),false) }}"
+          bool_mute: "{{bool(( global_mute or local_mute ),false)}}"
+          bool_clear_message: "{{ bool(('clear_notification' in message) ,false )}}"
+          speaker_id: "{{ target_alexa_speaker.entity_id }}"
+          previous_volume: "{{ state_attr(speaker_id,'volume_level') }}"
+          quiet_hours: "{{bool( is_state('binary_sensor.quiet_hours', 'on' ),false)}}"
+          do_volume_change: >-
+            {{ bool( volume != 'Current', false ) or ( bool( volume == 'Current',
+            false ) and bool(quiet_hours,false) )}}
+          volume_float: |-
+            {% if  bool(quiet_hours,false) %}
+              {% if volume == 'Maximum Volume'%}
+                0.5
+              {%- elif volume == "Normal Volume" -%}
+                0.35
+              {%- else -%}
+                0.35
+              {%- endif -%}
+            {% else %}
+              {% if volume == 'Maximum Volume'%}
+                1.0
+              {%- elif volume == "Normal Volume" -%}
+                .65
+              {%- else -%}
+                {{previous_volume}}
+              {%- endif -%}
+            {% endif %}
+          play_sound: "{{ false if sound is not defined or sound == 'no_sound' else true }}"
+          message_real: >
+            "{{ message | regex_replace(find='(\\d+)\\s*g\\s+', replace='\\1 gallon
+            ', ignorecase=True) }}"
+      - alias: Clear the message if contains "clear_notification"
+        if:
+          - condition: template
+            value_template: "{{ bool( bool_clear_message,false)}}"
+        then:
+          - action: logbook.log
+            metadata: {}
+            data:
+              entity_id: "{{ speaker_id }}"
+              name: Alexa Clear_Notification
+              message: Alexa was MUTED bc the notification is being cleared.
+        else:
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ bool(bool_mute,false )  }}"
+                sequence:
+                  - action: logbook.log
+                    metadata: {}
+                    data:
+                      entity_id: "{{ speaker_id }}"
+                      name: Alexa Muted
+                      message: >-
+                        Alexa was MUTED and is not allowed to say the following
+                        message, {{ message_real }} | Sound: {{play_sound}} {{ sound
+                        }} | Volume: {{volume_float}} | Quiet Hrs: {{quiet_hours}} |
+                        Prev Volume: {{previous_volume}}
+                alias: If alexa is MUTED
+            default:
+              - if:
+                  - condition: template
+                    value_template: "{{ bool(do_volume_change, false)}}"
+                then:
+                  - action: media_player.volume_set
+                    metadata: {}
+                    data:
+                      volume_level: "{{ volume_float| float (0.5) }}"
+                    target:
+                      entity_id: "{{ speaker_id }}"
+                alias: Set temporary vol
+                enabled: true
+              - alias: play a sound!
+                if:
+                  - condition: template
+                    value_template: "{{ bool(play_sound , false )}}"
+                then:
+                  - target:
+                      entity_id: "{{ speaker_id }}"
+                    data:
+                      media_content_type: sound
+                      media_content_id: "{{ sound }}"
+                    action: media_player.play_media
+              - action: notify.alexa_media
+                metadata: {}
+                data:
+                  target: "{{speaker_id}}"
+                  message: "{{message_real}}"
+                enabled: true
+                alias: send notification, replace 'g' with gallon
+              - alias: "Restore orig. volume "
+                if:
+                  - condition: template
+                    value_template: "{{ bool(do_volume_change, false)}}"
+                then:
+                  - action: media_player.volume_set
+                    metadata: {}
+                    data:
+                      volume_level: "{{   previous_volume | float (0.5) }}"
+                    target:
+                      entity_id: "{{ speaker_id }}"
+              - alias: play sound again
+                if:
+                  - condition: template
+                    value_template: "{{ bool(play_sound , false )}}"
+                then:
+                  - target:
+                      entity_id: "{{ speaker_id }}"
+                    data:
+                      media_content_type: sound
+                      media_content_id: "{{ sound }}"
+                    action: media_player.play_media
+              - action: logbook.log
+                metadata: {}
+                data:
+                  entity_id: "{{ speaker_id }}"
+                  name: Alexa Notification Dispatched
+                  message: >-
+                    Alexa was dispatched to say the following message, {{
+                    message_real }} | Sound: {{play_sound}} {{ sound }} | Volume:
+                    {{volume_float}} | Quiet Hrs: {{quiet_hours}} | Prev Volume:
+                    {{previous_volume}}
+    alias: Alexa Custom Notification
+    description: Send an alexa notification with louder volume. Respects a 'quiet hours' policy
+    fields:
+      target_alexa_speaker:
+        selector:
+          target:
+            entity:
+              domain: media_player
+              integration: alexa_media
+        name: Alexa Speaker
+        required: false
+        default:
+          entity_id: media_player.alexa_s_baby
+      message:
+        selector:
+          text: null
+        name: Message
+        default: "No message set. "
+        required: true
+      volume:
+        selector:
+          select:
+            options:
+              - Maximum Volume
+              - Normal Volume
+              - Current
+        description: If it is quiet hours, vol will only be set to .5 max, and .2 for same
+        default: Normal Volume
+        required: true
+        name: Volume
+      sound:
+        selector:
+          select:
+            options:
+              - amzn_sfx_doorbell_chime_01
+              - bell_02
+              - buzzers_pistols_01
+              - amzn_sfx_church_bell_1x_02
+              - amzn_sfx_doorbell_01
+              - amzn_sfx_doorbell_chime_01
+              - amzn_sfx_doorbell_chime_02
+              - christmas_05
+              - horror_10
+              - air_horn_03
+              - boing_01
+              - boing_03
+              - camera_01
+              - squeaky_12
+              - clock_01
+              - amzn_sfx_trumpet_bugle_04
+              - amzn_sfx_cat_meow_1x_01
+              - amzn_sfx_dog_med_bark_1x_02
+              - amzn_sfx_lion_roar_02
+              - amzn_sfx_rooster_crow_01
+              - amzn_sfx_wolf_howl_02
+              - futuristic_10
+              - amzn_sfx_scifi_engines_on_02
+              - amzn_sfx_scifi_alarm_04
+              - amzn_sfx_scifi_sheilds_up_01
+              - amzn_sfx_scifi_alarm_01
+              - zap_01
+              - amzn_sfx_crowd_applause_01
+              - amzn_sfx_large_crowd_cheer_01
+        name: Sound
+        description: Be annoying!!
+      local_mute:
+        selector:
+          select:
+            options:
+              - "On"
+              - "Off"
+        name: Local Mute
+        description: >-
+          Mute for testing purposes. Global alexa mute entity is
+          input_boolean.bool_mute_alexa_notifications
+    icon: mdi:bullhorn-outline
+#####
+# Rest Api: Custom Alexa Notification
+
+#####
+notify:
+  - name: api_custom_alexa_notification
+    platform: rest
+    method: POST_JSON
+    resource: http://homeassistant.local:8123/api/services/script/custom_alexa_notification
+    #resource: http://homeassistant.local:8123/api/services/script/notification_dispatcher
+    headers:
+      Authorization: !secret rest_token
+      Content-Type: "application/json"

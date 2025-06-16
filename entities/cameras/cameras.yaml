@@ -16,7 +16,7 @@
   draw: ["all"]
   attributes:
     - calibration_points
-  #. auto_update: false
+  auto_update: true
 
 #####
 # FFMpeg Cameras

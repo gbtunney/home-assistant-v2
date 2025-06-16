@@ -1,0 +1,22 @@
+---
+# Zoning information
+zone:
+  - name: Home
+    latitude: !secret home_lat
+    longitude: !secret home_long
+    radius: 13
+    icon: mdi:home
+
+  - name: Target
+    latitude: !secret target_lat
+    longitude: !secret target_long
+    radius: 80
+    icon: mdi:bullseye
+
+# Seafoams Home Country LOL!
+sun2:
+  - unique_id: tanzania
+    location: Lushoto,Tanzania
+    latitude: -4.875124
+    longitude: 38.462557
+    time_zone: Africa/Nairobi

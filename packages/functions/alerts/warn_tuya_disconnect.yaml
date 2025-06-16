@@ -1,0 +1,46 @@
+#####
+# Warning for Non-essential devices.
+# TODO - rename this is archived
+#####
+
+automation:
+  - id: "1736918165710"
+    alias: Warn Tuya Disconnect
+    description: todo- rename, reorganize"
+    use_blueprint:
+      path: alert_replacement.yaml
+      input:
+        alert_name: Warning Tuya disconnect
+        label_id: entity_list_tuya_connectivity_status
+        notification_timer: timer.timer_warn_tuya_disconnect
+        controlling_binary_sensor: binary_sensor.alert_state_warning_tuya_disconnect
+        alert_type: WARNING
+        event_uid: ACK_WARN_TUYA_DISCONNECT
+        trigger_state: "on"
+        trigger_offset_minutes: 15
+        repeat_minutes: 45
+
+input_boolean:
+  enabled_warn_tuya_disconnect:
+    name: "Alert Enabled: Warn - Tuya Disconnect"
+    # description: "used to supress warnings during clean event"
+    icon: mdi:alert
+
+timer:
+  timer_warn_tuya_disconnect:
+    duration: "00:25:00"
+    restore: true
+    name: "Timer Warn Tuya Disconnect"
+
+# configuration.yaml
+template:
+  - binary_sensor:
+      - name: "Alert State: Warning - Tuya Disconnect"
+        unique_id: "alert_state_warn_tuya_disconnect"
+
+        state: |
+          {%- set my_enabled = bool(is_state( "input_boolean.enabled_warn_tuya_disconnect",'on') ,false) %}
+          {%- set my_label = "entity_list_tuya_connectivity_status" %}
+          {%- set label_list = label_entities(my_label) | select('is_state', 'off') | list  %}    
+          {%- set label_count = label_list | count %}
+          {{- bool( bool(my_enabled,false) and  bool( label_count | int > 0 ,false) ,false) }}

@@ -1,0 +1,120 @@
+blueprint:
+  name: Alert Replacement Blueprint
+  description: "The core functionality is a pairing of an alert state binary_sensor and a timer entity. It then runs on a cycle and sends notifications. Todo remove testing defaults. "
+  domain: automation
+  input:
+    alert_name:
+      name: Title
+      selector:
+        text: null
+    label_id:
+      name: Label ID
+      selector:
+        text: null
+    notification_timer:
+      name: Notification Timer
+      selector:
+        entity:
+          filter:
+            - domain:
+                - timer
+          multiple: false
+    controlling_binary_sensor:
+      name: Controlling Binary Sensor
+
+      selector:
+        entity:
+          filter:
+            - domain:
+                - binary_sensor
+                - input_boolean
+          multiple: false
+
+    alert_type:
+      name: Alert Type
+      selector:
+        select:
+          options:
+            - INFO
+            - WARNING
+            - CRITICAL
+      default: INFO
+    event_uid:
+      name: Event UID
+      description: For actionable notificcations and clearing example- ACK_WARN_IRREGULAR_OFF
+      selector:
+        text: null
+
+    trigger_state:
+      selector:
+        text: null
+      name: Trigger State
+      description: like alert.state="on" in alert integration exccept idk message field TODO - implement
+    trigger_offset_minutes:
+      selector:
+        number:
+          min: 2
+          max: 10
+          step: 1
+      name: Trigger Offset Minutes
+
+    repeat_minutes:
+      selector:
+        number:
+          min: 2
+          max: 500
+          step: 1
+      name: Repeat Minutes
+      description: like "repeat" in alert integration
+variables:
+  bp_variables:
+    alert_name: !input alert_name
+    label_id: !input label_id
+    notification_timer: !input notification_timer
+    controlling_binary_sensor: !input controlling_binary_sensor
+    alert_type: !input alert_type
+    event_uid: !input event_uid
+    trigger_state: !input trigger_state
+    trigger_offset_minutes: !input trigger_offset_minutes
+    repeat_minutes: !input repeat_minutes
+
+triggers:
+  - trigger: state
+    entity_id:
+      - !input controlling_binary_sensor
+    to: "on"
+    from: "off"
+    for:
+      hours: 0
+      minutes: !input trigger_offset_minutes
+      seconds: 0
+  - trigger: state
+    entity_id:
+      - !input controlling_binary_sensor
+    to: "off"
+    from: "on"
+    for:
+      hours: 0
+      minutes: !input trigger_offset_minutes
+      seconds: 0
+  - trigger: event
+    event_type: timer.finished
+    event_data:
+      entity_id: !input notification_timer
+condition: []
+
+action:
+  - variables:
+      my_platform: "{{trigger.platform }}"
+      my_event: "{{trigger.event }}"
+  - action: script.alert_replacement_script
+    metadata: {}
+    data:
+      alert_name: "{{bp_variables.alert_name}}"
+      label_id: "{{bp_variables.label_id}}"
+      notification_timer: "{{bp_variables.notification_timer}}"
+      controlling_binary_sensor: "{{bp_variables.controlling_binary_sensor}}"
+      alert_type: "{{bp_variables.alert_type}}"
+      event_uid: "{{bp_variables.event_uid}}"
+      repeat_minutes: "{{bp_variables.repeat_minutes}}"
+mode: single

@@ -1,0 +1,114 @@
+---
+### Home Assistant Core Configurations ###
+
+homeassistant:
+  packages: !include_dir_named packages # package setup/config split
+  media_dirs:
+    local: /media
+    # directory for camera snapshots
+  allowlist_external_dirs:
+    - "/media"
+
+    #####
+# Bluetooth
+# https://www.home-assistant.io/integrations/bluetooth/
+#####
+
+bluetooth:
+  #device_tracker:
+  #- platform: bluetooth_le_tracker
+
+  #####
+# The System Health component provides an API to offer information
+# on the system and its components.
+#
+# https://www.home-assistant.io/integrations/system_health
+#####
+system_health:
+
+  #####
+# Using this integration to trigger events for log entries
+# https://www.home-assistant.io/integrations/system_log/
+#####
+system_log:
+  fire_event: true
+
+#####
+# Logger - only log warning and up
+# https://www.home-assistant.io/integrations/logger/
+#####
+
+logger:
+  default: warn
+  logs:
+    custom_components.tuya_local: debug
+    custom_components.hass_cozylife_local_pull: debug
+  #    homeassistant.components.cast: debug
+  #    homeassistant.components.cast.media_player: debug
+  #    custom_components.youtube: debug
+  #    custom_components.powercalc: debug
+  #    custom_components.tuya_local: debug
+
+# Show links to resources in log and frontend
+# introduction:
+
+# Enable iOS frontend
+ios:
+
+# Enables configuration UI
+config:
+
+# Incorporate latest changes
+default_config:
+
+# Person component
+person:
+
+# Checks for available updates
+# Note: This component will send some information about your system to
+# the developers to assist with development of Home Assistant.
+# For more information, please see:
+# https://home-assistant.io/blog/2016/10/25/explaining-the-updater/
+# updater:
+# Deprecated with 2021.4.0
+# Optional, allows Home Assistant developers to focus on popular components.
+# include_used_components: true
+
+recorder:
+  #db_url: !secret recorder_url
+  #purge_keep_days: 32
+  include: !include ./../../history/include.yaml
+  exclude:
+    !include ./../../history/exclude.yaml
+    #- event_types:
+  #- call_service # Don't record actions
+
+# Enables support for tracking state changes over time
+history:
+  include: !include ./../../history/include.yaml
+  exclude: !include ./../../history/exclude.yaml
+
+# View all events in a logbook
+logbook:
+  include: !include ./../../history/include.yaml
+  exclude: !include ./../../history/exclude.yaml # Allows you to issue voice commands from the frontend in enabled browsers
+
+conversation:
+
+#####
+# Added Alexa integration to Home Assistant
+# https://www.home-assistant.io/integrations/alexa.smart_home/
+#####
+alexa:
+  smart_home:
+
+# Enables a map showing the location of tracked devices
+# map: # Deprecated
+
+# Track the sun
+sun:
+
+# Home Assistant Cloud
+cloud:
+# Universal Plug and Play
+# upnp: # DEPRECATED

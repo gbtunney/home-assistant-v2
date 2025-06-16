@@ -1,0 +1,8 @@
+#####
+# Bluetooth
+# https://www.home-assistant.io/integrations/bluetooth/
+#####
+
+bluetooth:
+  #device_tracker:
+  #- platform: bluetooth_le_tracker

@@ -173,6 +173,7 @@ dist
 .uuid
 core.*
 core
+!core.yaml
 home-assistant_v2
 home-assistant_v2.*
 deps
@@ -193,7 +194,7 @@ production_auth.json
 OZW_Log.txt
 www
 .esphome
-
+cozylife_getconfig.py
 snapshots
 storage
 # Scratch Files

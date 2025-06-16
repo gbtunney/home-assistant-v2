@@ -2,4 +2,16 @@
 # Sensor Templates
 # https://www.home-assistant.io/integrations/template/
 #####
-[]
+
+- use_blueprint:
+    path: inverted_binary_sensor.yaml
+    input:
+      reference_entity: binary_sensor.alert_watch_list
+  name: Inverted foo
+  unique_id: inverted_binary_sensor_alert_watch_list
+- use_blueprint:
+    path: inverted_binary_sensor.yaml
+    input:
+      reference_entity: binary_sensor.10g_m_powerstrip_status
+  name: Inverted bar
+  unique_id: inverted_binary_10g_m_powerstrip_status

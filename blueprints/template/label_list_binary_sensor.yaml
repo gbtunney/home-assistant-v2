@@ -1,0 +1,78 @@
+blueprint:
+  name: Clone a switch
+  description: Creates a clone of a switch based on a reference switch
+  domain: template
+  input:
+    label_id:
+      selector:
+        text: null
+      required: true
+      name: Label ID
+    name:
+      selector:
+        text: null
+      required: true
+      name: Name
+    timer_unique_id:
+      selector:
+        text: null
+      required: true
+      name: Timer Unique ID
+      description: should be a slug!
+    state_picker:
+      selector:
+        select:
+          multiple: true
+          options:
+            - "on"
+            - "off"
+            - unavailable
+            - unknown
+      required: true
+      name: State Picker
+
+variables:
+  label_id: !input label_id
+  unique_id: !input unique_id
+  state_picker: !input state_picker
+  name: !input name
+
+input_boolean:
+  controller_{{unique_id}}:
+    name: "Alert Enabled: Warning - Tuya Disconnect"
+    # description: "used to supress warnings during clean event"
+    icon: mdi:alert
+
+timer:
+  "timer_{{unique_id}}":
+    duration: "00:25:00"
+    restore: true
+
+# configuration.yaml
+template:
+  binary_sensor:
+    - name: "{{name}}" # "{{name}}"
+      # unique_id: #"binary_sensor.{{unique_id}}"
+      device_class: power
+      state: |
+        {% set my_label = label_id %}
+        {% set label_list = label_entities(my_label) | select('is_state', 'off') | list  %}    
+        {% set label_count = label_list | count %}
+        {{ bool( label_count | int > 0 ,false) }}
+
+    - platform: template
+      switches:
+        clone_aquarium_pump:
+          friendly_name: "Aquarium Pump Clone"
+          value_template: "{{ is_state(reference_entity, 'on') }}"
+          turn_on:
+            service: switch.turn_on
+            target:
+              entity_id: "{{reference_entity}}"
+          turn_off:
+            service: switch.turn_off
+            target: entity_id:"{{ reference_entity}}"
+    # TODO: test undr template:
+    #     - switch:
+    #- name: "Aquarium Pump"
+    #state: "{{ is_state('switch.20g_rack_filter_powerhead_heater', 'on') }}"

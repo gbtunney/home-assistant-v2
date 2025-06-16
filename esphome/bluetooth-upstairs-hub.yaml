@@ -1,18 +1,10 @@
-
 substitutions:
-  itag1_id: white_itag_1
-  itag1_friendly_name: "iTag 1"
-
-  # Tag 2
-  itag2_id: white_itag_2
-  itag2_friendly_name: "iTag 2"
-
-  atc_1_id: atc_hygrometer_1
-  atc_1_friendly_name: "ATC Hygrometer 1"
+  proxy_id: bluetooth_upstairs_hub
+  proxy_friendly_name: Bluetooth Upstairs Hub
 
 esphome:
-  name: bluetooth-upstairs-hub
-  friendly_name: Bluetooth Upstairs Hub
+  name: ${proxy_id}
+  friendly_name: ${proxy_friendly_name}
 
 esp32:
   board: esp32dev
@@ -21,7 +13,7 @@ esp32:
 
 # Enable logging
 logger:
-  level: VERY_VERBOSE
+  level: VERBOSE
 
 # Enable Home Assistant API
 api:
@@ -42,42 +34,23 @@ wifi:
     password: "p5uecvmtRSN7"
 
 captive_portal:
-    
-
 
 esp32_ble_tracker:
   scan_parameters:
-    interval: 1100ms
-    window: 1100ms
-    active: true
-  on_ble_advertise:
-    - then:
+    active: false
 
 bluetooth_proxy:
   active: true
-  
-ble_client:
- ### ===== ATC BLE CLIENT ===== ###
-  - mac_address: A4:C1:38:91:3B:D8 # A4:C1:38:91:3B:D8 .  5B:09:83:FC:69:4C #REPLACE WITH FOB'S MAC ADDRESS "78:6D:EB:2D:BF:4C"
-    id: ${atc_1_id}
-    auto_connect: true
-    on_connect:
-      then:
-        - logger.log: "${atc_1_friendly_name} is connected!!"
 
 binary_sensor:
-  - platform: ble_presence
-    mac_address: A4:C1:38:91:3B:D8
-    name: "${atc_1_friendly_name}"
+  - platform: status
+    id: ${proxy_id}_status
+    name: "${proxy_friendly_name} Status"
 
 sensor:
-  - platform: ble_client
-    type: rssi
-    ble_client_id: ${atc_1_id}
-    name: "${atc_1_friendly_name} RSSI"
+  ### =====ESP32 BLE Tracker Wifi Signal Strength===== ###
+  - platform: wifi_signal # Reports the WiFi signal strength/RSSI in dB
+    id: ${proxy_id}wifi_signal_db
+    name: "${proxy_friendly_name} WiFi Signal dB"
+    update_interval: 360s
     entity_category: "diagnostic"
-
-#text_sensor:
- # - platform: ble_scanner
-   # name: "BLE Devices Scanner"
-

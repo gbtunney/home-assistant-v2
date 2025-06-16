@@ -1,0 +1,22 @@
+#####
+# Cozy Life 3rd Party Integration
+# https://github.com/yangqian/hass-cozylife
+#####
+
+switch:
+  - platform: cozylife
+    switches:
+      - name: "Cozy Life Outlet 1"
+        ip: !secret cl1_ip_address
+        description: !secret cl1_ip_address
+        did: 733969430050c2827748
+        pid: O28YAL
+        dmn: Smart Switch
+        dpid: [1, 2, 3, 31]
+      - name: "Cozy Life Outlet 2"
+        ip: !secret cl2_ip_address
+        description: !secret cl2_ip_address
+        did: 733280740050c21acc61
+        pid: O28YAL
+        dmn: Smart Switch
+        dpid: [1, 2, 3, 31]

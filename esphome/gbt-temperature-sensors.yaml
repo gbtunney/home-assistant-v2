@@ -3,7 +3,7 @@ esphome:
   friendly_name: gbt-temperature-sensors
 
 esp32:
-  board: esp32dev
+  board: esp32doit-devkit-v1
   framework:
     type: arduino
 
@@ -30,15 +30,10 @@ wifi:
     password: "hhrkMfNmIK3g"
 
 captive_portal:
-    
-#one_wire:
- # - platform: gpio
- #   pin: 
-
 
 one_wire:
   - platform: gpio
-    pin: GPIO22
+    pin: 22
     id: dallas
 
 button:
@@ -49,29 +44,11 @@ button:
       - lambda: |-
           id(dallas).search();
           id(dallas).dump_config();
-
+          
 sensor:
   - platform: dallas_temp
-    name: "Temperature"
-  
-external_components:
-  - source:
-      type: git
-      url: https://github.com/ssieb/esphome
-      ref: onewire
-    components: [ gpio, one_wire ]
-    refresh: 1min
-  #- platform: template
- # name: "Test 1-wire bus"
-#  then:
-     # - lambda: |-
-     #     id(dallas).search();
-      #    id(dallas).dump_config();
-
-#sensor:
- # - platform: dallas
-  #  address: 0xd13cb3f648ef3c28 #Replace
-   # name: "Boiler 150l Temperature" 
-  #- platform: dallas
-  #  address: 0x5c3c23f648eb7328 #Replace
-  #  name: "Boiler 100l Temperature"     
+    address: 0x1b000000391c3228 #Replace
+    name: "Dallas Temperature 1"
+  - platform: dallas_temp
+    address: 0x44000000348b3d28 #Replace
+    name: "Dallas Temperature 2"

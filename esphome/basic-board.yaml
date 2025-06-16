@@ -1,0 +1,36 @@
+substitutions:
+  esp_id: basic_board
+  esp_friendly_name: Basic Board
+
+esphome:
+  name: ${esp_id}
+  friendly_name: ${esp_friendly_name}
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+  level: VERBOSE
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "9TpNoNfVi7mWGoDhkykBJo5dH0c4JfpKUIj+WBzvt3w="
+
+ota:
+  - platform: esphome
+    password: "9539eaf3089799b792160d39f8b3efac"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "${esp_friendly_name} Fallback Hotspot"
+    password: "K1LAMVHGFSDS"
+
+captive_portal:
