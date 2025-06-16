@@ -13,10 +13,3 @@ switch:
         pid: O28YAL
         dmn: Smart Switch
         dpid: [1, 2, 3, 31]
-      - name: "Cozy Life Outlet 2"
-        ip: !secret cl2_ip_address
-        description: !secret cl2_ip_address
-        did: 733280740050c21acc61
-        pid: O28YAL
-        dmn: Smart Switch
-        dpid: [1, 2, 3, 31]
