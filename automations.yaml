@@ -515,6 +515,8 @@
     value_template: '{{ trigger.to_state.state in [''on'', ''off''] }}'
     enabled: true
   actions:
+  - variables:
+      entity_id: '{{trigger.entity_id}}'
   - action: script.set_state_switch_light
     data:
       bool_invert_state: 'Off'
@@ -525,4 +527,64 @@
         entity_id:
         - light.120g_aquarium_light
         - switch.120g_aquarium_pump
+  mode: single
+- id: '1750134524312'
+  alias: Aquarium Lighting Scheduled On/Off UI
+  description: Aquarium Lighting turned On/Off according to a schedule
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.aquarium_lighting_schedule
+    attribute: next_update
+    enabled: true
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.to_state.state in [''on'', ''off''] }}'
+    enabled: true
+  actions:
+  - action: script.dump_group
+    metadata: {}
+    data:
+      entities:
+      - light.aquarium_lighting
+      - light.120g_aquarium_light
+      - switch.120g_aquarium_pump
+  - variables:
+      my_trigger: entity_id
+  - action: script.set_state_switch_light
+    data:
+      select_state: 'Off'
+      bool_invert_state: 'Off'
+      entity_trigger:
+        entity_id: binary_sensor.aquarium_lighting_schedule
+      target_entity_set:
+        entity_id:
+        - light.aquarium_lighting
+        - light.120g_aquarium_light
+        - switch.120g_aquarium_pump
+  mode: single
+- id: '1760738048232'
+  alias: Carbon Monoxide Alert
+  description: ''
+  triggers:
+  - trigger: webhook
+    allowed_methods:
+    - POST
+    - PUT
+    - GET
+    local_only: false
+    webhook_id: -cz8onGC_d6n4Vk2Q2JIj5J9e
+    id: co_alert
+  conditions: []
+  actions:
+  - action: script.notification_dispatcher
+    metadata: {}
+    data:
+      message: Carbon Monoxide Detected!
+      notification_channel:
+      - iPhone
+      - alexa
+      - iPad
+      sound: default
+      alexa_sound: amzn_sfx_lion_roar_02
   mode: single

@@ -4,5 +4,5 @@
   after: sunrise
   after_offset: "2:30"
   before: sunset
-  before_offset: "-0:30"
+  before_offset: "2:30"
   unique_id: reptile_lighting_schedule

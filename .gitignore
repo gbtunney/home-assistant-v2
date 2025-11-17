@@ -132,6 +132,10 @@ pnpm-lock.yaml
 # System
 .ssh
 .env
+*.env
+
+# Virtual Python Env
+.venv
 
 # Build files
 dist
