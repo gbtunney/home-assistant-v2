@@ -1,101 +1,71 @@
 #!/bin/bash
-# Home Assistant Raw Registry Export Script with Floors + Web Exposure
+# Home Assistant Registry Exporter
+# - Dumps full arrays with a header row (union of keys across all items)
+# - CSVs are written to /config/www/ha_exports for easy Nabu Casa access
 
 OUT="/config/www/ha_exports"
-HA_URL="${HA_URL:-homeassistant.local:8123}/local/ha_exports"
+IN="/config/.storage"
+HA_HOST="${HA_HOST:-yzcm6icwt327ovrlkovlq6vvtbrwxk6j.ui.nabu.casa}"
+BASE_URL="http://${HA_HOST}/local/ha_exports"
+
 mkdir -p "$OUT"
-cd /config/.storage || { echo "❌ .storage not found"; exit 1; }
 
-echo "🔹 Exporting entities..."
-jq -r '
-  .data.entities[]
-  | [
-      .entity_id,
-      .device_id,
-      .platform,
-      .name,
-      .original_name,
-      .disabled_by,
-      .hidden_by,
-      (.labels // [] | join(";")),
-      .area_id
-    ]
-  | @csv
-' core.entity_registry > "$OUT/ha_entities_raw.csv"
-
-echo "🔹 Exporting devices..."
-jq -r '
-  .data.devices[]
-  | [
-      .id,
-      (.name_by_user // .name // ""),
-      .manufacturer,
-      .model,
-      .area_id,
-      .via_device_id,
-      (.entry_type // ""),
-      (.disabled_by // "")
-    ]
-  | @csv
-' core.device_registry > "$OUT/ha_devices_raw.csv"
-
-echo "🔹 Exporting areas..."
-jq -r '
-  .data.areas[]
-  | [
-      .id,
-      .name,
-      (
-        if (.aliases | type) == "array" then
-          (.aliases | join(";"))
-        else
-          (.aliases // "")
-        end
-      ),
-      (.floor_id // "")
-    ]
-  | @csv
-' core.area_registry > "$OUT/ha_areas_raw.csv"
-
-echo "🔹 Exporting labels..."
-if [ -f core.label_registry ]; then
-  jq -r '
-    .data.labels[]
-    | [
-        .id,
-        .name,
-        .color,
-        (.description // "")
-      ]
-    | @csv
-  ' core.label_registry > "$OUT/ha_labels_raw.csv"
-else
-  echo "⚠️ No label registry found; skipping label export."
+if [ ! -d "$IN" ]; then
+  echo "❌ Not found: $IN"
+  exit 1
 fi
 
-echo "🔹 Exporting floors..."
-if [ -f core.floor_registry ]; then
-  jq -r '
-    .data.floors[]
-    | [
-        .id,
-        .name,
-        (.aliases // [] | join(";")),
-        (.level // "")
-      ]
-    | @csv
-  ' core.floor_registry > "$OUT/ha_floors_raw.csv"
-  echo "✅ Floors exported to ha_floors_raw.csv"
-else
-  echo "⚠️ No floor registry found; skipping floors export."
-fi
+export_registry() {
+  local in_file="$1"     # e.g. core.entity_registry
+  local arr_key="$2"     # e.g. entities | devices | areas | labels | floors
+  local out_csv="$3"     # e.g. ha_entities_raw.csv
 
-echo "✅ Raw registry exports complete:"
-ls -1 "$OUT"/ha_*_raw.csv
+  if [ ! -f "$IN/$in_file" ]; then
+    echo "⚠️  Skipping $in_file (not found)"
+    return 0
+  fi
 
-echo "📂 Access your exports at:"
-echo "🔹  http://$HA_URL/ha_entities_raw.csv"
-echo "🔹  http://$HA_URL/ha_devices_raw.csv"
-echo "🔹  http://$HA_URL/ha_areas_raw.csv"
-echo "🔹  http://$HA_URL/ha_labels_raw.csv"
-echo "🔹  http://$HA_URL/ha_floors_raw.csv"
+  echo "🔹 Exporting $in_file → $out_csv (.$arr_key with header)"
+
+  jq -r --arg k "$arr_key" '
+    # Normalize any JSON value to a CSV-safe string
+    def norm:
+      if . == null then ""
+      elif type == "string" then .
+      elif type == "number" or type == "boolean" then tostring
+      elif type == "array" or type == "object" then tojson
+      else tostring
+      end;
+
+    # Grab the array at .data[$k]
+    (.data[$k]) as $a
+    | if ($a | type) != "array" then
+        # If the path is not an array, emit nothing
+        empty
+      else
+        # Build union of keys for header row
+        ($a | map(keys) | add | unique) as $cols
+        # Header
+        | ($cols | @csv),
+          # Rows
+          ( $a[] | [ $cols[] as $c | (.[$c] | norm) ] | @csv )
+      end
+  ' "$IN/$in_file" > "$OUT/$out_csv"
+}
+
+# Entities, Devices, Areas, Labels, Floors
+export_registry "core.entity_registry" "entities" "ha_entities_raw.csv"
+export_registry "core.device_registry"  "devices"  "ha_devices_raw.csv"
+export_registry "core.area_registry"    "areas"    "ha_areas_raw.csv"
+export_registry "core.label_registry"   "labels"   "ha_labels_raw.csv"
+export_registry "core.floor_registry"   "floors"   "ha_floors_raw.csv"
+
+echo "✅ Exports complete:"
+ls -1 "$OUT"/ha_*_raw.csv 2>/dev/null || true
+
+echo "📂 Access URLs (Nabu Casa):"
+echo "  ${BASE_URL}/ha_entities_raw.csv"
+echo "  ${BASE_URL}/ha_devices_raw.csv"
+echo "  ${BASE_URL}/ha_areas_raw.csv"
+echo "  ${BASE_URL}/ha_labels_raw.csv"
+echo "  ${BASE_URL}/ha_floors_raw.csv"
