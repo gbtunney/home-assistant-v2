@@ -1,0 +1,3 @@
+python-dotenv
+tuya-iot-py-sdk
+paho-mqtt
