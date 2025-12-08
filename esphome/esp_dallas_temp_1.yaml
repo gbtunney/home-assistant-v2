@@ -1,12 +1,18 @@
+#. ESP Tempeture Probe Count: 6
+
 substitutions:
-  proxy_id: bluetooth_upstairs_hub
-  proxy_friendly_name: Bluetooth Upstairs Hub
+  device_id: esp_dallas_1
+  device_friendly_name: ESP Dallas Temperature/:/ 1
+  probe_a_id: ${device_id}_probe_a
+  probe_a_name: ${device_friendly_name} Probe/:/ A
+  probe_b_id: ${device_id}_probe_b
+  probe_b_name: ${device_friendly_name} Probe/:/ B
 
 esphome:
-  name: ${proxy_id}
-  friendly_name: ${proxy_friendly_name}
-
-esp32:
+  name: ${device_id}
+  friendly_name: ${device_friendly_name}
+  
+esp32:  
   board: esp32dev
   framework:
     type: arduino
@@ -49,29 +55,36 @@ one_wire:
 
 binary_sensor:
   - platform: status
-    id: ${proxy_id}_status
-    name: "${proxy_friendly_name} Status"
+    id: ${device_id}_status
+    name: ${device_friendly_name} Status
+    entity_category: "diagnostic"
 
 sensor:
   ### =====ESP32 BLE Tracker Wifi Signal Strength===== ###
+  # Diagnostic ? 
   - platform: wifi_signal # Reports the WiFi signal strength/RSSI in dB
-    id: ${proxy_id}wifi_signal_db
-    name: "${proxy_friendly_name} WiFi Signal dB"
-    update_interval: 360s
+    id: ${device_id}_wifi_signal_db
+    name: ${device_friendly_name} WiFi Signal dB
+    update_interval: 600s
     entity_category: "diagnostic"
   
   - platform: dallas_temp
     address: 0x1b000000391c3228 #Replace
-    name: "Dallas Temperature 1"
+    id: ${probe_a_id}
+    name: ${probe_a_name}
+    device_class: temperature
+    
   - platform: dallas_temp
     address: 0x44000000348b3d28 #Replace
-    name: "Dallas Temperature 2"
-    
+    id: ${probe_b_id}
+    name: ${probe_b_name}
+    device_class: temperature
+
 button:
   - platform: template
     name: "Test 1-wire bus"
     on_press:
-      - logger.log: "Button press notification"
+      - logger.log: "Stupid Button press notification"
       - lambda: |-
           id(dallas).search();
           id(dallas).dump_config();
