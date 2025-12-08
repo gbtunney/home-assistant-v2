@@ -42,6 +42,11 @@ esp32_ble_tracker:
 bluetooth_proxy:
   active: true
 
+one_wire:
+  - platform: gpio
+    pin: 22
+    id: dallas
+
 binary_sensor:
   - platform: status
     id: ${proxy_id}_status
@@ -54,3 +59,19 @@ sensor:
     name: "${proxy_friendly_name} WiFi Signal dB"
     update_interval: 360s
     entity_category: "diagnostic"
+  
+  - platform: dallas_temp
+    address: 0x1b000000391c3228 #Replace
+    name: "Dallas Temperature 1"
+  - platform: dallas_temp
+    address: 0x44000000348b3d28 #Replace
+    name: "Dallas Temperature 2"
+    
+button:
+  - platform: template
+    name: "Test 1-wire bus"
+    on_press:
+      - logger.log: "Button press notification"
+      - lambda: |-
+          id(dallas).search();
+          id(dallas).dump_config();
