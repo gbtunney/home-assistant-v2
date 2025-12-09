@@ -7,12 +7,16 @@ substitutions:
   probe_a_name: ${device_friendly_name} Probe/:/ A
   probe_b_id: ${device_id}_probe_b
   probe_b_name: ${device_friendly_name} Probe/:/ B
+  probe_c_id: ${device_id}_probe_c
+  probe_c_name: ${device_friendly_name} Probe/:/ C
+  probe_d_id: ${device_id}_probe_d
+  probe_d_name: ${device_friendly_name} Probe/:/ D
 
 esphome:
   name: ${device_id}
   friendly_name: ${device_friendly_name}
-  
-esp32:  
+
+esp32:
   board: esp32dev
   framework:
     type: arduino
@@ -33,10 +37,16 @@ ota:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
-
+  manual_ip:
+    # Set this to the IP of the ESP
+    static_ip: !secret esp_dallas_1_static_ip
+    # Set this to the IP address of the router. Often ends with .1
+    gateway: 10.0.0.1
+    # The subnet of the network. 255.255.255.0 works for most home networks.
+    subnet: 255.255.255.0
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
-    ssid: "Bluetooth-Upstairs-Hub"
+    ssid: ${device_id}
     password: "p5uecvmtRSN7"
 
 captive_portal:
@@ -61,23 +71,35 @@ binary_sensor:
 
 sensor:
   ### =====ESP32 BLE Tracker Wifi Signal Strength===== ###
-  # Diagnostic ? 
+  # Diagnostic ?
   - platform: wifi_signal # Reports the WiFi signal strength/RSSI in dB
     id: ${device_id}_wifi_signal_db
     name: ${device_friendly_name} WiFi Signal dB
     update_interval: 600s
     entity_category: "diagnostic"
-  
+
   - platform: dallas_temp
     address: 0x1b000000391c3228 #Replace
     id: ${probe_a_id}
     name: ${probe_a_name}
     device_class: temperature
-    
+
   - platform: dallas_temp
     address: 0x44000000348b3d28 #Replace
     id: ${probe_b_id}
     name: ${probe_b_name}
+    device_class: temperature
+    
+  - platform: dallas_temp
+    address: 0x1b000000391c3228 #Replace
+    id: ${probe_c_id}
+    name: ${probe_c_name}
+    device_class: temperature
+  
+  - platform: dallas_temp
+    address: 0x44000000348b3d28 #Replace
+    id: ${probe_d_id}
+    name: ${probe_d_name}
     device_class: temperature
 
 button:
