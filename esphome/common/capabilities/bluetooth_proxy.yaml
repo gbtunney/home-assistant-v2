@@ -1,0 +1,43 @@
+# ============================================================
+# CAPABILITY — BLUETOOTH PROXY
+# ============================================================
+#
+# PURPOSE
+# -------
+# Enables ESPHome Bluetooth Proxy functionality so this device can:
+# - Relay BLE traffic to Home Assistant
+# - Support BLE-based integrations (e.g. Bermuda, Xiaomi, Govee, etc.)
+# - Act as shared BLE infrastructure for nearby devices
+#
+# DESIGN RULES
+# ------------
+# - This capability defines BLE *infrastructure*, not sensors
+# - No BLE target devices are hardcoded here
+# - Safe to include on any ESP32 with BLE support
+# - Does not create Home Assistant entities
+#
+# BLE SCANNING NOTES
+# ------------------
+# - Uses passive scanning by default (lower power / interference)
+# - Active scanning can be enabled per device if required
+#
+# ============================================================
+
+substitutions:
+  # BLE scan mode (passive recommended unless required)
+  ble_active_scan: "false"
+
+# ------------------------------------------------------------
+# BLE TRACKER (LOW-LEVEL SCANNING)
+# ------------------------------------------------------------
+esp32_ble_tracker:
+  id: ble_tracker
+  scan_parameters:
+    active: ${ble_active_scan}
+
+# ------------------------------------------------------------
+# BLUETOOTH PROXY (HOME ASSISTANT INTEGRATION)
+# ------------------------------------------------------------
+bluetooth_proxy:
+  id: ble_proxy
+  active: true

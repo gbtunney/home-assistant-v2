@@ -1,0 +1,165 @@
+# ============================================================
+# CAPABILITY — DALLAS PROBE PAIR
+# ============================================================
+#
+# ENTITIES (PER PAIR, GENERIC)
+# ---------------------------
+# Sensors (enabled by default):
+#   - <prefix>_<pair>a_temp        (smoothed temperature, probe A)
+#   - <prefix>_<pair>b_temp        (smoothed temperature, probe B)
+#
+# Sensors (diagnostic, disabled by default):
+#   - <prefix>_<pair>a_raw         (raw DS18B20, probe A)
+#   - <prefix>_<pair>b_raw         (raw DS18B20, probe B)
+#   - <prefix>_<pair>_delta        (|A − B|)
+#
+# Binary sensors:
+#   - <prefix>_<pair>_high_alert   (either probe > high threshold)
+#   - <prefix>_<pair>_low_alert    (either probe < low threshold)
+#   - <prefix>_<pair>_out_of_sync  (delta > allowed)
+#
+# NOTES
+# -----
+# - <prefix> defaults to "probe" (configurable via substitutions)
+# - <pair> is the pair_id (e.g. 1, 2, 3)
+# - Entity names are TECHNICAL and STABLE
+# - Home Assistant entity_ids are derived from `name:` and device name
+# - Do NOT rename entities after first deploy
+#
+# FUTURE EXTENSIONS (INTENTIONALLY DEFERRED)
+# ------------------------------------------
+# These are explicitly NOT implemented in v1 to keep behavior stable.
+# They are safe to add in future versions without breaking entity IDs:
+#
+# - Probe failure detection
+#   * Detect NaN / disconnected DS18B20 sensors
+#   * Expose <prefix>_<pair>a_failed / b_failed (diagnostic)
+#
+# - Per-probe calibration offsets
+#   * User-defined additive offsets per probe
+#   * Applied between raw and smoothed sensors
+#
+# - °F mirror sensors
+#   * Additional Fahrenheit entities (disabled by default)
+#   * Preserve existing °C entities as canonical
+#
+# - Health summary sensor
+#   * Roll-up of connectivity, delta, and alert state
+#   * Diagnostic-only, optional
+#
+# ============================================================
+
+substitutions:
+  # Update interval for derived/template sensors (seconds)
+  probe_update_interval: "30s"
+
+  # Domain prefix for entities (do not change after deploy)
+  probe_prefix: "probe"
+
+  # Pair identifier (e.g. "1", "2", "3")
+  pair_id: "REQUIRED"
+
+  # DS18B20 addresses
+  probe_a_address: "REQUIRED"
+  probe_b_address: "REQUIRED"
+
+  # Thresholds (°C)
+  pair_high_threshold: "32.0"
+  pair_low_threshold: "22.0"
+  pair_delta_threshold: "1.0"
+
+# ------------------------------------------------------------
+# PROBE A
+# ------------------------------------------------------------
+sensor:
+  # Raw probe A (diagnostic only)
+  - platform: ds18b20
+    id: ${probe_prefix}_${pair_id}a_raw
+    address: ${probe_a_address}
+    name: "${probe_prefix}_${pair_id}a_raw"
+    entity_category: diagnostic
+    disabled_by_default: true
+
+  # Smoothed probe A (primary)
+  - platform: copy
+    id: ${probe_prefix}_${pair_id}a_temp
+    source_id: ${probe_prefix}_${pair_id}a_raw
+    name: "${probe_prefix}_${pair_id}a_temp"
+    device_class: temperature
+    # unit_of_measurement omitted (ESPHome device_class: temperature defaults to °C)
+    filters:
+      - sliding_window_moving_average:
+          window_size: ${dallas_avg_window}
+          send_every: ${dallas_avg_window}
+
+  # ------------------------------------------------------------
+  # PROBE B
+  # ------------------------------------------------------------
+  # Raw probe B (diagnostic only)
+  - platform: ds18b20
+    id: ${probe_prefix}_${pair_id}b_raw
+    address: ${probe_b_address}
+    name: "${probe_prefix}_${pair_id}b_raw"
+    entity_category: diagnostic
+    disabled_by_default: true
+
+  # Smoothed probe B (primary)
+  - platform: copy
+    id: ${probe_prefix}_${pair_id}b_temp
+    source_id: ${probe_prefix}_${pair_id}b_raw
+    name: "${probe_prefix}_${pair_id}b_temp"
+    device_class: temperature
+    # unit_of_measurement omitted (ESPHome device_class: temperature defaults to °C)
+    filters:
+      - sliding_window_moving_average:
+          window_size: ${dallas_avg_window}
+          send_every: ${dallas_avg_window}
+
+  # ------------------------------------------------------------
+  # DELTA (DIAGNOSTIC)
+  # ------------------------------------------------------------
+  - platform: template
+    id: ${probe_prefix}_${pair_id}_delta
+    name: "${probe_prefix}_${pair_id}_delta"
+    # unit_of_measurement omitted (ESPHome device_class: temperature defaults to °C)
+    icon: mdi:delta
+    entity_category: diagnostic
+    update_interval: ${probe_update_interval}
+    lambda: |-
+      return abs(
+        id(${probe_prefix}_${pair_id}a_temp).state -
+        id(${probe_prefix}_${pair_id}b_temp).state
+      );
+
+# ------------------------------------------------------------
+# ALERTS
+# ------------------------------------------------------------
+binary_sensor:
+  # High temperature alert (either probe)
+  - platform: template
+    id: ${probe_prefix}_${pair_id}_high_alert
+    name: "${probe_prefix}_${pair_id}_high_alert"
+    device_class: heat
+    lambda: |-
+      return
+        id(${probe_prefix}_${pair_id}a_temp).state > ${pair_high_threshold} ||
+        id(${probe_prefix}_${pair_id}b_temp).state > ${pair_high_threshold};
+
+  # Low temperature alert (either probe)
+  - platform: template
+    id: ${probe_prefix}_${pair_id}_low_alert
+    name: "${probe_prefix}_${pair_id}_low_alert"
+    device_class: cold
+    lambda: |-
+      return
+        id(${probe_prefix}_${pair_id}a_temp).state < ${pair_low_threshold} ||
+        id(${probe_prefix}_${pair_id}b_temp).state < ${pair_low_threshold};
+
+  # Out-of-sync alert (delta exceeded)
+  - platform: template
+    id: ${probe_prefix}_${pair_id}_out_of_sync
+    name: "${probe_prefix}_${pair_id}_out_of_sync"
+    icon: mdi:alert-decagram
+    entity_category: diagnostic
+    lambda: |-
+      return id(${probe_prefix}_${pair_id}_delta).state > ${pair_delta_threshold};

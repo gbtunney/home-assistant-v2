@@ -1,0 +1,71 @@
+# ============================================================
+# FLEET — BLUETOOTH PROXY NODES
+# ============================================================
+#
+# PURPOSE
+# -------
+# This fleet defines devices whose *primary role* is to act as
+# Bluetooth Proxy infrastructure for Home Assistant.
+#
+# These devices:
+#   - relay BLE traffic to Home Assistant
+#   - support nearby BLE-based integrations (e.g. Bermuda)
+#   - provide shared RF infrastructure
+#
+# They do NOT:
+#   - own sensors or actuators
+#   - represent physical measurements
+#   - implement device-specific logic
+#
+# ------------------------------------------------------------
+#
+# FLEET CONTRACT
+# --------------
+# A fleet represents:
+#   - firmware lineage
+#   - rollout cadence
+#   - operational role
+#
+# A fleet MUST NOT:
+#   - define sensors, binary_sensors, buttons, switches
+#   - define hardware behavior (BLE, GPIO, buses)
+#   - create or remove ESPHome entities
+#   - assume wiring or peripherals
+#
+# Hardware behavior is defined exclusively by capabilities.
+#
+# ------------------------------------------------------------
+#
+# CARDINALITY RULE
+# ---------------
+# Each device MUST include exactly ONE fleet file.
+# Fleets are mutually exclusive.
+#
+# Devices may include MANY capabilities.
+#
+# ------------------------------------------------------------
+#
+# CHANGE SAFETY
+# -------------
+# Changes to this file must be SAFE and NON-DESTRUCTIVE:
+#   - updating values here must not create/remove entities
+#   - moving a device between fleets must not require
+#     refactoring device or capability logic
+#
+# ------------------------------------------------------------
+
+substitutions:
+  # Fleet identifier
+  # Used for:
+  #   - ESPHome project.name
+  #   - firmware family identification
+  #   - Home Assistant labeling / grouping
+  fleet_id: "ble_proxy"
+
+  # High-level operational role (human-readable)
+  # Informational only — no logic should depend on this
+  fleet_role: "bluetooth_proxy_infrastructure"
+
+  # Firmware version for this fleet
+  # Used for diagnostics and future update policy
+  fleet_firmware_version: "0.1.0"

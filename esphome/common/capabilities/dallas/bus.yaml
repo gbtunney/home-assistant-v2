@@ -1,0 +1,23 @@
+# ============================================================
+# CAPABILITY — DALLAS / ONEWIRE BUS
+# ============================================================
+#
+# PURPOSE
+# -------
+# Defines the OneWire GPIO bus required by DS18B20 probes.
+#
+# This file:
+# - creates the bus
+# - does NOT define any probes
+#
+# Probes are defined by probe_pair.yaml.
+#
+# ============================================================
+
+substitutions:
+  dallas_pin: "21" # default, override per device if needed
+
+one_wire:
+  - platform: gpio
+    id: dallas_bus
+    pin: ${dallas_pin}

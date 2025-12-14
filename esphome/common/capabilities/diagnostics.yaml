@@ -1,0 +1,148 @@
+# ============================================================
+# CAPABILITY — DIAGNOSTICS
+# ============================================================
+#
+# PURPOSE
+# -------
+# Provides standard diagnostic and metadata entities for ESPHome devices.
+# These entities are informational only and must never affect behavior.
+#
+# DESIGN RULES
+# ------------
+# - Entity names are TECHNICAL and STABLE
+# - ESPHome IDs are prefixed with `diag_` (internal only)
+# - Home Assistant entity_ids are derived from `name` + device name
+# - Diagnostics are categorized using `entity_category: diagnostic`
+# - Some entities are disabled by default to reduce UI clutter
+#
+# DO NOT rename entities after first deploy.
+#
+# FUTURE EXTENSIONS
+# -----------------
+# - Device health summary sensor (roll-up)
+#   * Single diagnostic entity representing overall device health
+#   * Derived from existing diagnostics such as:
+#     - connected (API / connectivity)
+#     - wifi_percent (signal quality)
+#     - probe alerts / deltas (from probe capabilities)
+#   * Possible forms:
+#     - binary (healthy / unhealthy)
+#     - text enum (ok / degraded / offline)
+#   * Recommended to prototype in Home Assistant first (template sensor)
+#   * Can be moved into this diagnostics capability later if needed
+#
+# - Update-needed / stale firmware indicator
+#   * Compare ${fleet_firmware_version} to expected fleet version
+#   * Expose binary_sensor.<device>_update_needed
+#   * Implemented in future version to avoid premature coupling
+#
+# - Last-seen timestamp
+#   * Human-readable representation of last successful connection
+#
+# ============================================================
+
+substitutions:
+  # Update interval for derived / polling diagnostics
+  diagnostics_update_interval: "60s"
+
+# ------------------------------------------------------------
+# TEXT SENSORS — METADATA
+# ------------------------------------------------------------
+text_sensor:
+  # ESPHome runtime version
+  - platform: version
+    id: diag_esphome_version
+    name: "esphome_version"
+    entity_category: diagnostic
+    disabled_by_default: true
+
+  # Build timestamp (compile time)
+  - platform: template
+    id: diag_build_datetime
+    name: "build_datetime"
+    entity_category: diagnostic
+    update_interval: never
+    lambda: |-
+      return __DATE__ " " __TIME__;
+
+  # Fleet identifier
+  - platform: template
+    id: diag_fleet_id
+    name: "fleet_id"
+    entity_category: diagnostic
+    update_interval: never
+    lambda: |-
+      return "${fleet_id}";
+
+  # Fleet firmware version
+  - platform: template
+    id: diag_fleet_firmware_version
+    name: "fleet_firmware_version"
+    entity_category: diagnostic
+    update_interval: never
+    lambda: |-
+      return "${fleet_firmware_version}";
+
+# ------------------------------------------------------------
+# SENSORS — RUNTIME DIAGNOSTICS
+# ------------------------------------------------------------
+sensor:
+  # Device uptime (seconds, internal source)
+  - platform: uptime
+    id: diag_uptime_seconds
+    internal: true
+
+  # Device uptime (human-readable)
+  - platform: template
+    id: diag_uptime_human
+    name: "uptime"
+    entity_category: diagnostic
+    update_interval: ${diagnostics_update_interval}
+    lambda: |-
+      uint32_t s = (uint32_t) id(diag_uptime_seconds).state;
+      uint32_t days = s / 86400;
+      s %= 86400;
+      uint32_t hours = s / 3600;
+      s %= 3600;
+      uint32_t minutes = s / 60;
+      char buf[32];
+      if (days > 0)
+        snprintf(buf, sizeof(buf), "%ud %uh %um", days, hours, minutes);
+      else if (hours > 0)
+        snprintf(buf, sizeof(buf), "%uh %um", hours, minutes);
+      else
+        snprintf(buf, sizeof(buf), "%um", minutes);
+      return std::string(buf);
+
+  # WiFi RSSI (raw, diagnostic only)
+  - platform: wifi_signal
+    id: diag_wifi_rssi
+    name: "wifi_rssi"
+    entity_category: diagnostic
+    disabled_by_default: true
+    update_interval: ${diagnostics_update_interval}
+
+  # WiFi signal quality (derived percentage)
+  - platform: template
+    id: diag_wifi_percent
+    name: "wifi_percent"
+    entity_category: diagnostic
+    unit_of_measurement: "%"
+    icon: mdi:wifi
+    update_interval: ${diagnostics_update_interval}
+    lambda: |-
+      if (isnan(id(diag_wifi_rssi).state)) return NAN;
+      float percent = 2.0 * (id(diag_wifi_rssi).state + 100.0);
+      if (percent < 0) return 0;
+      if (percent > 100) return 100;
+      return percent;
+
+# ------------------------------------------------------------
+# BINARY SENSORS — CONNECTIVITY
+# ------------------------------------------------------------
+binary_sensor:
+  # ESP ↔ Home Assistant connectivity
+  - platform: status
+    id: diag_connected
+    name: "connected"
+    entity_category: diagnostic

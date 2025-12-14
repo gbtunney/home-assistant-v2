@@ -1,0 +1,66 @@
+# ============================================================
+# FLEET — ENVIRONMENTAL SENSOR NODES
+# ============================================================
+#
+# PURPOSE
+# -------
+# This file defines a *fleet*:
+# a logical, operational grouping of devices that share
+# firmware lineage, rollout cadence, and high-level role.
+#
+# A fleet represents:
+#   - a firmware family
+#   - a deployment / rollout group
+#   - a reporting / labeling boundary
+#
+# ------------------------------------------------------------
+#
+# A FLEET MAY:
+#   - define substitutions (metadata only)
+#   - define firmware family identity
+#   - define rollout / versioning information
+#   - describe the operational role of devices
+#
+# A FLEET MUST NOT:
+#   - define sensors, binary_sensors, buttons, switches
+#   - define hardware behavior (BLE, Dallas, GPIO, etc.)
+#   - create or remove ESPHome entities
+#   - assume specific device wiring
+#
+# If it affects runtime behavior, it does NOT belong here.
+#
+# ------------------------------------------------------------
+#
+# CARDINALITY RULE
+# ---------------
+# Each device MUST include exactly ONE fleet file.
+# Fleets are mutually exclusive.
+#
+# Devices may include MANY capabilities.
+#
+# ------------------------------------------------------------
+#
+# CHANGE SAFETY
+# -------------
+# Changes to this file should be SAFE and NON-DESTRUCTIVE:
+#   - updating values here must not create/remove entities
+#   - moving a device between fleets must not require
+#     refactoring device or capability logic
+#
+# ------------------------------------------------------------
+
+substitutions:
+  # Fleet identifier
+  # Used for:
+  #   - ESPHome project.name
+  #   - firmware family identification
+  #   - Home Assistant labeling / grouping
+  fleet_id: "env_sensors"
+
+  # High-level operational role (human-readable)
+  # Informational only — no logic should depend on this
+  fleet_role: "environmental_temperature_monitoring"
+
+  # Firmware version for this fleet
+  # Used for diagnostics and future update policy
+  fleet_firmware_version: "0.0.0"
