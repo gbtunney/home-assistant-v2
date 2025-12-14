@@ -221,8 +221,9 @@
     - binary_sensor.10g_m_powerstrip_status
     - binary_sensor.120g_powerstrip_status
     - binary_sensor.20g_powerstrip_status
-    - binary_sensor.55g_powerstrip_status
-    to: 'off'
+    - binary_sensor.dummypowerstrip_status
+    to:
+    - 'off'
     for:
       hours: 0
       minutes: 5

@@ -67,7 +67,16 @@ automation:
           bool_invert_state: "Off"
           select_state: Unknown
           target_entity_set:
-            entity_id: switch.20g_rack_co2
+            entity_id: switch.20_gallon_rack_c02
           entity_trigger:
             entity_id: "{{trigger.entity_id}}"
+
+      - action: script.notification_dispatcher
+        data:
+          message: Co2 is {% if is_state("switch.20_gallon_rack_c02",["on"]) -%}on{%- else -%}off{% endif -%}
+          sound: default
+          notification_channel:
+            - alexa
+          alexa_sound: amzn_sfx_trumpet_bugle_04
+
     mode: single

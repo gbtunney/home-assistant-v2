@@ -1,0 +1,39 @@
+esphome:
+  name: test_flash
+  friendly_name: Test Flash
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+logger:
+
+api:
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  ap:
+    ssid: "test-flash-fallback"
+    password: "testflash123"
+
+captive_portal:
+
+# BLE proxy (so we know BLE works too)
+esp32_ble_tracker:
+  scan_parameters:
+    active: false
+
+bluetooth_proxy:
+  active: true
+
+# Simple proof-of-life indicator
+binary_sensor:
+  - platform: status
+    name: "Test Flash Status"

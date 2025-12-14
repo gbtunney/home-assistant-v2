@@ -35,48 +35,6 @@ llm_vision_describe_scene:
     target:
       entity_id: input_text.llm_response
   icon: mdi:camera
-llm_car_in_driveway:
-  alias: LLM Car in Driveway
-  sequence:
-  - data:
-      max_tokens: 100
-      image_entity:
-      - camera.carport
-      provider: 01J99F4T99PA1XGQ4CTQS3CP8H
-      model: gpt-4o
-      target_width: 512
-      temperature: 0.5
-      detail: low
-      include_filename: false
-      message: Please check if there is a car in the driveway with the license plate
-        "<your_license_plate_number>" and respond with a JSON object. The JSON object
-        should have a single key, "car_in_driveway," which should be set to true if
-        - and only  if - there is a car with the license number provided above in
-        the  driveway and false otherwise.
-    response_variable: response
-    action: llmvision.image_analyzer
-  - choose:
-    - conditions:
-      - condition: template
-        value_template: '{{ (( response.response_text |regex_replace(find=''```json
-
-          '', replace='''', ignorecase=False) |regex_replace(find=''
-
-          ```'', replace='''', ignorecase=False)  ) | from_json).car_in_driveway }}'
-        enabled: true
-      sequence:
-      - target:
-          entity_id: input_boolean.car_in_driveway
-        data: {}
-        action: input_boolean.turn_on
-    default:
-    - target:
-        entity_id: input_boolean.car_in_driveway
-      data: {}
-      action: input_boolean.turn_off
-    enabled: true
-  mode: single
-  description: ''
 llv_prompt_test:
   alias: LLV Prompt Test
   fields:
@@ -108,35 +66,6 @@ llv_prompt_test:
       entity_id: tts.piper
     action: tts.speak
   description: ''
-bring_clothes_in_when_it_rains:
-  alias: Bring Clothes in when it rains
-  sequence:
-  - action: llmvision.image_analyzer
-    metadata: {}
-    data:
-      remember: false
-      include_filename: false
-      detail: low
-      max_tokens: 100
-      expose_images: false
-      temperature: 0.5
-      message: Reply with a simple number, how many pictures of artwork are hanging
-        on the wall?
-      image_entity:
-      - camera.camera_1_q5_profile1
-      model: gemini-1.5-flash
-      target_width: 512
-  - if:
-    - condition: template
-      value_template: '"{{ gemini.response_text | int > 1 }}"'
-    then:
-    - action: persistent_notification.create
-      metadata: {}
-      data:
-        message: 'The clothing items were counted.  COUNT: {{ gemini.response_text
-          | int }}'
-  description: ddd
-  icon: mdi:weather-lightning-rainy
 llv_numeric_question:
   alias: LLV Numeric Question
   sequence:
@@ -278,13 +207,13 @@ test_parent_resp:
   - action: script.test_response
     data:
       testvalue: i am a value
-      number_to_add: 40
+      number_to_add: 100
     response_variable: result
   - action: logbook.log
     metadata: {}
     data:
       name: LogBook test response
-      message: RESULT MER {{result}}///
+      message: RESULT Child Script {{result}}
   alias: Test Parent Resp
   description: ''
 alert_replacement_script_ui:
@@ -805,3 +734,45 @@ set_state_switch_light_test_version:
       required: false
   description: Target to turn on or off (setting the state)
   icon: mdi:toggle-switch-off
+entity_info_loop_script:
+  alias: Entity Info Loop Script
+  mode: parallel
+  fields:
+    entities:
+      name: Entities
+      description: List of entity IDs
+      required: true
+      selector:
+        entity:
+          multiple: true
+  sequence:
+  - variables:
+      input_entities: '{{ entities }}'
+      results: []
+  - repeat:
+      for_each: '{{ input_entities }}'
+      sequence:
+      - variables:
+          e: '{{ repeat.item }}'
+          ent_obj: '{{ states(e) }}'
+          ent_name: '{{ state_attr(e, ''friendly_name'') or e }}'
+          ent_state: '{{ ent_obj.state }}'
+          ent_domain: '{{ e.split(''.'')[0] }}'
+          dev_id: '{{ device_id(e) }}'
+          dev_name: "{% if dev_id %}\n  {{ device_attr(e, 'name')\n     or device_attr(e,
+            'model')\n     or 'Unknown Device' }}\n{% else %}\n  none\n{% endif %}\n"
+          ar_id: "{% if dev_id %}\n  {{ area_id(dev_id) }}\n{% else %}\n  {{ area_id(e)
+            }}\n{% endif %}\n"
+          ar_name: "{% if ar_id %}\n  {{ area_name(ar_id) }}\n{% else %}\n  none\n{%
+            endif %}\n"
+          lbls: '{{ device_attr(e, ''labels'') or [] }}'
+          row: "{{\n  {\n    \"entity_id\": e,\n    \"name\": ent_name,\n    \"state\":
+            ent_state,\n    \"domain\": ent_domain,\n    \"device_id\": dev_id,\n
+            \   \"device_name\": dev_name,\n    \"area_id\": ar_id,\n    \"area_name\":
+            ar_name,\n    \"labels\": lbls\n  }\n}}\n"
+      - variables:
+          results: '{{ results + [row] }}'
+  - event: entity_info_list_return
+    event_data:
+      items: '{{ results }}'
+  description: ''
