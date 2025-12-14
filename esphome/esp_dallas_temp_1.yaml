@@ -16,7 +16,7 @@
 
 substitutions:
   wifi_ssid: "Snailicide"
-
+  wifi_password: '"Betta$11"'
   api_encryption_key: "UK183nZ61Ngi/7py/HnBtsMQURS8lYXnBke8iBepuFo="
   ota_password: "9261fadd458c420a7f03c4467a4be901"
   device_use_address: "192.168.1.14"
@@ -52,6 +52,7 @@ packages:
   # BASE + FLEET
   # ----------------------------------------------------------
   base: !include common/universal_base.yaml
+  board: !include common/platforms/esp32.yaml
   fleet: !include fleets/env_sensors.yaml
 
   # ----------------------------------------------------------
@@ -87,8 +88,3 @@ packages:
         pair_id: "3"
         probe_a_address: ${probe_3a_address}
         probe_b_address: ${probe_3b_address}
-
-esp32:
-  board: esp32dev
-  framework:
-    type: arduino

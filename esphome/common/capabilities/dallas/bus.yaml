@@ -15,7 +15,7 @@
 # ============================================================
 
 substitutions:
-  dallas_pin: "21" # default, override per device if needed
+  dallas_pin: "22" # default, override per device if needed
 
 one_wire:
   - platform: gpio

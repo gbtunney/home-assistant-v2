@@ -52,14 +52,14 @@ packages:
   # ----------------------------------------------------------
   diagnostics: !include common/capabilities/diagnostics.yaml
   ble: !include common/capabilities/bluetooth_proxy.yaml
-  dallas_bus: !include common/capabilities/dallas_bus.yaml
+  dallas_bus: !include common/capabilities/dallas/bus.yaml
 
   # ----------------------------------------------------------
   # PROBE PAIRS (3 TOTAL)
   # ----------------------------------------------------------
   probe_pair_1:
     <<: !include
-      file: common/dallas/probe_pair.yaml
+      file: common/capabilities/dallas/probe_pair.yaml
       vars:
         pair_id: "1"
         probe_a_address: ${probe_1a_address}
@@ -67,7 +67,7 @@ packages:
 
   probe_pair_2:
     <<: !include
-      file: common/dallas/probe_pair.yaml
+      file: common/capabilities/dallas/probe_pair.yaml
       vars:
         pair_id: "2"
         probe_a_address: ${probe_2a_address}
@@ -75,7 +75,7 @@ packages:
 
   probe_pair_3:
     <<: !include
-      file: common/dallas/probe_pair.yaml
+      file: common/capabilities/dallas/probe_pair.yaml
       vars:
         pair_id: "3"
         probe_a_address: ${probe_3a_address}
