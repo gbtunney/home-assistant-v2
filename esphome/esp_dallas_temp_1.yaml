@@ -32,7 +32,7 @@ api:
 
 ota:
   - platform: esphome
-    password: "9261fadd458c420a7f03c4467a4be901"
+    password: !secret ota_password
 
 wifi:
   ssid: !secret wifi_ssid
@@ -89,13 +89,13 @@ sensor:
     id: ${probe_b_id}
     name: ${probe_b_name}
     device_class: temperature
-    
+
   - platform: dallas_temp
     address: 0x1b000000391c3228 #Replace
     id: ${probe_c_id}
     name: ${probe_c_name}
     device_class: temperature
-  
+
   - platform: dallas_temp
     address: 0x44000000348b3d28 #Replace
     id: ${probe_d_id}
