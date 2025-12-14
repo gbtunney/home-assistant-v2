@@ -1,112 +1,94 @@
-#. ESP Tempeture Probe Count: 6
+# ============================================================
+# DEVICE — ENV TEMP 1 (DEPLOYED)
+# ============================================================
+#
+# This is a DEPLOYED device file.
+# It lives at the root of the ESPHome config directory so it
+# appears in the ESPHome add-on UI.
+#
+# Role:
+# - Environmental temperature monitoring
+# - 3 Dallas probe pairs
+# - Bluetooth Proxy infrastructure
+# - Standard diagnostics
+#
+# ============================================================
 
 substitutions:
-  device_id: esp_dallas_1
-  device_friendly_name: ESP Dallas Temperature/:/ 1
-  probe_a_id: ${device_id}_probe_a
-  probe_a_name: ${device_friendly_name} Probe/:/ A
-  probe_b_id: ${device_id}_probe_b
-  probe_b_name: ${device_friendly_name} Probe/:/ B
-  probe_c_id: ${device_id}_probe_c
-  probe_c_name: ${device_friendly_name} Probe/:/ C
-  probe_d_id: ${device_id}_probe_d
-  probe_d_name: ${device_friendly_name} Probe/:/ D
+  wifi_ssid: "Snailicide"
 
-esphome:
-  name: ${device_id}
-  friendly_name: ${device_friendly_name}
+  api_encryption_key: "UK183nZ61Ngi/7py/HnBtsMQURS8lYXnBke8iBepuFo="
+  ota_password: "9261fadd458c420a7f03c4467a4be901"
+  device_use_address: "192.168.1.14"
+
+  # ----------------------------------------------------------
+  # DEVICE IDENTITY
+  # ----------------------------------------------------------
+  device_id: env_temp_1
+  device_hostname: "env-temp-1"
+  device_friendly_name: "Env Temp Node 1"
+  device_description: "Rack temperature monitor with BLE proxy"
+
+  # ----------------------------------------------------------
+  # DALLAS BUS CONFIGURATION
+  # ----------------------------------------------------------
+  dallas_pin: "21"
+  dallas_avg_window: "5"
+
+  # ----------------------------------------------------------
+  # PROBE ADDRESSES
+  # ----------------------------------------------------------
+  probe_1a_address: "0x28FFAAAA11111111"
+  probe_1b_address: "0x28FFBBBB22222222"
+
+  probe_2a_address: "0x28FFCCCC33333333"
+  probe_2b_address: "0x28FFDDDD44444444"
+
+  probe_3a_address: "0x28FFEEEE55555555"
+  probe_3b_address: "0x28FFFFF666666666"
+
+packages:
+  # ----------------------------------------------------------
+  # BASE + FLEET
+  # ----------------------------------------------------------
+  base: !include common/universal_base.yaml
+  fleet: !include fleets/env_sensors.yaml
+
+  # ----------------------------------------------------------
+  # CAPABILITIES
+  # ----------------------------------------------------------
+  diagnostics: !include common/capabilities/diagnostics.yaml
+  ble: !include common/capabilities/bluetooth_proxy.yaml
+  dallas_bus: !include common/capabilities/dallas/bus.yaml
+
+  # ----------------------------------------------------------
+  # PROBE PAIRS (3 TOTAL)
+  # ----------------------------------------------------------
+  probe_pair_1:
+    <<: !include
+      file: common/capabilities/dallas/probe_pair.yaml
+      vars:
+        pair_id: "1"
+        probe_a_address: ${probe_1a_address}
+        probe_b_address: ${probe_1b_address}
+
+  probe_pair_2:
+    <<: !include
+      file: common/capabilities/dallas/probe_pair.yaml
+      vars:
+        pair_id: "2"
+        probe_a_address: ${probe_2a_address}
+        probe_b_address: ${probe_2b_address}
+
+  probe_pair_3:
+    <<: !include
+      file: common/capabilities/dallas/probe_pair.yaml
+      vars:
+        pair_id: "3"
+        probe_a_address: ${probe_3a_address}
+        probe_b_address: ${probe_3b_address}
 
 esp32:
   board: esp32dev
   framework:
     type: arduino
-
-# Enable logging
-logger:
-  level: VERBOSE
-
-# Enable Home Assistant API
-api:
-  encryption:
-    key: "UK183nZ61Ngi/7py/HnBtsMQURS8lYXnBke8iBepuFo="
-
-ota:
-  - platform: esphome
-    password: !secret ota_password
-
-wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
-  manual_ip:
-    # Set this to the IP of the ESP
-    static_ip: !secret esp_dallas_1_static_ip
-    # Set this to the IP address of the router. Often ends with .1
-    gateway: 10.0.0.1
-    # The subnet of the network. 255.255.255.0 works for most home networks.
-    subnet: 255.255.255.0
-  # Enable fallback hotspot (captive portal) in case wifi connection fails
-  ap:
-    ssid: ${device_id}
-    password: "p5uecvmtRSN7"
-
-captive_portal:
-
-esp32_ble_tracker:
-  scan_parameters:
-    active: false
-
-bluetooth_proxy:
-  active: true
-
-one_wire:
-  - platform: gpio
-    pin: 22
-    id: dallas
-
-binary_sensor:
-  - platform: status
-    id: ${device_id}_status
-    name: ${device_friendly_name} Status
-    entity_category: "diagnostic"
-
-sensor:
-  ### =====ESP32 BLE Tracker Wifi Signal Strength===== ###
-  # Diagnostic ?
-  - platform: wifi_signal # Reports the WiFi signal strength/RSSI in dB
-    id: ${device_id}_wifi_signal_db
-    name: ${device_friendly_name} WiFi Signal dB
-    update_interval: 600s
-    entity_category: "diagnostic"
-
-  - platform: dallas_temp
-    address: 0x1b000000391c3228 #Replace
-    id: ${probe_a_id}
-    name: ${probe_a_name}
-    device_class: temperature
-
-  - platform: dallas_temp
-    address: 0x44000000348b3d28 #Replace
-    id: ${probe_b_id}
-    name: ${probe_b_name}
-    device_class: temperature
-
-  - platform: dallas_temp
-    address: 0x1b000000391c3228 #Replace
-    id: ${probe_c_id}
-    name: ${probe_c_name}
-    device_class: temperature
-
-  - platform: dallas_temp
-    address: 0x44000000348b3d28 #Replace
-    id: ${probe_d_id}
-    name: ${probe_d_name}
-    device_class: temperature
-
-button:
-  - platform: template
-    name: "Test 1-wire bus"
-    on_press:
-      - logger.log: "Stupid Button press notification"
-      - lambda: |-
-          id(dallas).search();
-          id(dallas).dump_config();

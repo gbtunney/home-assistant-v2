@@ -1,0 +1,21 @@
+# ============================================================
+# PLATFORM — ESP32 (ARDUINO)
+# ============================================================
+#
+# Defines:
+# - MCU family
+# - Framework
+# - Board-level constraints
+#
+# This file MUST NOT:
+# - define WiFi
+# - define BLE
+# - define sensors
+# - define GPIO usage
+#
+# ============================================================
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino

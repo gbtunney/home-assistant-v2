@@ -1,88 +1,83 @@
 # ============================================================
-# UNIVERSAL BASE — PLATFORM CONTRACT
+# UNIVERSAL BASE — ALL DEVICES
 # ============================================================
 #
-# PURPOSE
-# -------
-# This file defines the *platform-level contract* shared by
-# all ESPHome devices in this repo.
+# Provides:
+# - Core ESPHome identity
+# - Logger defaults
+# - API + OTA
+# - WiFi + fallback AP
 #
-# It MAY define:
-#   - device identity (name, friendly_name, comment)
-#   - logging defaults
-#   - API / OTA configuration
-#   - WiFi + fallback AP
-#   - project metadata (firmware family + version)
-#
-# It MUST NOT define:
-#   - sensors, binary_sensors, buttons, switches
-#   - hardware capabilities (BLE, Dallas, GPIO, etc.)
-#   - fleet metadata (fleet_id, firmware version values)
-#
-# If it creates an ESPHome entity, it does NOT belong here.
-#
-# ------------------------------------------------------------
+# This file MUST NOT contain hardware-specific logic.
+# ============================================================
+
+substitutions:
+  # -------------------------
+  # DEVICE IDENTITY
+  # -------------------------
+  # device_hostname defaults to device_id unless overridden per device
+  device_hostname: ${device_id}
+
+  # -------------------------
+  # OPTIONAL OTA TARGET
+  # -------------------------
+  # Set this per-device ONLY if mDNS is unreliable.
+  # Leave empty ("") to disable.
+  device_use_address: ""
+
+  # -------------------------
+  # GLOBAL DEFAULTS
+  # -------------------------
+  log_level: "INFO"
+
+  # -------------------------
+  # NETWORK DEFAULTS
+  # -------------------------
+  wifi_ssid: "!secret wifi_ssid"
+  wifi_password: "!secret wifi_password"
+  fallback_ap_password: "!secret fallback_ap_password"
+
+  # -------------------------
+  # OTA / API DEFAULTS
+  # -------------------------
+  api_encryption_key: "!secret api_encryption_key"
+  ota_password: "!secret ota_password"
 
 esphome:
-  # Machine identifier (stable, never renamed)
-  name: ${device_id}
-
-  # Human-readable name (safe to change)
+  # Hostname rule:
+  # - device_hostname may be overridden per device
+  # - defaults to device_id if not explicitly set
+  name: ${device_hostname}
   friendly_name: ${device_friendly_name}
-
-  # Freeform description of what this device does
-  # (lives at device level)
   comment: ${device_description}
-
-  # Firmware family metadata
-  # NOTE:
-  # - Values are PROVIDED by the fleet include
-  # - This file may reference fleet substitutions
-  # - This file must NEVER define fleet values itself
   project:
-    name: "${fleet_id}"
-    version: "${fleet_firmware_version}"
+    name: ${fleet_project}
+    version: ${fleet_firmware_version}
 
-esp32:
-  board: esp32dev
-  framework:
-    type: arduino
-
-# ------------------------------------------------------------
-# LOGGING
-# ------------------------------------------------------------
-# Logging is a platform concern.
-# Log level is device-configurable via substitution.
 logger:
   level: ${log_level}
 
-# ------------------------------------------------------------
-# API + OTA
-# ------------------------------------------------------------
-# Core lifecycle services shared by all devices.
 api:
-  id: ${device_id}_api
   encryption:
-    key: !secret api_encryption_key
+    key: ${api_encryption_key}
 
 ota:
   - platform: esphome
-    id: ${device_id}_ota
-    password: !secret ota_password
+    password: ${ota_password}
 
-# ------------------------------------------------------------
-# WIFI + FALLBACK AP
-# ------------------------------------------------------------
-# WiFi configuration is universal and must not be duplicated
-# in device or capability files.
 wifi:
-  id: ${device_id}_wifi
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
+  # Optional direct IP / hostname for OTA uploads.
+  # Rule:
+  # - Leave empty to use mDNS (.local)
+  # - Set to an IP (e.g. 192.168.1.14) to bypass mDNS
+  # - Do NOT put this in secrets
+  use_address: ${device_use_address}
 
-  # Fallback AP is required for recovery
+  ssid: ${wifi_ssid}
+  password: ${wifi_password}
+
   ap:
     ssid: "${device_friendly_name} Fallback"
-    password: !secret fallback_ap_password
+    password: ${fallback_ap_password}
 
 captive_portal:

@@ -73,7 +73,7 @@ substitutions:
 # ------------------------------------------------------------
 sensor:
   # Raw probe A (diagnostic only)
-  - platform: ds18b20
+  - platform: dallas_temp
     id: ${probe_prefix}_${pair_id}a_raw
     address: ${probe_a_address}
     name: "${probe_prefix}_${pair_id}a_raw"
@@ -96,7 +96,7 @@ sensor:
   # PROBE B
   # ------------------------------------------------------------
   # Raw probe B (diagnostic only)
-  - platform: ds18b20
+  - platform: dallas_temp
     id: ${probe_prefix}_${pair_id}b_raw
     address: ${probe_b_address}
     name: "${probe_prefix}_${pair_id}b_raw"

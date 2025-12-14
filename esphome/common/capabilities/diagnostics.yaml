@@ -46,73 +46,13 @@ substitutions:
   diagnostics_update_interval: "60s"
 
 # ------------------------------------------------------------
-# TEXT SENSORS — METADATA
-# ------------------------------------------------------------
-text_sensor:
-  # ESPHome runtime version
-  - platform: version
-    id: diag_esphome_version
-    name: "esphome_version"
-    entity_category: diagnostic
-    disabled_by_default: true
-
-  # Build timestamp (compile time)
-  - platform: template
-    id: diag_build_datetime
-    name: "build_datetime"
-    entity_category: diagnostic
-    update_interval: never
-    lambda: |-
-      return __DATE__ " " __TIME__;
-
-  # Fleet identifier
-  - platform: template
-    id: diag_fleet_id
-    name: "fleet_id"
-    entity_category: diagnostic
-    update_interval: never
-    lambda: |-
-      return "${fleet_id}";
-
-  # Fleet firmware version
-  - platform: template
-    id: diag_fleet_firmware_version
-    name: "fleet_firmware_version"
-    entity_category: diagnostic
-    update_interval: never
-    lambda: |-
-      return "${fleet_firmware_version}";
-
-# ------------------------------------------------------------
-# SENSORS — RUNTIME DIAGNOSTICS
+# NUMERIC SENSORS — DIAGNOSTICS
 # ------------------------------------------------------------
 sensor:
   # Device uptime (seconds, internal source)
   - platform: uptime
     id: diag_uptime_seconds
     internal: true
-
-  # Device uptime (human-readable)
-  - platform: template
-    id: diag_uptime_human
-    name: "uptime"
-    entity_category: diagnostic
-    update_interval: ${diagnostics_update_interval}
-    lambda: |-
-      uint32_t s = (uint32_t) id(diag_uptime_seconds).state;
-      uint32_t days = s / 86400;
-      s %= 86400;
-      uint32_t hours = s / 3600;
-      s %= 3600;
-      uint32_t minutes = s / 60;
-      char buf[32];
-      if (days > 0)
-        snprintf(buf, sizeof(buf), "%ud %uh %um", days, hours, minutes);
-      else if (hours > 0)
-        snprintf(buf, sizeof(buf), "%uh %um", hours, minutes);
-      else
-        snprintf(buf, sizeof(buf), "%um", minutes);
-      return std::string(buf);
 
   # WiFi RSSI (raw, diagnostic only)
   - platform: wifi_signal
@@ -136,6 +76,31 @@ sensor:
       if (percent < 0) return 0;
       if (percent > 100) return 100;
       return percent;
+
+# ------------------------------------------------------------
+# TEXT SENSORS — HUMAN-READABLE
+# ------------------------------------------------------------
+text_sensor:
+  - platform: template
+    id: diag_uptime_human
+    name: "uptime"
+    entity_category: diagnostic
+    update_interval: ${diagnostics_update_interval}
+    lambda: |-
+      uint32_t s = (uint32_t) id(diag_uptime_seconds).state;
+      uint32_t days = s / 86400;
+      s %= 86400;
+      uint32_t hours = s / 3600;
+      s %= 3600;
+      uint32_t minutes = s / 60;
+      char buf[32];
+      if (days > 0)
+        snprintf(buf, sizeof(buf), "%ud %uh %um", days, hours, minutes);
+      else if (hours > 0)
+        snprintf(buf, sizeof(buf), "%uh %um", hours, minutes);
+      else
+        snprintf(buf, sizeof(buf), "%um", minutes);
+      return std::string(buf);
 
 # ------------------------------------------------------------
 # BINARY SENSORS — CONNECTIVITY
