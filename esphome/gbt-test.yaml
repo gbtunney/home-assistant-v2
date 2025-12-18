@@ -54,5 +54,5 @@ one_wire:
 
 sensor:
   - platform: dallas_temp
-    #address: 0x1b000000391c3228 #Replace
-    name: "Dallas Temperature 1"
+    address: 0xac00000034ba3528 #
+    name: "Test Dallas Temperature 1"
