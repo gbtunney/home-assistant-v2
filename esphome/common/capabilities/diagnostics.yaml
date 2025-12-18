@@ -57,7 +57,7 @@ sensor:
   # WiFi RSSI (raw, diagnostic only)
   - platform: wifi_signal
     id: diag_wifi_rssi
-    name: "wifi_rssi"
+    name: "Wifi_RSSI"
     entity_category: diagnostic
     disabled_by_default: true
     update_interval: ${diagnostics_update_interval}
@@ -65,7 +65,7 @@ sensor:
   # WiFi signal quality (derived percentage)
   - platform: template
     id: diag_wifi_percent
-    name: "wifi_percent"
+    name: "Wifi_percent"
     entity_category: diagnostic
     unit_of_measurement: "%"
     icon: mdi:wifi
@@ -83,7 +83,7 @@ sensor:
 text_sensor:
   - platform: template
     id: diag_uptime_human
-    name: "uptime"
+    name: "Uptime"
     entity_category: diagnostic
     update_interval: ${diagnostics_update_interval}
     lambda: |-
@@ -109,5 +109,5 @@ binary_sensor:
   # ESP ↔ Home Assistant connectivity
   - platform: status
     id: diag_connected
-    name: "connected"
+    name: "Connected"
     entity_category: diagnostic

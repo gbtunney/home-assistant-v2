@@ -15,24 +15,25 @@
 # ============================================================
 
 substitutions:
-  wifi_ssid: "Snailicide"
-  wifi_password: '"Betta$11"'
-  api_encryption_key: "UK183nZ61Ngi/7py/HnBtsMQURS8lYXnBke8iBepuFo="
-  ota_password: "9261fadd458c420a7f03c4467a4be901"
+  log_level: VERY_VERBOSE
+  #wifi_ssid: "Snailicide"
+  #wifi_password: "Betta$11"
+  #api_encryption_key: "UK183nZ61Ngi/7py/HnBtsMQURS8lYXnBke8iBepuFo="
+  #ota_password: "9261fadd458c420a7f03c4467a4be901"
   device_use_address: "192.168.1.14"
-
+  ble_proxy: false
   # ----------------------------------------------------------
   # DEVICE IDENTITY
   # ----------------------------------------------------------
   device_id: env_temp_1
   device_hostname: "env-temp-1"
-  device_friendly_name: "Env Temp Node 1"
+  device_friendly_name: "GBT Env Temp Node 1"
   device_description: "Rack temperature monitor with BLE proxy"
 
   # ----------------------------------------------------------
   # DALLAS BUS CONFIGURATION
   # ----------------------------------------------------------
-  dallas_pin: "21"
+  dallas_pin: "22"
   dallas_avg_window: "5"
 
   # ----------------------------------------------------------
@@ -59,7 +60,7 @@ packages:
   # CAPABILITIES
   # ----------------------------------------------------------
   diagnostics: !include common/capabilities/diagnostics.yaml
-  ble: !include common/capabilities/bluetooth_proxy.yaml
+  #ble: !include common/capabilities/bluetooth_proxy.yaml
   dallas_bus: !include common/capabilities/dallas/bus.yaml
 
   # ----------------------------------------------------------

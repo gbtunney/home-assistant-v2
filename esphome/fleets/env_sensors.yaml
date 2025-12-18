@@ -65,4 +65,4 @@ substitutions:
   fleet_project: "gbt.env-sensors"
   # Firmware version for this fleet
   # Used for diagnostics and future update policy
-  fleet_firmware_version: "0.0.0"
+  fleet_firmware_version: "0.0.1"

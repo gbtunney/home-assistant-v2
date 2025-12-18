@@ -30,19 +30,6 @@ substitutions:
   # -------------------------
   log_level: "INFO"
 
-  # -------------------------
-  # NETWORK DEFAULTS
-  # -------------------------
-  wifi_ssid: "!secret wifi_ssid"
-  wifi_password: "!secret wifi_password"
-  fallback_ap_password: "!secret fallback_ap_password"
-
-  # -------------------------
-  # OTA / API DEFAULTS
-  # -------------------------
-  api_encryption_key: "!secret api_encryption_key"
-  ota_password: "!secret ota_password"
-
 esphome:
   # Hostname rule:
   # - device_hostname may be overridden per device
@@ -59,11 +46,11 @@ logger:
 
 api:
   encryption:
-    key: ${api_encryption_key}
+    key: !secret api_encryption_key
 
 ota:
   - platform: esphome
-    password: ${ota_password}
+    password: !secret ota_password
 
 wifi:
   # Optional direct IP / hostname for OTA uploads.
@@ -73,11 +60,11 @@ wifi:
   # - Do NOT put this in secrets
   use_address: ${device_use_address}
 
-  ssid: ${wifi_ssid}
-  password: ${wifi_password}
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
 
   ap:
     ssid: "${device_friendly_name} Fallback"
-    password: ${fallback_ap_password}
+    password: !secret fallback_ap_password
 
 captive_portal:

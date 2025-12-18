@@ -75,16 +75,15 @@ sensor:
   # Raw probe A (diagnostic only)
   - platform: dallas_temp
     id: ${probe_prefix}_${pair_id}a_raw
-    address: ${probe_a_address}
-    name: "${probe_prefix}_${pair_id}a_raw"
-    entity_category: diagnostic
+    #address: ${probe_a_address}
+    name: "${probe_prefix} ${pair_id}A Raw Temperature"
     disabled_by_default: true
 
   # Smoothed probe A (primary)
   - platform: copy
     id: ${probe_prefix}_${pair_id}a_temp
     source_id: ${probe_prefix}_${pair_id}a_raw
-    name: "${probe_prefix}_${pair_id}a_temp"
+    name: "${probe_prefix} ${pair_id}A Temperature"
     device_class: temperature
     # unit_of_measurement omitted (ESPHome device_class: temperature defaults to °C)
     filters:
@@ -98,16 +97,15 @@ sensor:
   # Raw probe B (diagnostic only)
   - platform: dallas_temp
     id: ${probe_prefix}_${pair_id}b_raw
-    address: ${probe_b_address}
-    name: "${probe_prefix}_${pair_id}b_raw"
-    entity_category: diagnostic
+    #address: ${probe_b_address}
+    name: "${probe_prefix} ${pair_id}B Raw Temperature"
     disabled_by_default: true
 
   # Smoothed probe B (primary)
   - platform: copy
     id: ${probe_prefix}_${pair_id}b_temp
     source_id: ${probe_prefix}_${pair_id}b_raw
-    name: "${probe_prefix}_${pair_id}b_temp"
+    name: "${probe_prefix} ${pair_id}B Temperature"
     device_class: temperature
     # unit_of_measurement omitted (ESPHome device_class: temperature defaults to °C)
     filters:
@@ -120,7 +118,7 @@ sensor:
   # ------------------------------------------------------------
   - platform: template
     id: ${probe_prefix}_${pair_id}_delta
-    name: "${probe_prefix}_${pair_id}_delta"
+    name: "${probe_prefix} ${pair_id} Delta"
     # unit_of_measurement omitted (ESPHome device_class: temperature defaults to °C)
     icon: mdi:delta
     entity_category: diagnostic
@@ -138,7 +136,7 @@ binary_sensor:
   # High temperature alert (either probe)
   - platform: template
     id: ${probe_prefix}_${pair_id}_high_alert
-    name: "${probe_prefix}_${pair_id}_high_alert"
+    name: "${probe_prefix} ${pair_id} High Alert"
     device_class: heat
     lambda: |-
       return
@@ -148,7 +146,7 @@ binary_sensor:
   # Low temperature alert (either probe)
   - platform: template
     id: ${probe_prefix}_${pair_id}_low_alert
-    name: "${probe_prefix}_${pair_id}_low_alert"
+    name: "${probe_prefix} ${pair_id} Low Alert"
     device_class: cold
     lambda: |-
       return
@@ -158,7 +156,7 @@ binary_sensor:
   # Out-of-sync alert (delta exceeded)
   - platform: template
     id: ${probe_prefix}_${pair_id}_out_of_sync
-    name: "${probe_prefix}_${pair_id}_out_of_sync"
+    name: "${probe_prefix} ${pair_id} Out of Sync"
     icon: mdi:alert-decagram
     entity_category: diagnostic
     lambda: |-

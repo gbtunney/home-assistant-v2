@@ -66,6 +66,8 @@ substitutions:
   # Informational only — no logic should depend on this
   fleet_role: "bluetooth_proxy_infrastructure"
 
+  # ESPHome project name (MUST be lowercase, namespace/name, no underscores)
+  fleet_project: "gbt.ble-proxy"
   # Firmware version for this fleet
   # Used for diagnostics and future update policy
-  fleet_firmware_version: "0.1.0"
+  fleet_firmware_version: "0.0.0"

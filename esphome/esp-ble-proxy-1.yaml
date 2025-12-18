@@ -1,0 +1,44 @@
+# ============================================================
+# DEVICE — ENV TEMP 1 (DEPLOYED)
+# ============================================================
+#
+# This is a DEPLOYED device file.
+# It lives at the root of the ESPHome config directory so it
+# appears in the ESPHome add-on UI.
+#
+# Role:
+# - Environmental temperature monitoring
+# - 3 Dallas probe pairs
+# - Bluetooth Proxy infrastructure
+# - Standard diagnostics
+#
+# ============================================================
+
+substitutions:
+  log_level: VERY_VERBOSE
+  #wifi_ssid: "Snailicide"
+  #wifi_password: "Betta$11"
+  #api_encryption_key: "UK183nZ61Ngi/7py/HnBtsMQURS8lYXnBke8iBepuFo="
+  #ota_password: "9261fadd458c420a7f03c4467a4be901"
+  #device_use_address: "192.168.1.14"
+  # ----------------------------------------------------------
+  # DEVICE IDENTITY
+  # ----------------------------------------------------------
+  device_id: ble_proxy_1
+  device_hostname: "ble-proxy-1"
+  device_friendly_name: "GBT New Ble Proxy 1"
+  device_description: "BLE proxy test"
+
+packages:
+  # ----------------------------------------------------------
+  # BASE + FLEET
+  # ----------------------------------------------------------
+  base: !include common/universal_base.yaml
+  board: !include common/platforms/esp32.yaml
+  fleet: !include fleets/ble_proxy.yaml
+
+  # ----------------------------------------------------------
+  # CAPABILITIES
+  # ----------------------------------------------------------
+  diagnostics: !include common/capabilities/diagnostics.yaml
+  ble: !include common/capabilities/bluetooth_proxy.yaml

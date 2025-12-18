@@ -25,7 +25,8 @@
 
 substitutions:
   # BLE scan mode (passive recommended unless required)
-  ble_active_scan: "false"
+  ble_active_scan: false
+  ble_proxy: true
 
 # ------------------------------------------------------------
 # BLE TRACKER (LOW-LEVEL SCANNING)
@@ -40,4 +41,4 @@ esp32_ble_tracker:
 # ------------------------------------------------------------
 bluetooth_proxy:
   id: ble_proxy
-  active: true
+  active: ${ble_proxy}
