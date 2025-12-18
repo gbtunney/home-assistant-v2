@@ -48,22 +48,18 @@
 #   * Diagnostic-only, optional
 #
 # ============================================================
+# ============================================================
+# CAPABILITY — DALLAS PROBE PAIR (NO COPY PLATFORM)
+# ============================================================
 
 substitutions:
-  # Update interval for derived/template sensors (seconds)
   probe_update_interval: "30s"
-
-  # Domain prefix for entities (do not change after deploy)
   probe_prefix: "probe"
-
-  # Pair identifier (e.g. "1", "2", "3")
   pair_id: "REQUIRED"
 
-  # DS18B20 addresses
   probe_a_address: "REQUIRED"
   probe_b_address: "REQUIRED"
 
-  # Thresholds (°C)
   pair_high_threshold: "32.0"
   pair_low_threshold: "22.0"
   pair_delta_threshold: "1.0"
@@ -72,46 +68,56 @@ substitutions:
 # PROBE A
 # ------------------------------------------------------------
 sensor:
-  # Raw probe A (diagnostic only)
+  # Raw probe A (diagnostic)
   - platform: dallas_temp
     id: ${probe_prefix}_${pair_id}a_raw
-    #address: ${probe_a_address}
+    address: ${probe_a_address}
     name: "${probe_prefix} ${pair_id}A Raw Temperature"
     disabled_by_default: true
+    update_interval: ${probe_update_interval}
+    resolution: 12
 
   # Smoothed probe A (primary)
-  - platform: copy
+  - platform: dallas_temp
     id: ${probe_prefix}_${pair_id}a_temp
-    source_id: ${probe_prefix}_${pair_id}a_raw
+    address: ${probe_a_address}
     name: "${probe_prefix} ${pair_id}A Temperature"
+    update_interval: ${probe_update_interval}
+    resolution: 12
     device_class: temperature
-    # unit_of_measurement omitted (ESPHome device_class: temperature defaults to °C)
+    state_class: measurement
     filters:
       - sliding_window_moving_average:
           window_size: ${dallas_avg_window}
           send_every: ${dallas_avg_window}
+          send_first_at: 1
 
   # ------------------------------------------------------------
   # PROBE B
   # ------------------------------------------------------------
-  # Raw probe B (diagnostic only)
+  # Raw probe B (diagnostic)
   - platform: dallas_temp
     id: ${probe_prefix}_${pair_id}b_raw
-    #address: ${probe_b_address}
+    address: ${probe_b_address}
     name: "${probe_prefix} ${pair_id}B Raw Temperature"
     disabled_by_default: true
+    update_interval: ${probe_update_interval}
+    resolution: 12
 
   # Smoothed probe B (primary)
-  - platform: copy
+  - platform: dallas_temp
     id: ${probe_prefix}_${pair_id}b_temp
-    source_id: ${probe_prefix}_${pair_id}b_raw
+    address: ${probe_b_address}
     name: "${probe_prefix} ${pair_id}B Temperature"
+    update_interval: ${probe_update_interval}
+    resolution: 12
     device_class: temperature
-    # unit_of_measurement omitted (ESPHome device_class: temperature defaults to °C)
+    state_class: measurement
     filters:
       - sliding_window_moving_average:
           window_size: ${dallas_avg_window}
           send_every: ${dallas_avg_window}
+          send_first_at: 1
 
   # ------------------------------------------------------------
   # DELTA (DIAGNOSTIC)
@@ -119,11 +125,14 @@ sensor:
   - platform: template
     id: ${probe_prefix}_${pair_id}_delta
     name: "${probe_prefix} ${pair_id} Delta"
-    # unit_of_measurement omitted (ESPHome device_class: temperature defaults to °C)
     icon: mdi:delta
     entity_category: diagnostic
     update_interval: ${probe_update_interval}
     lambda: |-
+      if (isnan(id(${probe_prefix}_${pair_id}a_temp).state) ||
+          isnan(id(${probe_prefix}_${pair_id}b_temp).state)) {
+        return NAN;
+      }
       return abs(
         id(${probe_prefix}_${pair_id}a_temp).state -
         id(${probe_prefix}_${pair_id}b_temp).state
@@ -133,7 +142,6 @@ sensor:
 # ALERTS
 # ------------------------------------------------------------
 binary_sensor:
-  # High temperature alert (either probe)
   - platform: template
     id: ${probe_prefix}_${pair_id}_high_alert
     name: "${probe_prefix} ${pair_id} High Alert"
@@ -143,7 +151,6 @@ binary_sensor:
         id(${probe_prefix}_${pair_id}a_temp).state > ${pair_high_threshold} ||
         id(${probe_prefix}_${pair_id}b_temp).state > ${pair_high_threshold};
 
-  # Low temperature alert (either probe)
   - platform: template
     id: ${probe_prefix}_${pair_id}_low_alert
     name: "${probe_prefix} ${pair_id} Low Alert"
@@ -153,7 +160,6 @@ binary_sensor:
         id(${probe_prefix}_${pair_id}a_temp).state < ${pair_low_threshold} ||
         id(${probe_prefix}_${pair_id}b_temp).state < ${pair_low_threshold};
 
-  # Out-of-sync alert (delta exceeded)
   - platform: template
     id: ${probe_prefix}_${pair_id}_out_of_sync
     name: "${probe_prefix} ${pair_id} Out of Sync"
