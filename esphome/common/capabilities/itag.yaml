@@ -1,0 +1,128 @@
+yaml
+// filepath: /workspaces/home-assistant-v2/esphome/common/capabilities/itag/itag_single.yaml
+# ============================================================
+# CAPABILITY — ITAG (SINGLE TAG, NO GLOBAL DIAGNOSTICS)
+# ============================================================
+
+substitutions:
+  itag_id: "REQUIRED"
+  itag_friendly_name: "REQUIRED"
+  itag_mac_address: "REQUIRED"
+
+  # Timings (overridable)
+  itag_btn_helper_off_ms: "500ms"
+  itag_btn_off_ms: "200ms"
+  itag_btn_double_off_ms: "1000ms"
+
+# Per‑device BLE tracker. If your base capability already defines
+# esp32_ble_tracker, remove this block here.
+esp32_ble_tracker:
+
+ble_client:
+  - mac_address: ${itag_mac_address}
+    id: ${itag_id}
+    on_connect:
+      then:
+        - logger.log: "${itag_friendly_name} is connected"
+
+binary_sensor:
+  # Helper for single/double click logic
+  - platform: template
+    id: ${itag_id}_btn_state_helper
+    filters:
+      delayed_off: ${itag_btn_helper_off_ms}
+    on_release:
+      then:
+        - if:
+            condition:
+              lambda: "return !id(${itag_id}_btn_doubleclick).state;"
+            then:
+              - logger.log: "${itag_friendly_name} button click (single) detected"
+              - binary_sensor.template.publish:
+                  id: ${itag_id}_btn
+                  state: ON
+              - binary_sensor.template.publish:
+                  id: ${itag_id}_btn
+                  state: OFF
+
+  - platform: template
+    id: ${itag_id}_btn
+    name: "${itag_friendly_name} Button"
+    icon: "mdi:radiobox-indeterminate-variant"
+    filters:
+      delayed_off: ${itag_btn_off_ms}
+
+  - platform: template
+    id: ${itag_id}_btn_doubleclick
+    name: "${itag_friendly_name} Button (doubleclick)"
+    icon: "mdi:radiobox-indeterminate-variant"
+    filters:
+      delayed_off: ${itag_btn_double_off_ms}
+
+switch:
+  - platform: ble_client
+    ble_client_id: ${itag_id}
+    name: "Connect ${itag_friendly_name}"
+
+button:
+  - platform: template
+    name: "${itag_friendly_name} Alert"
+    on_press:
+      - ble_client.ble_write:
+          id: ${itag_id}
+          service_uuid: "1802"
+          characteristic_uuid: "2a06"
+          value: [0x01]
+      - delay: 10s
+      - ble_client.ble_write:
+          id: ${itag_id}
+          service_uuid: "1802"
+          characteristic_uuid: "2a06"
+          value: [0x00]
+
+sensor:
+  # Button logic (notify characteristic)
+  - platform: ble_client
+    id: ${itag_id}_ble_btn_logic
+    type: characteristic
+    ble_client_id: ${itag_id}
+    service_uuid: "ffe0"
+    characteristic_uuid: "ffe1"
+    notify: true
+    update_interval: never
+    on_notify:
+      then:
+        - if:
+            condition:
+              lambda: "return !id(${itag_id}_btn_state_helper).state;"
+            then:
+              - binary_sensor.template.publish:
+                  id: ${itag_id}_btn_state_helper
+                  state: ON
+              - binary_sensor.template.publish:
+                  id: ${itag_id}_btn_state_helper
+                  state: OFF
+            else:
+              - binary_sensor.template.publish:
+                  id: ${itag_id}_btn_doubleclick
+                  state: ON
+              - binary_sensor.template.publish:
+                  id: ${itag_id}_btn_doubleclick
+                  state: OFF
+
+  # Battery level (per‑tag, not global)
+  - platform: ble_client
+    type: characteristic
+    ble_client_id: ${itag_id}
+    name: "${itag_friendly_name} Battery"
+    service_uuid: "180f"
+    characteristic_uuid: "2a19"
+    icon: "mdi:battery-bluetooth-variant"
+    unit_of_measurement: "%"
+
+  # RSSI (per‑tag, still useful for location/health)
+  - platform: ble_client
+    type: rssi
+    ble_client_id: ${itag_id}
+    name: "${itag_friendly_name} RSSI"
+    entity_category: "diagnostic"

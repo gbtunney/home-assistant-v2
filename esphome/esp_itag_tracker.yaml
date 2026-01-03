@@ -1,0 +1,69 @@
+yaml
+// filepath: /workspaces/home-assistant-v2/esphome/itag-tracking-hub.yaml
+# ============================================================
+# DEVICE — ITAG TRACKING HUB
+# ============================================================
+#
+# Role:
+# - BLE tracking of multiple iTags
+# - Optional Bluetooth Proxy infrastructure
+# - Standard diagnostics
+#
+# ============================================================
+
+substitutions:
+  log_level: VERY_VERBOSE
+  #device_use_address: "192.168.1.50"   # adjust for your network
+  ble_proxy: true
+
+  # ----------------------------------------------------------
+  # DEVICE IDENTITY
+  # ----------------------------------------------------------
+  device_id: itag_tracking_hub
+  device_hostname: "itag-tracking-hub"
+  device_friendly_name: "iTag Tracking Hub"
+  device_description: "BLE iTag tracker hub with diagnostics"
+
+  # ----------------------------------------------------------
+  # ITAG DEFINITIONS
+  # ----------------------------------------------------------
+  itag_1_id: white_itag_1
+  itag_1_friendly_name: "iTag 1"
+  itag_1_mac: "5B:09:83:FC:69:4C"
+
+  itag_2_id: white_itag_2
+  itag_2_friendly_name: "iTag 2"
+  itag_2_mac: "5B:D7:68:44:2E:09"
+
+packages:
+  # ----------------------------------------------------------
+  # BASE + FLEET
+  # ----------------------------------------------------------
+  base: !include common/universal_base.yaml
+  board: !include common/platforms/esp32.yaml
+  fleet: !include fleets/env_sensors.yaml   # or another fleet file, or remove if not needed
+
+  # ----------------------------------------------------------
+  # CAPABILITIES
+  # ----------------------------------------------------------
+  diagnostics: !include common/capabilities/diagnostics.yaml
+  ble: !include common/capabilities/bluetooth_proxy.yaml
+
+  # ----------------------------------------------------------
+  # ITAG INSTANCES
+  # ----------------------------------------------------------
+  itag_1:
+    <<: !include
+      file: common/capabilities/itag.yaml
+      vars:
+        itag_id: ${itag_1_id}
+        itag_friendly_name: ${itag_1_friendly_name}
+        itag_mac_address: ${itag_1_mac}
+
+  itag_2:
+    <<: !include
+      file: common/capabilities/itag.yaml
+      vars:
+        itag_id: ${itag_2_id}
+        itag_friendly_name: ${itag_2_friendly_name}
+        itag_mac_address: ${itag_2_mac}
