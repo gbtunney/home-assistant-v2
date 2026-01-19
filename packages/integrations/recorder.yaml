@@ -15,3 +15,4 @@ recorder:
     entities:
       #      - sensor.next_launch_countdown
       - sensor.ha_uptime
+      #- sensor.*uptime*

@@ -6,7 +6,7 @@
   icon: mdi:lightbulb
 
 # STATUS ( Likely to be a binary sensor )
-"*.*status*":
+"binary_sensor.*status*":
   #friendly_name: ""
   icon: mdi:check-network-outline
   device_class: connectivity

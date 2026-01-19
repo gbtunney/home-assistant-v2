@@ -1,0 +1,39 @@
+substitutions:
+  moisture_probe_id: "REQUIRED"
+  moisture_probe_name: "REQUIRED"
+  moisture_probe_pin: "GPIO32"
+  # Timings (overridable)
+  moisture_probe_update_interval: "60s"
+  calibration_dry: "2.70" # dry soil / in air
+  calibration_wet: "1.77" #very wet soil
+# Raw voltage reading from the sensor
+sensor:
+  - platform: adc
+    pin: ${moisture_probe_pin}
+    name: "${moisture_probe_name} Voltage"
+    id: ${moisture_probe_id}_voltage
+    attenuation: 11db
+    update_interval: ${moisture_probe_update_interval}
+    filters:
+      - sliding_window_moving_average:
+          window_size: 10
+          send_every: 1
+
+  # Convert voltage -> moisture percent (calibrate this)
+  - platform: template
+    id: ${moisture_probe_id}_moisture
+    name: "${moisture_probe_name} Moisture"
+    unit_of_measurement: "%"
+    device_class: moisture
+    update_interval: ${moisture_probe_update_interval}
+    lambda: |-
+      // Replace these after you measure your real dry/wet voltages:
+      const float dry_v = ${calibration_dry};  // dry soil / in air
+      const float wet_v = ${calibration_wet};  // very wet soil
+      float v = id(${moisture_probe_id}_voltage).state;
+
+      // Map so wet = 100%, dry = 0%
+      float pct = (dry_v - v) * 100.0 / (dry_v - wet_v);
+      if (pct < 0) pct = 0;
+      if (pct > 100) pct = 100;
+      return pct;

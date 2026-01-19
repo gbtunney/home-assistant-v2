@@ -48,122 +48,139 @@
 #   * Diagnostic-only, optional
 #
 # ============================================================
-# ============================================================
-# CAPABILITY — DALLAS PROBE PAIR (NO COPY PLATFORM)
+# CAPABILITY — DALLAS PROBE PAIR (FINAL)
+# Units: °C (canonical)
+# Thresholds: 68–82 °F → 20.0–27.8 °C
+# ESPHome 2025 SAFE
 # ============================================================
 
 substitutions:
-  probe_update_interval: "30s"
-  probe_prefix: "probe"
+  probe_update_interval: "60s"
+  probe_prefix: ""
   pair_id: "REQUIRED"
 
   probe_a_address: "REQUIRED"
   probe_b_address: "REQUIRED"
 
-  pair_high_threshold: "32.0"
-  pair_low_threshold: "22.0"
+  # Thresholds (°C)
+  pair_low_threshold: "18.3" # 65°F
+  pair_high_threshold: "27.8" # 82°F
   pair_delta_threshold: "1.0"
 
 # ------------------------------------------------------------
-# PROBE A
+# TEMPERATURE SENSORS
 # ------------------------------------------------------------
 sensor:
-  # Raw probe A (diagnostic)
+  # -------------------------
+  # PROBE A — RAW
+  # -------------------------
   - platform: dallas_temp
     id: ${probe_prefix}_${pair_id}a_raw
     address: ${probe_a_address}
     name: "${probe_prefix} ${pair_id}A Raw Temperature"
+    icon: mdi:thermometer-lines
     disabled_by_default: true
     update_interval: ${probe_update_interval}
     resolution: 12
 
-  # Smoothed probe A (primary)
+  # -------------------------
+  # PROBE A — SMOOTHED
+  # -------------------------
   - platform: dallas_temp
     id: ${probe_prefix}_${pair_id}a_temp
     address: ${probe_a_address}
     name: "${probe_prefix} ${pair_id}A Temperature"
+    icon: mdi:thermometer
+    device_class: temperature
     update_interval: ${probe_update_interval}
     resolution: 12
-    device_class: temperature
-    state_class: measurement
     filters:
       - sliding_window_moving_average:
           window_size: ${dallas_avg_window}
           send_every: ${dallas_avg_window}
           send_first_at: 1
 
-  # ------------------------------------------------------------
-  # PROBE B
-  # ------------------------------------------------------------
-  # Raw probe B (diagnostic)
+  # -------------------------
+  # PROBE B — RAW
+  # -------------------------
   - platform: dallas_temp
     id: ${probe_prefix}_${pair_id}b_raw
     address: ${probe_b_address}
     name: "${probe_prefix} ${pair_id}B Raw Temperature"
+    icon: mdi:thermometer-lines
     disabled_by_default: true
     update_interval: ${probe_update_interval}
     resolution: 12
 
-  # Smoothed probe B (primary)
+  # -------------------------
+  # PROBE B — SMOOTHED
+  # -------------------------
   - platform: dallas_temp
     id: ${probe_prefix}_${pair_id}b_temp
     address: ${probe_b_address}
     name: "${probe_prefix} ${pair_id}B Temperature"
+    icon: mdi:thermometer
+    device_class: temperature
     update_interval: ${probe_update_interval}
     resolution: 12
-    device_class: temperature
-    state_class: measurement
     filters:
       - sliding_window_moving_average:
           window_size: ${dallas_avg_window}
           send_every: ${dallas_avg_window}
           send_first_at: 1
 
-  # ------------------------------------------------------------
-  # DELTA (DIAGNOSTIC)
-  # ------------------------------------------------------------
+  # -------------------------
+  # DELTA |A − B| (rounded)
+  # -------------------------
   - platform: template
     id: ${probe_prefix}_${pair_id}_delta
     name: "${probe_prefix} ${pair_id} Delta"
-    icon: mdi:delta
-    entity_category: diagnostic
     update_interval: ${probe_update_interval}
+    filters:
+      - round: 4
+    device_class: temperature_delta
+    icon: mdi:decagram
+    disabled_by_default: true
     lambda: |-
       if (isnan(id(${probe_prefix}_${pair_id}a_temp).state) ||
           isnan(id(${probe_prefix}_${pair_id}b_temp).state)) {
         return NAN;
       }
-      return abs(
+      return fabs(
         id(${probe_prefix}_${pair_id}a_temp).state -
         id(${probe_prefix}_${pair_id}b_temp).state
       );
+
+# ------------------------------------------------------------
+# STATUS (ENUM-LIKE, HUMAN READABLE)
+# ------------------------------------------------------------
+text_sensor:
+  - platform: template
+    id: ${probe_prefix}_${pair_id}_status
+    name: "${probe_prefix} ${pair_id} Status"
+    icon: mdi:thermometer-alert
+    update_interval: ${probe_update_interval}
+    lambda: |-
+      const float a = id(${probe_prefix}_${pair_id}a_temp).state;
+      const float b = id(${probe_prefix}_${pair_id}b_temp).state;
+
+      if (isnan(a) || isnan(b)) return std::string("unknown");
+
+      if (a < ${pair_low_threshold} || b < ${pair_low_threshold})
+        return std::string("COLD");
+
+      if (a > ${pair_high_threshold} || b > ${pair_high_threshold})
+        return std::string("HOT");
+
+      return std::string("Normal");
 
 # ------------------------------------------------------------
 # ALERTS
 # ------------------------------------------------------------
 binary_sensor:
   - platform: template
-    id: ${probe_prefix}_${pair_id}_high_alert
-    name: "${probe_prefix} ${pair_id} High Alert"
-    device_class: heat
-    lambda: |-
-      return
-        id(${probe_prefix}_${pair_id}a_temp).state > ${pair_high_threshold} ||
-        id(${probe_prefix}_${pair_id}b_temp).state > ${pair_high_threshold};
-
-  - platform: template
-    id: ${probe_prefix}_${pair_id}_low_alert
-    name: "${probe_prefix} ${pair_id} Low Alert"
-    device_class: cold
-    lambda: |-
-      return
-        id(${probe_prefix}_${pair_id}a_temp).state < ${pair_low_threshold} ||
-        id(${probe_prefix}_${pair_id}b_temp).state < ${pair_low_threshold};
-
-  - platform: template
     id: ${probe_prefix}_${pair_id}_out_of_sync
     name: "${probe_prefix} ${pair_id} Out of Sync"
-    icon: mdi:alert-decagram
-    entity_category: diagnostic
+    device_class: problem
     lambda: |-
       return id(${probe_prefix}_${pair_id}_delta).state > ${pair_delta_threshold};

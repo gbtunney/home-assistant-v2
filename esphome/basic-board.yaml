@@ -1,36 +1,66 @@
+#password: "9539eaf3089799b792160d39f8b3efac"
+
+# ============================================================
+# DEVICE — ENV TEMP 1 (DEPLOYED)
+# ============================================================
+#
+# This is a DEPLOYED device file.
+# It lives at the root of the ESPHome config directory so it
+# appears in the ESPHome add-on UI.
+#
+# Role:
+# - Environmental temperature monitoring
+# - 3 Dallas probe pairs
+# - Bluetooth Proxy infrastructure
+# - Standard diagnostics
+#
+# ============================================================
+
 substitutions:
-  esp_id: basic_board
-  esp_friendly_name: Basic Board
+  log_level: VERY_VERBOSE
+  #wifi_ssid: "Snailicide"
+  #wifi_password: "Betta$11"
+  #api_encryption_key: "UK183nZ61Ngi/7py/HnBtsMQURS8lYXnBke8iBepuFo="
+  ota_password: "d610ed309a79c724406c68c094316693"
+  device_use_address: "192.168.1.48"
+  # ----------------------------------------------------------
+  # DEVICE IDENTITY
+  # ----------------------------------------------------------
+  device_id: basic_board
+  device_hostname: "basic-ble-board"
+  device_friendly_name: "Basic Board BLE Proxy"
+  device_description: "BLE proxy test, old basic file."
+  moisture_probe_id: "plant1"
+  moisture_probe_name: "Plant 1"
+  moisture_probe_pin: "GPIO32"
+packages:
+  # ----------------------------------------------------------
+  # BASE + FLEET
+  # ----------------------------------------------------------
+  base: !include common/universal_base.yaml
+  board: !include common/platforms/esp32.yaml
+  fleet: !include fleets/moisture_sensor.yaml
 
-esphome:
-  name: ${esp_id}
-  friendly_name: ${esp_friendly_name}
+  # ----------------------------------------------------------
+  # CAPABILITIES
+  # ----------------------------------------------------------
+  diagnostics: !include common/capabilities/diagnostics.yaml
+  ble: !include common/capabilities/bluetooth_proxy.yaml
+  moisture_sensor: !include common/capabilities/moisture_probe.yaml
 
-esp32:
-  board: esp32dev
-  framework:
-    type: arduino
+# ============================================================
+# DEVICE — ENV TEMP 1 (DEPLOYED)
+# ============================================================
+#
+# This is a DEPLOYED device file.
+# It lives at the root of the ESPHome config directory so it
+# appears in the ESPHome add-on UI.
+#
+# Role:
+# - Environmental temperature monitoring
+# - 3 Dallas probe pairs
+# - Bluetooth Proxy infrastructure
+# - Standard diagnostics
+#
+# ============================================================
 
-# Enable logging
-logger:
-  level: VERBOSE
-
-# Enable Home Assistant API
-api:
-  encryption:
-    key: "9TpNoNfVi7mWGoDhkykBJo5dH0c4JfpKUIj+WBzvt3w="
-
-ota:
-  - platform: esphome
-    password: "9539eaf3089799b792160d39f8b3efac"
-
-wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
-
-  # Enable fallback hotspot (captive portal) in case wifi connection fails
-  ap:
-    ssid: "${esp_friendly_name} Fallback Hotspot"
-    password: "K1LAMVHGFSDS"
-
-captive_portal:

@@ -59,6 +59,7 @@ sensor:
     id: diag_wifi_rssi
     name: "Wifi_RSSI"
     entity_category: diagnostic
+    device_class: signal_strength
     disabled_by_default: true
     update_interval: ${diagnostics_update_interval}
 
@@ -69,6 +70,7 @@ sensor:
     entity_category: diagnostic
     unit_of_measurement: "%"
     icon: mdi:wifi
+    device_class: power_factor
     update_interval: ${diagnostics_update_interval}
     lambda: |-
       if (isnan(id(diag_wifi_rssi).state)) return NAN;
@@ -110,4 +112,5 @@ binary_sensor:
   - platform: status
     id: diag_connected
     name: "Connected"
+    device_class: connectivity
     entity_category: diagnostic

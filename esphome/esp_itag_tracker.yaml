@@ -1,5 +1,3 @@
-yaml
-// filepath: /workspaces/home-assistant-v2/esphome/itag-tracking-hub.yaml
 # ============================================================
 # DEVICE — ITAG TRACKING HUB
 # ============================================================
@@ -15,7 +13,7 @@ substitutions:
   log_level: VERY_VERBOSE
   #device_use_address: "192.168.1.50"   # adjust for your network
   ble_proxy: true
-
+  ble_active_scan: true
   # ----------------------------------------------------------
   # DEVICE IDENTITY
   # ----------------------------------------------------------
@@ -41,7 +39,7 @@ packages:
   # ----------------------------------------------------------
   base: !include common/universal_base.yaml
   board: !include common/platforms/esp32.yaml
-  fleet: !include fleets/env_sensors.yaml   # or another fleet file, or remove if not needed
+  fleet: !include fleets/env_sensors.yaml # or another fleet file, or remove if not needed
 
   # ----------------------------------------------------------
   # CAPABILITIES

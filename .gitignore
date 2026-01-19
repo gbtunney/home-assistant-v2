@@ -205,3 +205,5 @@ storage
 scratch
 examples
 configurationbk.yaml
+application_credentials
+custom_components.disabled

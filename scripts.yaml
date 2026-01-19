@@ -776,3 +776,340 @@ entity_info_loop_script:
     event_data:
       items: '{{ results }}'
   description: ''
+issue_queue_command:
+  alias: Issue Queue Command
+  mode: parallel
+  sequence:
+  - variables:
+      queue: '{{ states(''input_text.issue_queue'') | from_json(default=[]) }}'
+      cid: '{{ issue_id }}'
+      idx: "{% set i = -1 %} {% for item in queue %}\n  {% if item.id == cid %}\n
+        \   {% set i = loop.index0 %}\n  {% endif %}\n{% endfor %} {{ i }}\n"
+  - choose:
+    - conditions:
+      - condition: template
+        value_template: '{{ command == ''create'' and idx == -1 }}'
+      sequence:
+      - variables:
+          issue: "{{\n  {\n    \"id\": cid,\n    \"summary\": summary or cid,\n    \"details\":
+            details or \"\",\n    \"active\": true,\n    \"tags\": tags or [],\n    \"updated\":
+            now()\n  }\n}}\n"
+          new_queue: '{{ queue + [issue] }}'
+      - data:
+          entity_id: input_text.issue_queue
+          value: '{{ new_queue | to_json }}'
+        action: input_text.set_value
+      - event: issue_queue_event
+        event_data:
+          action: create
+          issue: '{{ issue }}'
+    - conditions:
+      - condition: template
+        value_template: '{{ command == ''update'' and idx != -1 }}'
+      sequence:
+      - variables:
+          issue: "{{\n  queue[idx] | combine({\n    \"summary\": summary or queue[idx].summary,\n
+            \   \"details\": details or queue[idx].details,\n    \"tags\": tags or
+            queue[idx].tags,\n    \"updated\": now()\n  })\n}}\n"
+          new_queue: '{{ queue[:idx] + [issue] + queue[idx+1:] }}'
+      - data:
+          entity_id: input_text.issue_queue
+          value: '{{ new_queue | to_json }}'
+        action: input_text.set_value
+      - event: issue_queue_event
+        event_data:
+          action: update
+          issue: '{{ issue }}'
+    - conditions:
+      - condition: template
+        value_template: '{{ command == ''resolve'' and idx != -1 }}'
+      sequence:
+      - variables:
+          issue: "{{\n  queue[idx] | combine({\n    \"active\": false,\n    \"updated\":
+            now()\n  })\n}}\n"
+          new_queue: '{{ queue[:idx] + [issue] + queue[idx+1:] }}'
+      - data:
+          entity_id: input_text.issue_queue
+          value: '{{ new_queue | to_json }}'
+        action: input_text.set_value
+      - event: issue_queue_event
+        event_data:
+          action: resolve
+          issue: '{{ issue }}'
+    - conditions:
+      - condition: template
+        value_template: '{{ command == ''remove'' and idx != -1 }}'
+      sequence:
+      - variables:
+          new_queue: '{{ queue | rejectattr(''id'',''equalto'',cid) | list }}'
+      - data:
+          entity_id: input_text.issue_queue
+          value: '{{ new_queue | to_json }}'
+        action: input_text.set_value
+      - event: issue_queue_event
+        event_data:
+          action: remove
+          id: '{{ cid }}'
+    - conditions:
+      - condition: template
+        value_template: '{{ command == ''exists'' }}'
+      sequence:
+      - event: issue_queue_event
+        event_data:
+          action: exists
+          exists: '{{ idx != -1 }}'
+          active: '{{ idx != -1 and queue[idx].active }}'
+  - action: input_text.set_value
+    metadata: {}
+    target:
+      entity_id: input_text.issue_queue
+    data:
+      value: 'i am a value '
+  description: ''
+  fields:
+    field:
+      selector:
+        text:
+      default: hello
+    field_2:
+      selector:
+        text:
+    command:
+      name: Command
+      description: Queue operation
+      required: true
+      selector:
+        select:
+          options:
+          - create
+          - update
+          - resolve
+          - remove
+          - exists
+    issue_id:
+      selector:
+        text:
+      name: Issue ID
+      description: 'this is a test '
+      required: true
+    summary:
+      selector:
+        text:
+      name: summary
+    details:
+      selector:
+        text:
+          multiline: true
+      name: Details
+pump_cycle_every_2_hrs:
+  sequence:
+  - action: switch.turn_on
+    data: {}
+    target:
+      entity_id: switch.120g_aquarium_filter
+  - delay: 00:20:00
+  - action: switch.turn_off
+    data: {}
+    target:
+      entity_id: switch.120g_aquarium_filter
+  - delay: 01:40:00
+  - action: script.turn_on
+    data: {}
+    target:
+      entity_id: script.pump_cycle_every_2_hrs
+  alias: Pump cycle Every 2 hrs
+  description: ''
+pump_duty_cycle_on_off_loop:
+  alias: Pump duty cycle (on/off loop)
+  description: Turns a switch on for a duration, then off until the next interval,
+    repeating.
+  mode: restart
+  fields:
+    target_switch:
+      name: Target switch
+      description: Switch entity to control (smart plug or pump switch).
+      required: true
+      selector:
+        entity:
+          domain: switch
+    on_duration:
+      name: On duration
+      description: How long to keep it ON each cycle.
+      required: true
+      default:
+        hours: 0
+        minutes: 20
+        seconds: 0
+      selector:
+        duration:
+          enable_day: false
+          enable_millisecond: false
+    repeat_interval:
+      name: Repeat interval
+      description: Total time from one ON start to the next ON start.
+      required: true
+      default:
+        hours: 2
+        minutes: 0
+        seconds: 0
+      selector:
+        duration:
+          enable_day: false
+          enable_millisecond: false
+  sequence:
+  - variables:
+      on_s: '{{ on_duration.hours * 3600 + on_duration.minutes * 60 + on_duration.seconds
+        }}'
+      interval_s: '{{ repeat_interval.hours * 3600 + repeat_interval.minutes * 60
+        + repeat_interval.seconds }}'
+      off_s: '{{ [interval_s - on_s, 0] | max }}'
+  - repeat:
+      while:
+      - condition: template
+        value_template: 'true'
+      sequence:
+      - target:
+          entity_id: '{{ target_switch }}'
+        action: switch.turn_on
+      - delay:
+          seconds: '{{ on_s }}'
+      - target:
+          entity_id: '{{ target_switch }}'
+        action: switch.turn_off
+      - delay:
+          seconds: '{{ off_s }}'
+new_script:
+  sequence:
+  - type: turn_off
+    device_id: caa78ec93f1558ce2be969a1774afdf9
+    entity_id: 84cf5a7007a8e688033cd7a432389630
+    domain: switch
+  fields:
+    field:
+      selector:
+        duration:
+          enable_day: true
+          enable_millisecond: true
+      default:
+        hours: 0
+        minutes: 20
+        seconds: 0
+      required: false
+  alias: New script
+  description: ''
+issue_wueue_2:
+  alias: Issue Queue 2
+  description: Maintain a JSON issue queue stored in input_text.issue_queue
+  mode: queued
+  fields:
+    action:
+      name: Action
+      description: add | update | remove | clear | list
+      required: true
+      selector:
+        select:
+          options:
+          - add
+          - update
+          - remove
+          - clear
+          - list
+    issue_id:
+      name: Issue ID
+      description: Unique issue identifier
+      required: false
+      selector:
+        text:
+          multiline: false
+    summary:
+      name: Summary
+      required: false
+      selector:
+        text:
+          multiline: false
+    details:
+      name: Details
+      required: false
+      selector:
+        text:
+          multiline: true
+    severity:
+      name: Severity
+      required: false
+      selector:
+        select:
+          options:
+          - low
+          - medium
+          - high
+          - critical
+  variables:
+    queue_entity: input_text.issue_queue
+    queue_raw: '{{ states(queue_entity) | default(''[]'', true) }}'
+    queue: "{% set s = queue_raw | trim %} {% if s in ['unknown', 'unavailable', 'none',
+      ''] %}\n  []\n{% else %}\n  {{ s | from_json }}\n{% endif %}\n"
+    v_action: '{{ action | default('''', true) | lower }}'
+    v_issue_id: '{{ issue_id | default('''', true) | trim }}'
+    v_summary: '{{ summary | default('''', true) | trim }}'
+    v_details: '{{ details | default('''', true) | trim }}'
+    v_severity: '{{ severity | default('''', true) | lower }}'
+    now_iso: '{{ now().isoformat() }}'
+    incoming_issue: '{% set obj = dict(issue_id=v_issue_id, updated_at=now_iso) %}
+      {% if v_summary != '''' %}{% set obj = dict(obj, summary=v_summary) %}{% endif
+      %} {% if v_details != '''' %}{% set obj = dict(obj, details=v_details) %}{%
+      endif %} {% if v_severity != '''' %}{% set obj = dict(obj, severity=v_severity)
+      %}{% endif %} {{ obj }}
+
+      '
+    existing_index: "{% set idx = -1 %} {% for item in queue %}\n  {% if item is mapping
+      and (item.get('issue_id','') == v_issue_id) %}\n    {% set idx = loop.index0
+      %}\n  {% endif %}\n{% endfor %} {{ idx }}\n"
+    new_queue: "{% if v_action == 'clear' %}\n  []\n{% elif v_action == 'list' %}\n
+      \ {{ queue }}\n{% elif v_action in ['add','update','remove'] %}\n  {% if v_issue_id
+      == '' %}\n    {{ queue }}\n  {% else %}\n    {% if v_action == 'remove' %}\n
+      \     {{ queue | rejectattr('issue_id', 'equalto', v_issue_id) | list }}\n    {%
+      elif v_action == 'add' %}\n      {% if existing_index | int >= 0 %}\n        {{
+      queue }}\n      {% else %}\n        {{ queue + [incoming_issue] }}\n      {%
+      endif %}\n    {% elif v_action == 'update' %}\n      {% if existing_index |
+      int < 0 %}\n        {{ queue + [incoming_issue] }}\n      {% else %}\n        {%
+      set out = [] %}\n        {% for item in queue %}\n          {% if loop.index0
+      == (existing_index | int) %}\n            {% set merged = dict(item, **incoming_issue)
+      %}\n            {% set out = out + [merged] %}\n          {% else %}\n            {%
+      set out = out + [item] %}\n          {% endif %}\n        {% endfor %}\n        {{
+      out }}\n      {% endif %}\n    {% endif %}\n  {% endif %}\n{% else %}\n  {{
+      queue }}\n{% endif %}\n"
+    should_write: '{{ v_action in [''add'',''update'',''remove'',''clear''] }}'
+    affected_issue: "{% if v_issue_id == '' %}\n  {{ dict() }}\n{% else %}\n  {% for
+      item in new_queue %}\n    {% if item is mapping and item.get('issue_id','')
+      == v_issue_id %}\n      {{ item }}\n      {% break %}\n    {% endif %}\n  {%
+      endfor %}\n{% endif %}\n"
+  sequence:
+  - choose:
+    - conditions:
+      - condition: template
+        value_template: '{{ v_action in [''add'',''update'',''remove''] and v_issue_id
+          == '''' }}'
+      sequence:
+      - event: issue_queue_event
+        event_data:
+          action: error
+          error: missing_issue_id
+          message: issue_id is required for add/update/remove
+      - stop: missing issue_id
+  - choose:
+    - conditions:
+      - condition: template
+        value_template: '{{ should_write }}'
+      sequence:
+      - action: input_text.set_value
+        target:
+          entity_id: '{{ queue_entity }}'
+        data:
+          value: '{{ new_queue | to_json }}'
+  - event: issue_queue_event
+    event_data:
+      action: '{{ v_action }}'
+      issue_id: '{{ v_issue_id }}'
+      issue: '{{ affected_issue | default({}, true) }}'
+      queue_length: '{{ new_queue | length }}'
+      queue: '{{ new_queue }}'

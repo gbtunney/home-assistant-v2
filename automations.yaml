@@ -589,3 +589,16 @@
       sound: default
       alexa_sound: amzn_sfx_lion_roar_02
   mode: single
+- id: '1767621098256'
+  alias: Issue Queue - Debug Log
+  description: ''
+  triggers:
+  - event_type: issue_queue_event
+    trigger: event
+  actions:
+  - action: logbook.log
+    data:
+      name: Issue Queue
+      message: '{{ trigger.event.data.action }} {{ trigger.event.data.issue_id }}
+
+        '

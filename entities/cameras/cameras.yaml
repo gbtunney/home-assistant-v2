@@ -8,15 +8,15 @@
 # https://github.com/PiotrMachowski/Home-Assistant-custom-components-Xiaomi-Cloud-Map-Extractor
 #####
 
-- platform: xiaomi_cloud_map_extractor
-  host: !secret xiaomi_vacuum_host
-  token: !secret xiaomi_vacuum_token
-  username: !secret xiaomi_cloud_username
-  password: !secret xiaomi_cloud_password
-  draw: ["all"]
-  attributes:
-    - calibration_points
-  auto_update: true
+#- platform: xiaomi_cloud_map_extractor
+# host: !secret xiaomi_vacuum_host
+#token: !secret xiaomi_vacuum_token
+#username: !secret xiaomi_cloud_username
+#password: !secret xiaomi_cloud_password
+#draw: ["all"]
+#attributes:
+# - calibration_points
+#auto_update: true
 
 #####
 # FFMpeg Cameras

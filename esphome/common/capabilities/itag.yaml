@@ -1,5 +1,3 @@
-yaml
-// filepath: /workspaces/home-assistant-v2/esphome/common/capabilities/itag/itag_single.yaml
 # ============================================================
 # CAPABILITY — ITAG (SINGLE TAG, NO GLOBAL DIAGNOSTICS)
 # ============================================================
