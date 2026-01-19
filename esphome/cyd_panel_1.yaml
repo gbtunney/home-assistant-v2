@@ -1,0 +1,168 @@
+# ============================================================
+# DEVICE — CYD 3-BUTTON PANEL
+# ============================================================
+#
+# Minimal CYD (ESP32-2432S028 / Cheap Yellow Display) panel:
+# - 3 big touch buttons
+# - Calls HA services (edit entity_ids below)
+#
+# Notes:
+# - BLE + moisture removed.
+# - JST/DuPont cable not used.
+# - Use USB-C for flashing.
+# ============================================================
+
+substitutions:
+  log_level: VERY_VERBOSE
+  #ota_password: "d610ed309a79c724406c68c094316693"
+  device_use_address: "192.168.1.28"
+
+  # ----------------------------------------------------------
+  # DEVICE IDENTITY
+  # ----------------------------------------------------------
+  device_id: cyd_display_1
+  device_hostname: "cyd-display-1"
+  device_friendly_name: "CYD Display 1"
+  device_description: "CYD touchscreen LCD panel test: 3 buttons"
+
+packages:
+  # ----------------------------------------------------------
+  # BASE + PLATFORM
+  # (assumes these define esphome/wifi/api/ota/logger basics)
+  # ----------------------------------------------------------
+  base: !include common/universal_base.yaml
+  board: !include common/platforms/esp32.yaml
+  fleet: !include fleets/cyd_panel.yaml
+  # ----------------------------------------------------------
+  # CAPABILITIES
+  # ----------------------------------------------------------
+  diagnostics: !include common/capabilities/diagnostics.yaml
+
+# ============================================================
+# CYD UI (non-base config)
+# ============================================================
+
+spi:
+  clk_pin: GPIO14
+  mosi_pin: GPIO13
+  # miso_pin not required for ILI9341 display; omit to avoid GPIO12 strapping warnings
+
+font:
+  - file: "gfonts://Roboto"
+    id: f_btn
+    size: 28
+
+# --- DISPLAY (ILI9341 via ili9xxx) ---
+display:
+  - platform: ili9xxx
+    model: ili9341
+    invert_colors: false
+    cs_pin: GPIO15
+    dc_pin: GPIO2
+    reset_pin: GPIO4
+    rotation: 0
+    update_interval: 200ms
+    lambda: |-
+      it.fill(Color::BLACK);
+
+      // 240x320 (portrait)
+      const int w = 240;
+      const int h = 320;
+      const int bh = h / 3;
+
+      auto draw_btn = [&](int y0, const char* label) {
+        it.rectangle(0, y0, w, bh, Color::WHITE);
+        it.print(w/2, y0 + bh/2, id(f_btn), TextAlign::CENTER, label);
+      };
+
+      draw_btn(0 * bh, "Living");
+      draw_btn(1 * bh, "Kitchen");
+      draw_btn(2 * bh, "Bedroom");
+
+# --- TOUCH (XPT2046) ---
+touchscreen:
+  - platform: xpt2046
+    cs_pin: GPIO33
+    interrupt_pin: GPIO36
+    update_interval: 50ms
+
+    # Starter calibration (tune after first run if needed)
+    calibration:
+      x_min: 200
+      x_max: 3800
+      y_min: 200
+      y_max: 3800
+
+    on_touch:
+      - lambda: |-
+          // Decide button by Y coordinate (3 vertical zones).
+          int y = touch.y;
+
+          if (y < 106) {
+            id(btn_living).execute();
+          } else if (y < 213) {
+            id(btn_kitchen).execute();
+          } else {
+            id(btn_bedroom).execute();
+          }
+
+output:
+  - platform: ledc
+    pin: GPIO21
+    id: lcd_backlight
+    frequency: 5000 Hz
+
+light:
+  - platform: monochromatic
+    output: lcd_backlight
+    name: "CYD Backlight"
+    restore_mode: ALWAYS_ON
+
+# --- BUTTON ACTIONS (call HA services) ---
+script:
+  - id: btn_living
+    mode: restart
+    then:
+      - homeassistant.service:
+          service: light.toggle
+          data:
+            entity_id: light.living_room_lights_switch_1 # <-- change me
+
+  - id: btn_kitchen
+    mode: restart
+    then:
+      - homeassistant.service:
+          service: light.toggle
+          data:
+            entity_id: light.wp_23_kitchen_string_light # <-- change me
+
+  - id: btn_bedroom
+    mode: restart
+    then:
+      - homeassistant.service:
+          service: light.toggle
+          data:
+            entity_id: light.bedroom_lights # <-- change me
+
+button:
+  - platform: restart
+    name: "Restart CYD Panel"
+  - platform: safe_mode
+    name: "Restart in Safe Mode"
+    disabled_by_default: true
+
+  #TESTING MOCK BUTTON CLICKS
+  - platform: template
+    name: "Test Living Button"
+    on_press:
+      - script.execute: btn_living
+
+  - platform: template
+    name: "Test Kitchen Button"
+    on_press:
+      - script.execute: btn_kitchen
+
+  - platform: template
+    name: "Test Bedroom Button"
+    on_press:
+      - script.execute: btn_bedroom
