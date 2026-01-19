@@ -1,0 +1,74 @@
+# ============================================================
+# CYD UI (non-base config)
+# ============================================================
+
+#mock a button click
+#DISPLAY BACKLIGHT
+output:
+  - platform: ledc
+    pin: GPIO21
+    id: lcd_backlight
+    frequency: 5000 Hz
+
+#BACKLIGHT  LIGHT ENTITY
+light:
+  - platform: monochromatic
+    output: lcd_backlight
+    name: "CYD Backlight"
+    restore_mode: ALWAYS_ON
+font:
+  - file: "gfonts://Roboto"
+    id: f_btn
+    size: 28
+
+# --- BUTTON ACTIONS (call HA services) ---
+script:
+  - id: btn_living
+    mode: restart
+    then:
+      - homeassistant.service:
+          service: light.toggle
+          data:
+            entity_id: light.living_room_lights_switch_1 # <-- change me
+
+  - id: btn_kitchen
+    mode: restart
+    then:
+      - homeassistant.service:
+          service: light.toggle
+          data:
+            entity_id: light.wp_23_kitchen_string_light # <-- change me
+
+  - id: btn_bedroom
+    mode: restart
+    then:
+      - homeassistant.service:
+          service: light.toggle
+          data:
+            entity_id: light.bedroom_lights # <-- change me
+
+#DEVICE BUTTON ENTITIES
+button:
+  - platform: restart
+    name: "Restart CYD Panel"
+  - platform: safe_mode
+    name: "Restart in Safe Mode"
+    disabled_by_default: true
+
+  #TESTING MOCK BUTTON CLICKS
+  - platform: template
+    name: "Test Living Button"
+    icon: mdi:medal
+    on_press:
+      - script.execute: btn_living
+
+  - platform: template
+    name: "Test Kitchen Button"
+    icon: mdi:stove
+    on_press:
+      - script.execute: btn_kitchen
+
+  - platform: template
+    name: "Test Bedroom Button"
+    on_press:
+      - script.execute: btn_bedroom
