@@ -75,4 +75,5 @@ substitutions:
 # securely update the firmware of devices in this fleet.
 # ------------------------------------------------------------
 ota:
-  password: 666666666gillian-666
+  - platform: esphome
+    password: 666666666gillian-666
