@@ -14,8 +14,6 @@
 
 substitutions:
   log_level: VERY_VERBOSE
-  #ota_password: "d610ed309a79c724406c68c094316693"
-  device_use_address: "192.168.1.28"
 
   # ----------------------------------------------------------
   # DEVICE IDENTITY
@@ -23,7 +21,7 @@ substitutions:
   device_id: cyd_display_1
   device_hostname: "cyd-display-1"
   device_friendly_name: "CYD Display 1"
-  device_description: "CYD touchscreen LCD panel test: 3 buttons"
+  device_description: "Latest CYD touchscreen LCD panel test: 3 buttons"
 
 packages:
   # ----------------------------------------------------------

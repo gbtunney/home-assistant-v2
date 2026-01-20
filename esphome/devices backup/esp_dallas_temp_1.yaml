@@ -16,17 +16,21 @@
 
 substitutions:
   log_level: VERY_VERBOSE
-  device_use_address: "192.168.1.25"
+  #wifi_ssid: "Snailicide"
+  #wifi_password: "Betta$11"
+  #api_encryption_key: "UK183nZ61Ngi/7py/HnBtsMQURS8lYXnBke8iBepuFo="
+  #ota_password: "9261fadd458c420a7f03c4467a4be901"
+  device_use_address: "192.168.1.14"
   ble_proxy: false
   # ----------------------------------------------------------
   # DEVICE IDENTITY
   # ----------------------------------------------------------
-  device_id: gbt_esp1
-  device_hostname: "gbt-esp1"
-  device_friendly_name: "ESP1 Environment Sensor"
-  device_description: "Temperature monitor with BLE proxy"
+  device_id: env_temp_1
+  device_hostname: "env-temp-1"
+  device_friendly_name: "DALLAS GBT Env Temp Node 1"
+  device_description: "DALLAS Rack temperature monitor with BLE proxy"
 
-  #-----------------------------------------------------
+  # ----------------------------------------------------------
   # DALLAS BUS CONFIGURATION
   # ----------------------------------------------------------
   dallas_pin: "22"
@@ -35,29 +39,28 @@ substitutions:
   # ----------------------------------------------------------
   # PROBE ADDRESSES
   # ----------------------------------------------------------
-  probe_1a_address: "0x8e00000038ab1428"
-  probe_1b_address: "0x3a00000036e82128"
+  probe_1a_address: "0x28FFAAAA11111111"
+  probe_1b_address: "0x28FFBBBB22222222"
 
-  probe_2a_address: "0x4c00000033fa6d28"
-  probe_2b_address: "0x49000000370e6b28"
+  probe_2a_address: "0x28FFCCCC33333333"
+  probe_2b_address: "0x28FFDDDD44444444"
 
-  probe_3a_address: "0x43000000340df728"
-  probe_3b_address: "0x9d00000036c0df28"
+  probe_3a_address: "0x28FFEEEE55555555"
+  probe_3b_address: "0x28FFFFF666666666"
 
 packages:
   # ----------------------------------------------------------
   # BASE + FLEET
   # ----------------------------------------------------------
   base: !include common/universal_base.yaml
-  board: !include common/platforms/esp32doit.yaml
-  fleet:
-    !include fleets/env_sensors.yaml
+  board: !include common/platforms/esp32.yaml
+  fleet: !include fleets/env_sensors.yaml
 
-    # ----------------------------------------------------------
+  # ----------------------------------------------------------
   # CAPABILITIES
   # ----------------------------------------------------------
   diagnostics: !include common/capabilities/diagnostics.yaml
-  ble: !include common/capabilities/bluetooth_proxy.yaml
+  #ble: !include common/capabilities/bluetooth_proxy.yaml
   dallas_bus: !include common/capabilities/dallas/bus.yaml
 
   # ----------------------------------------------------------
@@ -86,4 +89,3 @@ packages:
         pair_id: "3"
         probe_a_address: ${probe_3a_address}
         probe_b_address: ${probe_3b_address}
-captive_portal:

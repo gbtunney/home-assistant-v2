@@ -1,5 +1,5 @@
 # ============================================================
-# DEVICE — ENV TEMP 1 (DEPLOYED)
+# DEVICE — GENERIC MOISTURE SENSOR
 # ============================================================
 #
 # This is a DEPLOYED device file.
@@ -7,8 +7,7 @@
 # appears in the ESPHome add-on UI.
 #
 # Role:
-# - Environmental temperature monitoring
-# - 3 Dallas probe pairs
+# - Soil moisture monitoring
 # - Bluetooth Proxy infrastructure
 # - Standard diagnostics
 #
@@ -16,14 +15,22 @@
 
 substitutions:
   log_level: VERY_VERBOSE
-  #api_encryption_key: "UK183nZ61Ngi/7py/HnBtsMQURS8lYXnBke8iBepuFo="
+  ota_password: "d610ed309a79c724406c68c094316693"
+
   # ----------------------------------------------------------
   # DEVICE IDENTITY
   # ----------------------------------------------------------
-  device_id: ble_proxy_1
-  device_hostname: "ble-proxy-1"
-  device_friendly_name: "GBT New Ble Proxy 1"
-  device_description: "BLE proxy test"
+  device_id: moisture_sensor_1
+  device_hostname: "moisture-sensor-1"
+  device_friendly_name: "Moisture Sensor 1"
+  device_description: "Generic soil moisture sensor with BLE proxy."
+
+  # ----------------------------------------------------------
+  # MOISTURE SENSOR CONFIGURATION
+  # ----------------------------------------------------------
+  moisture_probe_id: "moisture_probe_1"
+  moisture_probe_name: "Moisture Probe 1"
+  moisture_probe_pin: "GPIO32"
 
 packages:
   # ----------------------------------------------------------
@@ -31,10 +38,13 @@ packages:
   # ----------------------------------------------------------
   base: !include common/universal_base.yaml
   board: !include common/platforms/esp32.yaml
-  fleet: !include fleets/ble_proxy.yaml
+  fleet: !include fleets/moisture_sensor.yaml
 
   # ----------------------------------------------------------
   # CAPABILITIES
   # ----------------------------------------------------------
   diagnostics: !include common/capabilities/diagnostics.yaml
   ble: !include common/capabilities/bluetooth_proxy.yaml
+  moisture_sensor: !include common/capabilities/moisture_probe.yaml
+
+captive_portal:

@@ -1,3 +1,5 @@
+--- # ------------------------------------------------------------
+
 # ============================================================
 # FLEET — SOIL MOISTURE SENSOR
 # ============================================================
@@ -52,8 +54,6 @@
 #   - moving a device between fleets must not require
 #     refactoring device or capability logic
 #
-# ------------------------------------------------------------
-
 substitutions:
   # Fleet identifier
   # Used for:
@@ -71,3 +71,13 @@ substitutions:
   # Firmware version for this fleet
   # Used for diagnostics and future update policy
   fleet_firmware_version: "0.0.0"
+
+# ------------------------------------------------------------
+# OTA CONFIGURATION
+# -----------------
+# The OTA section defines the Over-The-Air update password
+# for all devices in this fleet. This password is used to
+# securely update the firmware of devices in this fleet.
+# ------------------------------------------------------------
+ota:
+  password: 457984758347597495-9999999moist

@@ -1,21 +1,20 @@
 # ============================================================
-# FLEET — BLUETOOTH PROXY NODES
+# FLEET — CYD PANEL INTERFACE NODES
 # ============================================================
 #
 # PURPOSE
 # -------
 # This fleet defines devices whose *primary role* is to act as
-# Bluetooth Proxy infrastructure for Home Assistant.
+# CYD (Cheap Yellow Display) panel interfaces for Home Assistant.
 #
 # These devices:
-#   - relay BLE traffic to Home Assistant
-#   - support nearby BLE-based integrations (e.g. Bermuda)
-#   - provide shared RF infrastructure
+#   - provide a user interface for Home Assistant
+#   - include touch buttons for interaction
+#   - display information from Home Assistant
 #
 # They do NOT:
-#   - own sensors or actuators
-#   - represent physical measurements
-#   - implement device-specific logic
+#   - act as Bluetooth proxies
+#   - implement device-specific logic outside of the panel role
 #
 # ------------------------------------------------------------
 #
@@ -71,3 +70,16 @@ substitutions:
   # Firmware version for this fleet
   # Used for diagnostics and future update policy
   fleet_firmware_version: "0.0.0"
+
+  # Log level for debugging and diagnostics
+  log_level: VERY_VERBOSE
+
+# ------------------------------------------------------------
+# OTA CONFIGURATION
+# -----------------
+# The OTA section defines the Over-The-Air update password
+# for all devices in this fleet. This password is used to
+# securely update the firmware of devices in this fleet.
+# ------------------------------------------------------------
+ota:
+  password: cyan12345678900-666
