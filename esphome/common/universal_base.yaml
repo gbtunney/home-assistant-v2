@@ -1,43 +1,26 @@
-# ============================================================
-# UNIVERSAL BASE — ALL DEVICES
-# ============================================================
-#
-# Provides:
-# - Core ESPHome identity
-# - Logger defaults
-# - API + WiFi + fallback APi + fallback AP
-#
-# This file MUST NOT contain hardware-specific logic. This file MUST NOT contain hardware-specific logic.
-# =====================================================================
-
-substitutions:substitutions:
-  # ----------------------------------------
-  # DEVICE IDENTITY
-  # -----------------------------------
-  # device_hostname defaults to device_id unless overridden per deviceto device_id unless overridden per device
+substitutions:
+  # Defaults; device files can override these
   device_hostname: ${device_id}
+  log_level: INFO
 
-  # -------------------------  # -------------------------
-  # GLOBAL DEFAULTS
-  # -----------------------------------
-  log_level: "INFO"
-
-esphome:esphome:
-  name: ${device_hostname}${device_hostname}
-  friendly_name: ${device_friendly_name}friendly_name}
+esphome:
+  name: ${device_hostname}
+  friendly_name: ${device_friendly_name}
   comment: ${device_description}
   project:
+    name: ${fleet_project}
+    version: ${fleet_firmware_version}
 
 logger:
+  level: ${log_level}
 
-api:api:
+api:
 
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
-
   ap:
     ssid: "${device_friendly_name} Fallback"
     password: !secret fallback_ap_password
 
-captive_portal:captive_portal:
+captive_portal:
