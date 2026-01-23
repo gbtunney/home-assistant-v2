@@ -36,3 +36,8 @@ packages:
   # ----------------------------------------------------------
   diagnostics: !include common/capabilities/diagnostics.yaml
   ble: !include common/capabilities/bluetooth_proxy.yaml
+
+# Example configuration entry
+button:
+  - platform: factory_reset
+    name: Restart with Factory Default Settings
