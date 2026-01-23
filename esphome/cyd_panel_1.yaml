@@ -13,7 +13,9 @@
 # ============================================================
 
 substitutions:
-  log_level: VERY_VERBOSE
+  # Logging inherits default INFO from the universal base.
+  # For troubleshooting, temporarily set per-device to DEBUG, then revert.
+  #log_level: INFO
 
   # ----------------------------------------------------------
   # DEVICE IDENTITY
@@ -44,7 +46,7 @@ spi:
   clk_pin: GPIO14
   mosi_pin: GPIO13
   miso_pin: GPIO12
-  # miso_pin not required for ILI9341 display; omit to avoid GPIO12 strapping warnings
+  # ILI9341 doesn't need MISO; kept for XPT2046 touch (GPIO12 warning is expected)
 
 font:
   - file: "gfonts://Roboto"
@@ -114,8 +116,11 @@ output:
 
 light:
   - platform: monochromatic
+    id: cyd_backlight
+    internal: true
     output: lcd_backlight
     name: "CYD Backlight"
+    default_transition_length: 0s
     restore_mode: ALWAYS_ON
 
 # --- BUTTON ACTIONS (call HA services) ---
@@ -166,3 +171,15 @@ button:
     name: "Test Bedroom Button"
     on_press:
       - script.execute: btn_bedroom
+
+esphome:
+  on_boot:
+    priority: 800
+    then:
+      - output.set_level:
+          id: lcd_backlight
+          level: 1.0
+      # Or:
+      # - light.turn_on:
+      #     id: cyd_backlight
+      #     brightness: 100%
