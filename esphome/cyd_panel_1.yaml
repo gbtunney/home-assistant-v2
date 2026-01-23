@@ -1,15 +1,5 @@
 # ============================================================
-# DEVICE — CYD 3-BUTTON PANEL
-# ============================================================
-#
-# Minimal CYD (ESP32-2432S028 / Cheap Yellow Display) panel:
-# - 3 big touch buttons
-# - Calls HA services (edit entity_ids below)
-#
-# Notes:
-# - BLE + moisture removed.
-# - JST/DuPont cable not used.
-# - Use USB-C for flashing.
+# DEVICE — CYD 3-BUTTON PANEL (Network-only bring-up)
 # ============================================================
 
 substitutions:
@@ -23,7 +13,7 @@ substitutions:
   device_id: cyd_display_1
   device_hostname: "cyd-display-1"
   device_friendly_name: "CYD Display 1"
-  device_description: "Latest CYD touchscreen LCD panel test: 3 buttons"
+  device_description: "Network-only bring-up (no display/touch)"
 
 packages:
   # ----------------------------------------------------------
@@ -38,67 +28,7 @@ packages:
   # ----------------------------------------------------------
   diagnostics: !include common/capabilities/diagnostics.yaml
 
-# ============================================================
-# CYD UI (non-base config)
-# ============================================================
-
-spi:
-  id: hspi
-  clk_pin: GPIO14
-  mosi_pin: GPIO13
-  miso_pin: GPIO12
-  # HSPI default pins; GPIO12 warning is expected on CYD
-
-font:
-  - file: "gfonts://Roboto"
-    id: f_btn
-    size: 28
-
-# --- DISPLAY (ILI9341 via ili9xxx) ---
-display:
-  - platform: ili9xxx
-    spi_id: hspi
-    model: ili9341
-    cs_pin: GPIO15
-    dc_pin: GPIO2
-    reset_pin: GPIO4
-    data_rate: 20MHz # lower bus speed for reliable init
-    rotation: 0
-    update_interval: 1000ms
-    lambda: |-
-      it.fill(Color::BLACK);
-      const int w = 240, h = 320, bh = h / 3;
-      auto draw_btn = [&](int y0, const char* label) {
-        it.rectangle(0, y0, w, bh, Color::WHITE);
-        it.print(w/2, y0 + bh/2, id(f_btn), TextAlign::CENTER, label);
-      };
-      draw_btn(0 * bh, "Living");
-      draw_btn(1 * bh, "Kitchen");
-      draw_btn(2 * bh, "Bedroom");
-
-# --- TOUCH (XPT2046) ---
-touchscreen:
-  - platform: xpt2046
-    spi_id: hspi
-    cs_pin: GPIO33
-    interrupt_pin: GPIO36
-    update_interval: 50ms
-    threshold: 400
-    calibration:
-      x_min: 200
-      x_max: 3800
-      y_min: 200
-      y_max: 3800
-    on_touch:
-      - lambda: |-
-          int y = touch.y;
-          if (y < 106) {
-            id(btn_living).execute();
-          } else if (y < 213) {
-            id(btn_kitchen).execute();
-          } else {
-            id(btn_bedroom).execute();
-          }
+# No SPI/display/touch here — we’re just proving network stability.
 
 output:
   - platform: ledc
@@ -115,32 +45,6 @@ light:
     default_transition_length: 0s
     restore_mode: ALWAYS_ON
 
-# --- BUTTON ACTIONS (call HA services) ---
-script:
-  - id: btn_living
-    mode: restart
-    then:
-      - homeassistant.service:
-          service: light.toggle
-          data:
-            entity_id: light.living_room_lights_switch_1 # <-- change me
-
-  - id: btn_kitchen
-    mode: restart
-    then:
-      - homeassistant.service:
-          service: light.toggle
-          data:
-            entity_id: light.wp_23_kitchen_string_light # <-- change me
-
-  - id: btn_bedroom
-    mode: restart
-    then:
-      - homeassistant.service:
-          service: light.toggle
-          data:
-            entity_id: light.bedroom_lights # <-- change me
-
 button:
   - platform: restart
     name: "Restart CYD Panel"
@@ -148,24 +52,32 @@ button:
     name: "Restart in Safe Mode"
     disabled_by_default: true
 
-  #TESTING MOCK BUTTON CLICKS
+  # Simple test buttons
   - platform: template
-    name: "Test Living Button"
+    name: "Backlight On"
+    icon: mdi:brightness-7
     on_press:
-      - script.execute: btn_living
+      - output.set_level:
+          id: lcd_backlight
+          level: 1.0
 
   - platform: template
-    name: "Test Kitchen Button"
+    name: "Backlight Off"
+    icon: mdi:brightness-2
     on_press:
-      - script.execute: btn_kitchen
+      - output.turn_off: lcd_backlight
 
   - platform: template
-    name: "Test Bedroom Button"
+    name: "Test Notification"
+    icon: mdi:bell
     on_press:
-      - script.execute: btn_bedroom
+      - homeassistant.service:
+          service: persistent_notification.create
+          data:
+            title: "ESPHome Test"
+            message: "Button pressed from CYD Display 1"
 
 esphome:
-  use_address: cyd-display-1.local
   on_boot:
     priority: 800
     then:
