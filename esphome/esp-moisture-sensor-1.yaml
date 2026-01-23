@@ -39,6 +39,10 @@ packages:
   base: !include common/universal_base.yaml
   board: !include common/platforms/esp32.yaml
   fleet: !include fleets/moisture_sensor.yaml
+  # NETWORK (Wi‑Fi inherited from base; DHCP by default — no static IP)
+  net_perf: !include common/overrides/wifi_performance.yaml
+  # Optional later: target a specific uploader address
+  # net_use_address: !include common/overrides/wifi_use_address.yaml
 
   # ----------------------------------------------------------
   # CAPABILITIES
@@ -48,3 +52,5 @@ packages:
   moisture_sensor: !include common/capabilities/moisture_probe.yaml
 
 captive_portal:
+  # captive_portal is inherited from the base; this duplicate is optional.
+  # captive_portal:

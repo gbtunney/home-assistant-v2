@@ -70,7 +70,7 @@ substitutions:
   fleet_project: "gbt.ble-proxy"
   # Firmware version for this fleet
   # Used for diagnostics and future update policy
-  fleet_firmware_version: "0.0.0"
+  fleet_firmware_version: "0.0.1"
 
   # Logging inherits default `INFO` from the universal base.
   # For troubleshooting, temporarily override per-device to `DEBUG`,
