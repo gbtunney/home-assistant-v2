@@ -1,0 +1,22 @@
+# Override: Static IP configuration
+# Variables used:
+# - wifi_static_ip: Device IP
+# - wifi_gateway: Default gateway
+# - wifi_subnet: Netmask
+# - wifi_dns1: Primary DNS
+# - wifi_dns2: Secondary DNS
+substitutions:
+  # Examples (set in the device file's substitutions):
+  # wifi_static_ip: "192.168.1.50"
+  # wifi_gateway: "192.168.1.1"
+  # wifi_subnet: "255.255.255.0"
+  # wifi_dns1: "192.168.1.1"
+  # wifi_dns2: "1.1.1.1"
+
+wifi:
+  manual_ip:
+    static_ip: ${wifi_static_ip}
+    gateway: ${wifi_gateway}
+    subnet: ${wifi_subnet}
+    dns1: ${wifi_dns1}
+    dns2: ${wifi_dns2}
