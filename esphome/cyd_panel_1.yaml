@@ -15,6 +15,9 @@ substitutions:
   device_friendly_name: "CYD Display 1"
   device_description: "Network-only bring-up (no display/touch)"
 
+  # OTA/uploader target address (used by override include)
+  wifi_use_address: "192.168.1.129"
+
 packages:
   # ----------------------------------------------------------
   # BASE + PLATFORM
@@ -23,6 +26,13 @@ packages:
   base: !include common/universal_base.yaml
   board: !include common/platforms/esp32.yaml
   fleet: !include fleets/cyd_panel.yaml
+
+  # ----------------------------------------------------------
+  # NETWORK OVERRIDES (optional, per-device)
+  # ----------------------------------------------------------
+  net_perf: !include common/overrides/wifi_performance.yaml
+  net_use_address: !include common/overrides/wifi_use_address.yaml
+
   # ----------------------------------------------------------
   # CAPABILITIES
   # ----------------------------------------------------------
