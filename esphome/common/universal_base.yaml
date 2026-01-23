@@ -1,26 +1,58 @@
+# Universal ESPHome base for fleet devices.
+# All device-specific files can override these defaults via `substitutions`.
+
 substitutions:
   # Defaults; device files can override these
+  # `device_hostname`: typically sourced from `${device_id}` in device configs.
   device_hostname: ${device_id}
+  # `log_level`: adjust verbosity (`NONE`, `ERROR`, `WARN`, `INFO`, `DEBUG`, `VERBOSE`).
   log_level: INFO
 
+# Core ESPHome metadata and project identity used across the fleet.
 esphome:
+  # Visible hostname on the network; keep concise and unique.
   name: ${device_hostname}
+  # Friendly display name shown in dashboards/UIs.
   friendly_name: ${device_friendly_name}
+  # Short description for context (location, purpose, etc.).
   comment: ${device_description}
+  # Project info helps track firmware provenance across fleets.
   project:
     name: ${fleet_project}
     version: ${fleet_firmware_version}
 
+# Device logging; increasing verbosity can impact performance and flash wear.
 logger:
   level: ${log_level}
 
+# Native API for Home Assistant; encryption is strongly recommended for security.
 api:
+  encryption:
+    # Use a strong key stored in secrets; must match HA-side configuration.
+    key: !secret api_encryption_key
 
+# ------------------------------------------------------------
+# OTA CONFIGURATION
+# -----------------
+# Defines the Over-The-Air update password for all devices.
+# This secures firmware updates across all devices.
+# ------------------------------------------------------------
+ota:
+  - platform: esphome
+    # Store in secrets to avoid exposing credentials in VCS.
+    password: !secret ota_password
+
+# Primary Wi-Fi connectivity; ensure SSID/password come from secrets.
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
+
+  # Fallback AP used when the device cannot join the primary Wi-Fi.
+  # Useful for first-time setup and recovery; protect with a strong password.
   ap:
     ssid: "${device_friendly_name} Fallback"
     password: !secret fallback_ap_password
 
+# Captive portal enables an on-device configuration page when using the AP.
+# Helpful for onboarding or troubleshooting network credentials.
 captive_portal:

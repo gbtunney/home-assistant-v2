@@ -72,13 +72,7 @@ substitutions:
   # Used for diagnostics and future update policy
   fleet_firmware_version: "0.0.0"
 
-# ------------------------------------------------------------
-# OTA CONFIGURATION
-# -----------------
-# The OTA section defines the Over-The-Air update password
-# for all devices in this fleet. This password is used to
-# securely update the firmware of devices in this fleet.
-# ------------------------------------------------------------
-ota:
-  - platform: esphome
-    password: 457984758347597495-9999999moist
+  # Logging inherits default INFO from universal base.
+  # For troubleshooting, temporarily override per-device to DEBUG,
+  # then revert to INFO after onboarding.
+  #log_level: INFO
