@@ -22,6 +22,11 @@ substitutions:
   device_hostname: "ble-proxy-1"
   device_friendly_name: "GBT New Ble Proxy 1"
   device_description: "BLE proxy test"
+  
+
+  ble_rescan_duration: "10s"
+  ble_rescan_button_name: "BLE Active Scan"
+
 
 packages:
   # ----------------------------------------------------------
@@ -40,3 +45,5 @@ packages:
   # ----------------------------------------------------------
   diagnostics: !include common/capabilities/diagnostics.yaml
   ble: !include common/capabilities/bluetooth_proxy.yaml
+  test_buttons: !include common/capabilities/test/system_buttons.yaml
+  test_ble_scan_button: !include common/capabilities/test/ble_scan_button.yaml

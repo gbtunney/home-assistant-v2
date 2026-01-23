@@ -15,7 +15,7 @@
 
 substitutions:
   log_level: VERY_VERBOSE
-  ota_password: "d610ed309a79c724406c68c094316693"
+  #ota_password: "d610ed309a79c724406c68c094316693"
 
   # ----------------------------------------------------------
   # DEVICE IDENTITY
@@ -50,6 +50,7 @@ packages:
   diagnostics: !include common/capabilities/diagnostics.yaml
   ble: !include common/capabilities/bluetooth_proxy.yaml
   moisture_sensor: !include common/capabilities/moisture_probe.yaml
+  test_buttons: !include common/capabilities/test/system_buttons.yaml
 
 captive_portal:
   # captive_portal is inherited from the base; this duplicate is optional.
