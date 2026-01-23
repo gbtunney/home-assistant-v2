@@ -172,6 +172,8 @@ dist
 *.log*
 *.db
 .cloud
+cloud
+.storage
 .storage
 .google.token
 .uuid
@@ -197,10 +199,14 @@ ip_bans.yaml
 production_auth.json
 OZW_Log.txt
 www
+.storage
+storage
 .esphome
 cozylife_getconfig.py
 snapshots
-storage
+.ha.lock
+.backups
+*.log
 # Scratch Files
 scratch
 examples
