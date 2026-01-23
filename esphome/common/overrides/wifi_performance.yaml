@@ -1,0 +1,9 @@
+# Override: Wi‑Fi/API performance and stability
+# Variables used: none
+
+wifi:
+  power_save_mode: none
+  reboot_timeout: 0s
+
+api:
+  reboot_timeout: 0s

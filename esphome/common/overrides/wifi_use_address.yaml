@@ -1,0 +1,9 @@
+# Override: Wi‑Fi uploader target address
+# Variables used:
+# - wifi_use_address: IPv4 address to target for OTA/uploads
+substitutions:
+  # Example (set in the device file's substitutions):
+  # wifi_use_address: "192.168.1.129"
+
+wifi:
+  use_address: ${wifi_use_address}
