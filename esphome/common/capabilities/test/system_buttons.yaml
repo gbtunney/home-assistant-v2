@@ -1,0 +1,58 @@
+# ============================================================
+# CAPABILITY — TEST/DIAGNOSTIC BUTTONS
+# ============================================================
+#
+# PURPOSE
+# -------
+# Provides safe, generic test/diagnostic actions that can be included
+# per device via the packages mechanism. Keeps fleets entity-free.
+#
+# SAFETY
+# ------
+# - "Factory Reset" wipes Wi‑Fi/API credentials and reboots. It is
+#   disabled by default to avoid accidents; requires fallback AP to
+#   re-onboard the device.
+# - "Send Test Notification" requires the ESPHome API to Home Assistant.
+#
+# HOW TO INCLUDE (per device)
+# ---------------------------
+# packages:
+#   test_buttons: !include common/capabilities/test_buttons.yaml
+#
+# ============================================================
+
+button:
+  # Restart firmware normally (useful for applying non-OTA changes
+  # or testing boot behavior).
+  - platform: restart
+    name: "Restart Device"
+    entity_category: diagnostic
+
+  # Boot into Safe Mode (minimal config) to recover from bad builds.
+  # Hidden by default to reduce UI clutter.
+  - platform: safe_mode
+    name: "Restart in Safe Mode"
+    entity_category: diagnostic
+    disabled_by_default: true
+
+  # Full factory reset — clears Wi‑Fi/API credentials and reboots.
+  # Keep disabled to prevent accidental wipes. Ensure fallback AP is
+  # configured in your base before enabling this.
+  - platform: factory_reset
+    name: "Factory Reset"
+    entity_category: diagnostic
+    icon: "mdi:alert-decagram"
+    disabled_by_default: true
+
+  # Quick end-to-end check that the device can call Home Assistant
+  # services via the ESPHome API.
+  - platform: template
+    name: "Send Test Notification"
+    entity_category: diagnostic
+    icon: "mdi:bell"
+    on_press:
+      - homeassistant.service:
+          service: persistent_notification.create
+          data:
+            title: "ESPHome Diagnostic"
+            message: "Test notification from ${device_friendly_name}"

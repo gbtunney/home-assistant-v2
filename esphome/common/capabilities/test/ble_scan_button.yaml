@@ -1,0 +1,33 @@
+# ============================================================
+# CAPABILITY — BLE SCAN BUTTON (TEST)
+# ============================================================
+#
+# PURPOSE
+# -------
+# Exposes a diagnostic button to trigger a short active BLE scan.
+# Requires esp32_ble_tracker from your BLE capability.
+#
+# HOW TO INCLUDE (per device)
+# ---------------------------
+# substitutions:
+#   ble_rescan_duration: "5s"       # optional, defaults to 5s
+#   ble_rescan_button_name: "BLE Rescan"  # optional
+#
+# packages:
+#   test_ble_scan_button: !include common/capabilities/test/ble_scan_button.yaml
+#
+# ============================================================
+
+substitutions:
+  ble_rescan_button_name: "BLE Rescan"
+  ble_rescan_duration: "5s"
+
+button:
+  - platform: template
+    name: "${ble_rescan_button_name} (${ble_rescan_duration})"
+    entity_category: diagnostic
+    icon: "mdi:bluetooth"
+    on_press:
+      - logger.log: "Starting BLE rescan for ${ble_rescan_duration}"
+      - esp32_ble_tracker.start_scan: ${ble_rescan_duration}
+      - logger.log: "BLE rescan completed"
