@@ -108,9 +108,22 @@ text_sensor:
 # BINARY SENSORS — CONNECTIVITY
 # ------------------------------------------------------------
 binary_sensor:
-  # ESP ↔ Home Assistant connectivity
+  # Raw ESP ↔ Home Assistant connectivity (transport truth)
   - platform: status
+    id: diag_raw_connected
+    name: "Raw_connected"
+    device_class: connectivity
+    entity_category: diagnostic
+    disabled_by_default: true
+
+  # Debounced connectivity (stable, human-safe)
+  - platform: template
     id: diag_connected
     name: "Connected"
     device_class: connectivity
     entity_category: diagnostic
+    lambda: |-
+      return id(diag_raw_connected).state;
+    filters:
+      - delayed_on: 3s
+      - delayed_off: 15s
