@@ -206,4 +206,4 @@ scratch
 examples
 configurationbk.yaml
 application_credentials
-custom_components.disabled
+custom_components.disabled.ha_run.lock
