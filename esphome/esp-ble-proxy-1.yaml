@@ -15,8 +15,6 @@
 # ============================================================
 
 substitutions:
-  log_level: VERY_VERBOSE
-  #api_encryption_key: "UK183nZ61Ngi/7py/HnBtsMQURS8lYXnBke8iBepuFo="
   # ----------------------------------------------------------
   # DEVICE IDENTITY
   # ----------------------------------------------------------

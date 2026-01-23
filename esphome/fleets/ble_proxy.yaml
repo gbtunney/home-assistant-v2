@@ -75,4 +75,4 @@ substitutions:
   # Logging inherits default `INFO` from the universal base.
   # For troubleshooting, temporarily override per-device to `DEBUG`,
   # then revert to `INFO` after onboarding.
-  #log_level: INFO
+  log_level: DEBUG

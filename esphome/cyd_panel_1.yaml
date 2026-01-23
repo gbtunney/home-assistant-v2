@@ -43,10 +43,11 @@ packages:
 # ============================================================
 
 spi:
+  id: hspi
   clk_pin: GPIO14
   mosi_pin: GPIO13
   miso_pin: GPIO12
-  # ILI9341 doesn't need MISO; kept for XPT2046 touch (GPIO12 warning is expected)
+  # HSPI default pins; GPIO12 warning is expected on CYD
 
 font:
   - file: "gfonts://Roboto"
@@ -56,26 +57,21 @@ font:
 # --- DISPLAY (ILI9341 via ili9xxx) ---
 display:
   - platform: ili9xxx
+    spi_id: hspi
     model: ili9341
-    invert_colors: false
     cs_pin: GPIO15
     dc_pin: GPIO2
     reset_pin: GPIO4
+    data_rate: 20MHz # lower bus speed for reliable init
     rotation: 0
     update_interval: 1000ms
     lambda: |-
       it.fill(Color::BLACK);
-
-      // 240x320 (portrait)
-      const int w = 240;
-      const int h = 320;
-      const int bh = h / 3;
-
+      const int w = 240, h = 320, bh = h / 3;
       auto draw_btn = [&](int y0, const char* label) {
         it.rectangle(0, y0, w, bh, Color::WHITE);
         it.print(w/2, y0 + bh/2, id(f_btn), TextAlign::CENTER, label);
       };
-
       draw_btn(0 * bh, "Living");
       draw_btn(1 * bh, "Kitchen");
       draw_btn(2 * bh, "Bedroom");
@@ -83,23 +79,19 @@ display:
 # --- TOUCH (XPT2046) ---
 touchscreen:
   - platform: xpt2046
+    spi_id: hspi
     cs_pin: GPIO33
     interrupt_pin: GPIO36
     update_interval: 50ms
-
     threshold: 400
-    # Starter calibration (tune after first run if needed)
     calibration:
       x_min: 200
       x_max: 3800
       y_min: 200
       y_max: 3800
-
     on_touch:
       - lambda: |-
-          // Decide button by Y coordinate (3 vertical zones).
           int y = touch.y;
-
           if (y < 106) {
             id(btn_living).execute();
           } else if (y < 213) {
@@ -173,13 +165,10 @@ button:
       - script.execute: btn_bedroom
 
 esphome:
+  use_address: cyd-display-1.local
   on_boot:
     priority: 800
     then:
       - output.set_level:
           id: lcd_backlight
           level: 1.0
-      # Or:
-      # - light.turn_on:
-      #     id: cyd_backlight
-      #     brightness: 100%
