@@ -1,9 +1,22 @@
 {
   "files.associations": {
-    "*.yaml": "home-assistant"
+    "**/configuration.yaml": "home-assistant",
+    "**/automations.yaml": "home-assistant",
+    "**/scripts.yaml": "home-assistant",
+    "**/scenes.yaml": "home-assistant",
+    "entities/**/*.yaml": "home-assistant",
+    "packages/**/*.yaml": "home-assistant",
+    "themes/**/*.yaml": "home-assistant",
+    "esphome/**/*.yaml": "yaml"
   },
+  "yaml.customTags": [
+    "!secret scalar",
+    "!include mapping",
+    "!include sequence",
+    "!include scalar"
+  ],
   "editor.formatOnPaste": true,
-  "editor.formatOnSave": true,
+  //"editor.formatOnSave": true,
   "prettier.documentSelectors": [
     "{*,**/*}.{ts,js,cjs,mjs,cts,mts,sh,html,json,yaml,yml,graphql,md}"
   ]
