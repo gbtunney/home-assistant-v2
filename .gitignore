@@ -207,3 +207,4 @@ examples
 configurationbk.yaml
 application_credentials
 custom_components.disabled.ha_run.lock
+.ha_run.lock
