@@ -25,7 +25,7 @@ substitutions:
 
   ble_rescan_duration: "10s"
   ble_rescan_button_name: "BLE Active Scan"
-
+  ble_active_scan: true
 packages:
   # ----------------------------------------------------------
   # BASE + FLEET
