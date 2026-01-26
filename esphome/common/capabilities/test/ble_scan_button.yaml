@@ -29,5 +29,6 @@ button:
     icon: "mdi:bluetooth"
     on_press:
       - logger.log: "Starting BLE rescan for ${ble_rescan_duration}"
-      - esp32_ble_tracker.start_scan: ${ble_rescan_duration}
+      - esp32_ble_tracker.start_scan:
+          scan_time: ${ble_rescan_duration}
       - logger.log: "BLE rescan completed"
