@@ -44,4 +44,4 @@ substitutions:
   fleet_firmware_version: "0.0.0"
 
   # Logging inherits default from universal base; override per-device if needed.
-  #log_level: INFO
+  log_level: DEBUG

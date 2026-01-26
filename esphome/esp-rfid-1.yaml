@@ -14,8 +14,7 @@ substitutions:
   device_hostname: "rfid-reader-1"
   device_friendly_name: "Cat Fountain NFC"
   device_description: "PN532 NFC/RFID reader for cat fountain tags."
-  # Logging
-  log_level: DEBUG
+  ble_active_scan: true
 
 packages:
   # Base + platform + fleet
@@ -23,35 +22,77 @@ packages:
   board: !include common/platforms/esp32.yaml
   fleet: !include fleets/nfc_reader.yaml
   # Network performance tweaks
-  net_perf: !include common/overrides/wifi_performance.yaml
+  #net_perf: !include common/overrides/wifi_performance.yaml
 
-  # Capabilities
+  # ----------------------------------------------------------
+  # CAPABILITIES
+  # ----------------------------------------------------------
   diagnostics: !include common/capabilities/diagnostics.yaml
+  ble: !include common/capabilities/bluetooth_proxy.yaml
+  test_buttons: !include common/capabilities/test/system_buttons.yaml
 
-# I2C bus (ESP32 default pins)
+# ----------------------------------------------------------
+# RFID Reader - NFC
+# ----------------------------------------------------------
+
+# -------------------------------------------------
+# Runtime state (internal only, NOT exposed to HA)
+# -------------------------------------------------
+globals:
+  - id: last_seen_uid
+    type: std::string
+    restore_value: false
+    initial_value: '""' # empty = no tag present
+
+# -------------------------------------------------
+# I2C + PN532
+# -------------------------------------------------
 i2c:
   sda: 21
   scl: 22
   scan: true
+  frequency: 50kHz # PN532 is more stable slower
 
-# PN532 in I2C mode
 pn532_i2c:
-  id: nfc_reader
+  id: pn532_board
+  address: 0x24
+  update_interval: 2s
+
+  # Tag appeared
   on_tag:
     then:
-      - lambda: |-
-          // Convert UID bytes to hex string like "04A1B2C3D4..."
-          char buf[3];
-          std::string uid;
-          for (auto b : x) {
-            sprintf(buf, "%02X", b);
-            uid += buf;
-          }
-          ESP_LOGI("pn532", "Tag UID: %s", uid.c_str());
-          id(last_tag_uid).publish_state(uid);
+      - if:
+          condition:
+            lambda: |-
+              return id(last_seen_uid) != x;
+          then:
+            - lambda: |-
+                id(last_seen_uid) = x;
+            - logger.log:
+                level: INFO
+                format: "NFC TAG DETECTED (new): %s"
+                args: ["x.c_str()"]
+            - text_sensor.template.publish:
+                id: nfc_uid
+                state: !lambda "return x;"
 
+  # Tag removed
+  on_tag_removed:
+    then:
+      - lambda: |-
+          id(last_seen_uid).clear();
+      - logger.log:
+          level: DEBUG
+          format: "NFC tag removed"
+      - text_sensor.template.publish:
+          id: nfc_uid
+          state: ""
+
+# -------------------------------------------------
+# Home Assistant–visible sensor
+# -------------------------------------------------
 text_sensor:
   - platform: template
-    name: "Last NFC Tag UID"
-    id: last_tag_uid
+    id: nfc_uid
+    name: "Tag UID"
     update_interval: never
