@@ -1,0 +1,47 @@
+--- # ------------------------------------------------------------
+
+# ============================================================
+# FLEET — NFC/RFID Readers
+# ============================================================
+#
+# PURPOSE
+# -------
+# Logical fleet grouping for PN532-based NFC/RFID reader devices.
+# Provides firmware lineage and deployment metadata only.
+#
+# A fleet MUST NOT:
+#   - define sensors, binary_sensors, buttons, switches
+#   - define hardware behavior (I2C, GPIO, PN532, etc.)
+#   - create or remove ESPHome entities
+#   - assume specific device wiring
+#
+# ------------------------------------------------------------
+#
+# CARDINALITY RULE
+# ----------------
+# Each device MUST include exactly ONE fleet file.
+# Fleets are mutually exclusive. Devices may include MANY capabilities.
+#
+# ------------------------------------------------------------
+#
+# CHANGE SAFETY
+# -------------
+# Changes here must be SAFE and NON-DESTRUCTIVE:
+#   - updating values must not create/remove entities
+#   - moving a device between fleets must not require refactoring capabilities
+#
+substitutions:
+  # Fleet identifier used for grouping and labeling
+  fleet_id: "nfc_reader"
+
+  # Human-readable operational role
+  fleet_role: "nfc_rfid_reading"
+
+  # ESPHome project identity (lowercase, namespace/name)
+  fleet_project: "gbt.nfc-readers"
+
+  # Firmware lineage/version tracking
+  fleet_firmware_version: "0.0.0"
+
+  # Logging inherits default from universal base; override per-device if needed.
+  #log_level: INFO

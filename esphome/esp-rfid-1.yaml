@@ -1,0 +1,57 @@
+# ============================================================
+# DEVICE — NFC/RFID Reader (PN532, I2C)
+# ============================================================
+#
+# Role:
+# - NFC/RFID tag UID reading (PN532 via I2C)
+# - Standard diagnostics
+#
+# ============================================================
+
+substitutions:
+  # Identity
+  device_id: rfid_reader_1
+  device_hostname: "rfid-reader-1"
+  device_friendly_name: "Cat Fountain NFC"
+  device_description: "PN532 NFC/RFID reader for cat fountain tags."
+  # Logging
+  log_level: DEBUG
+
+packages:
+  # Base + platform + fleet
+  base: !include common/universal_base.yaml
+  board: !include common/platforms/esp32.yaml
+  fleet: !include fleets/nfc_reader.yaml
+  # Network performance tweaks
+  net_perf: !include common/overrides/wifi_performance.yaml
+
+  # Capabilities
+  diagnostics: !include common/capabilities/diagnostics.yaml
+
+# I2C bus (ESP32 default pins)
+i2c:
+  sda: 21
+  scl: 22
+  scan: true
+
+# PN532 in I2C mode
+pn532_i2c:
+  id: nfc_reader
+  on_tag:
+    then:
+      - lambda: |-
+          // Convert UID bytes to hex string like "04A1B2C3D4..."
+          char buf[3];
+          std::string uid;
+          for (auto b : x) {
+            sprintf(buf, "%02X", b);
+            uid += buf;
+          }
+          ESP_LOGI("pn532", "Tag UID: %s", uid.c_str());
+          id(last_tag_uid).publish_state(uid);
+
+text_sensor:
+  - platform: template
+    name: "Last NFC Tag UID"
+    id: last_tag_uid
+    update_interval: never
