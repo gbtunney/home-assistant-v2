@@ -49,7 +49,6 @@ output:
 light:
   - platform: monochromatic
     id: cyd_backlight
-    internal: true
     output: lcd_backlight
     name: "CYD Backlight"
     default_transition_length: 0s
