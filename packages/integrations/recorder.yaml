@@ -12,7 +12,11 @@ recorder:
   #  purge_interval: 1
 
   exclude:
-    entities:
-      #      - sensor.next_launch_countdown
-      - sensor.ha_uptime
-      #- sensor.*uptime*
+    #entities:
+    #- sensor.cat_fountain_nfc_uptime
+    #- sensor.next_launch_countdown
+    #- sensor.ha_uptime
+    #- sensor.*uptime*
+    entity_globs:
+      - sensor.*uptime*
+      - text_sensor.*uptime*
