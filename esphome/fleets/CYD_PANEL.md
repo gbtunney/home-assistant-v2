@@ -3,7 +3,8 @@
 > **Source:** Itemized strictly from provided product screenshots and photos. No external assumptions.
 
 ---
-
+## Examples
+- [https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display/tree/main/Examples/ESPHome](CYD Examples)
 ## Product Identification
 
 * **Product Name (as listed):** ESP32 Bruce CYD / ESP32 Bruce CYD 2432S028
