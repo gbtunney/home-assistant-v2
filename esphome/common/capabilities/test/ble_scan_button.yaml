@@ -26,9 +26,10 @@ button:
   - platform: template
     name: "${ble_rescan_button_name} (${ble_rescan_duration})"
     entity_category: diagnostic
-    icon: "mdi:bluetooth"
+    icon: mdi:bluetooth
     on_press:
-      - logger.log: "Starting BLE rescan for ${ble_rescan_duration}"
-      - esp32_ble_tracker.start_scan:
-          scan_time: ${ble_rescan_duration}
+      - logger.log: "Starting BLE rescan"
+      - esp32_ble_tracker.start_scan
+      - delay: ${ble_rescan_duration}
+      - esp32_ble_tracker.stop_scan
       - logger.log: "BLE rescan completed"
