@@ -44,11 +44,13 @@ button:
     icon: "mdi:alert-decagram"
     disabled_by_default: true
 
+  # TODO: move above to system buttons.
   # Quick end-to-end check that the device can call Home Assistant
   # services via the ESPHome API.
   - platform: template
     name: "Send Test Notification"
     entity_category: diagnostic
+    disabled_by_default: true
     icon: "mdi:bell"
     on_press:
       - homeassistant.service:
