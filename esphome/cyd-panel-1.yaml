@@ -37,6 +37,7 @@ packages:
   # CAPABILITIES
   # ----------------------------------------------------------
   diagnostics: !include common/capabilities/diagnostics.yaml
+  test_buttons: !include common/capabilities/test/system_buttons.yaml
 
 # No SPI/display/touch here — we’re just proving network stability.
 
@@ -53,5 +54,3 @@ light:
     name: "CYD Backlight"
     default_transition_length: 0s
     restore_mode: ALWAYS_ON
-
-test_buttons: !include common/capabilities/test/system_buttons.yaml
