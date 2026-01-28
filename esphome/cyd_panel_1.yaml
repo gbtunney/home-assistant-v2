@@ -31,7 +31,7 @@ packages:
   # NETWORK OVERRIDES (optional, per-device)
   # ----------------------------------------------------------
   net_perf: !include common/overrides/wifi_performance.yaml
-  net_use_address: !include common/overrides/wifi_use_address.yaml
+  #net_use_address: !include common/overrides/wifi_use_address.yaml
 
   # ----------------------------------------------------------
   # CAPABILITIES
@@ -54,42 +54,4 @@ light:
     default_transition_length: 0s
     restore_mode: ALWAYS_ON
 
-button:
-  - platform: restart
-    name: "Restart CYD Panel"
-  - platform: safe_mode
-    name: "Restart in Safe Mode"
-    disabled_by_default: true
-
-  # Simple test buttons
-  - platform: template
-    name: "Backlight On"
-    icon: mdi:brightness-7
-    on_press:
-      - output.set_level:
-          id: lcd_backlight
-          level: 1.0
-
-  - platform: template
-    name: "Backlight Off"
-    icon: mdi:brightness-2
-    on_press:
-      - output.turn_off: lcd_backlight
-
-  - platform: template
-    name: "Test Notification"
-    icon: mdi:bell
-    on_press:
-      - homeassistant.service:
-          service: persistent_notification.create
-          data:
-            title: "ESPHome Test"
-            message: "Button pressed from CYD Display 1"
-
-esphome:
-  on_boot:
-    priority: 800
-    then:
-      - output.set_level:
-          id: lcd_backlight
-          level: 1.0
+test_buttons: !include common/capabilities/test/system_buttons.yaml
