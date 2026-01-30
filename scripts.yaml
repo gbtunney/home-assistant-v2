@@ -1194,3 +1194,23 @@ entity_info_one_test:
       name: entity_info_one_test
       message: '{{ trigger.event.data.items_json }}'
   description: 'Calls pyscript.entity_info for a single entity and logs the JSON.'
+
+entity_info_smoke_test:
+  alias: Entity Info Smoke Test
+  mode: single
+  sequence:
+  - action: pyscript.entity_info
+    data:
+      entities: []
+      flatten_members: false
+      dedupe: true
+  - wait_for_trigger:
+    - platform: event
+      event_type: entity_info_list_return
+    timeout: '00:00:05'
+    continue_on_timeout: false
+  - action: logbook.log
+    data:
+      name: entity_info_smoke_test
+      message: 'items: {{ (trigger.event.data.items | count) if trigger and trigger.event and trigger.event.data else 0 }} json: {{ trigger.event.data.items_json if trigger and trigger.event and trigger.event.data else "none" }}'
+  description: 'Calls pyscript.entity_info with empty list and logs the result.'

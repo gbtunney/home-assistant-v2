@@ -100,7 +100,7 @@ def _build_entry(hass, entity_id: str, dreg, ereg, areg):
     base["group_entities"] = group_entities
     return base
 
-@service("pyscript.entity_info")
+@service("entity_info")
 async def entity_info(entities: list = None, flatten_members: bool = False, dedupe: bool = True):
     """Emit entity info for one or many entities via event 'entity_info_list_return'."""
     if not entities:
