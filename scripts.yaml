@@ -516,42 +516,6 @@ roku_test:
         text:
       name: YouTube Video ID
       required: true
-bird_camera:
-  sequence:
-  - action: script.roku_test
-    metadata: {}
-    data:
-      target_roku_player:
-        entity_id: media_player.little_tv_bitch
-      youtube_video_id: fLf9GPm2vIc
-  alias: Bird Camera
-  description: ''
-dump_group:
-  alias: Dump Group Members
-  description: 'Log all members of groups or single entities.
-
-    '
-  fields:
-    entities:
-      description: List of entities to process.
-      required: true
-      selector:
-        entity:
-          multiple: true
-  sequence:
-  - repeat:
-      for_each: '{{ entities }}'
-      sequence:
-      - data:
-          name: Group Dump
-          message: "{%- set state = states[repeat.item] %} {%- if 'entity_id' in state.attributes
-            %}\n  {%- set members = state.attributes.entity_id %}\n  {{ state.name
-            }} ({{ repeat.item }}) members: {{ members | count }}\n{%- for m in members
-            %}\n  - {{ states[m].name if m in states else m }} ({{ m }}): {{ states[m].state
-            if m in states else 'unknown' }}\n{%- endfor %} {%- else %}\n  {{ state.name
-            }} ({{ repeat.item }}): {{ state.state }}\n{%- endif %}"
-          entity_id: '{{ repeat.item }}'
-        action: logbook.log
 set_state_switch_light_test_version:
   sequence:
   - variables:
@@ -757,70 +721,46 @@ entity_info_loop_script:
           ent_name: '{{ state_attr(e, "friendly_name") or e }}'
           ent_domain: '{{ e.split(".")[0] }}'
           ent_raw_state: '{{ states(e) }}'
-          ent_state: >-
-            {% set s = ent_raw_state %}
-            {% if s in ['on','off','unavailable','unknown'] %}{{ s }}{% else %}unknown{% endif %}
+          ent_state: '{% set s = ent_raw_state %} {% if s in [''on'',''off'',''unavailable'',''unknown'']
+            %}{{ s }}{% else %}unknown{% endif %}'
           dev_id: '{{ device_id(e) }}'
-          ar_id: >-
-            {% if dev_id %}{{ area_id(dev_id) }}{% else %}{{ area_id(e) }}{% endif %}
-          ar_name: >-
-            {% if ar_id %}{{ area_name(ar_id) }}{% else %}{{ none }}{% endif %}
+          ar_id: '{% if dev_id %}{{ area_id(dev_id) }}{% else %}{{ area_id(e) }}{%
+            endif %}'
+          ar_name: '{% if ar_id %}{{ area_name(ar_id) }}{% else %}{{ none }}{% endif
+            %}'
           lbl_raw: '{{ device_attr(e, "labels") }}'
-          labels: >-
-            {% set v = lbl_raw %}{{ (v | list) if (v is iterable) else [] }}
+          labels: '{% set v = lbl_raw %}{{ (v | list) if (v is iterable) else [] }}'
           grp_members: '{{ state_attr(e, "entity_id") or [] }}'
           is_group: '{{ grp_members is list and (grp_members | count) > 0 }}'
-          grp_first_dev_id: >-
-            {% set _d = none %}
-            {% for m in grp_members %}
-              {% if _d is none and device_id(m) %}{% set _d = device_id(m) %}{% endif %}
-            {% endfor %}
-            {{ _d }}
-          row_dev_id: >-
-            {% if dev_id %}{{ dev_id }}{% else %}{{ grp_first_dev_id }}{% endif %}
-          row_dev_name: >-
-            {% if row_dev_id %}{{ device_attr(row_dev_id,'name') or device_attr(row_dev_id,'model') }}{% else %}{{ none }}{% endif %}
-          row_ar_id: >-
-            {% if ar_id %}{{ ar_id }}{% else %}
-              {% set _a = none %}
-              {% for m in grp_members %}
-                {% set ma = area_id(m) %}
-                {% if _a is none and ma %}{% set _a = ma %}{% endif %}
-              {% endfor %}
-              {{ _a }}
-            {% endif %}
-          row_ar_name: >-
-            {% if row_ar_id %}{{ area_name(row_ar_id) }}{% else %}{{ none }}{% endif %}
-          group_entities: >-
-            {% set out = [] %}
-            {% for m in grp_members %}
-              {% set m_name = state_attr(m,'friendly_name') or m %}
-              {% set m_domain = m.split('.')[0] %}
-              {% set ms = states(m) %}
-              {% set m_state = ms if ms in ['on','off','unavailable','unknown'] else 'unknown' %}
-              {% set m_dev_id = device_id(m) %}
-              {% set m_ar_id = (area_id(m_dev_id) if m_dev_id else area_id(m)) %}
-              {% set m_ar_name = (area_name(m_ar_id) if m_ar_id else none) %}
-              {% set m_lbl_raw = device_attr(m,'labels') %}
-              {% set m_labels = (m_lbl_raw | list) if (m_lbl_raw is iterable) else [] %}
-              {% set m_dev_name = (device_attr(m,'name') or device_attr(m,'model')) if m_dev_id else none %}
-              {% set out = out + [dict(entity_id=m, domain=m_domain, state=m_state, name=m_name, device_id=m_dev_id, device_name=m_dev_name, area_id=m_ar_id, area_name=m_ar_name, labels=m_labels)] %}
-            {% endfor %}
-            {{ out }}
-          row: >-
-            {{ dict(
-              entity_id=e,
-              domain=ent_domain,
-              state=ent_state,
-              name=ent_name,
-              device_id=row_dev_id,
-              device_name=row_dev_name,
-              area_id=row_ar_id,
-              area_name=row_ar_name,
-              labels=labels,
-              group=is_group,
-              group_entities=group_entities
-            ) }}
+          grp_first_dev_id: "{% set _d = none %} {% for m in grp_members %}\n  {%
+            if _d is none and device_id(m) %}{% set _d = device_id(m) %}{% endif %}\n{%
+            endfor %} {{ _d }}"
+          row_dev_id: '{% if dev_id %}{{ dev_id }}{% else %}{{ grp_first_dev_id }}{%
+            endif %}'
+          row_dev_name: '{% if row_dev_id %}{{ device_attr(row_dev_id,''name'') or
+            device_attr(row_dev_id,''model'') }}{% else %}{{ none }}{% endif %}'
+          row_ar_id: "{% if ar_id %}{{ ar_id }}{% else %}\n  {% set _a = none %}\n
+            \ {% for m in grp_members %}\n    {% set ma = area_id(m) %}\n    {% if
+            _a is none and ma %}{% set _a = ma %}{% endif %}\n  {% endfor %}\n  {{
+            _a }}\n{% endif %}"
+          row_ar_name: '{% if row_ar_id %}{{ area_name(row_ar_id) }}{% else %}{{ none
+            }}{% endif %}'
+          group_entities: "{% set out = [] %} {% for m in grp_members %}\n  {% set
+            m_name = state_attr(m,'friendly_name') or m %}\n  {% set m_domain = m.split('.')[0]
+            %}\n  {% set ms = states(m) %}\n  {% set m_state = ms if ms in ['on','off','unavailable','unknown']
+            else 'unknown' %}\n  {% set m_dev_id = device_id(m) %}\n  {% set m_ar_id
+            = (area_id(m_dev_id) if m_dev_id else area_id(m)) %}\n  {% set m_ar_name
+            = (area_name(m_ar_id) if m_ar_id else none) %}\n  {% set m_lbl_raw = device_attr(m,'labels')
+            %}\n  {% set m_labels = (m_lbl_raw | list) if (m_lbl_raw is iterable)
+            else [] %}\n  {% set m_dev_name = (device_attr(m,'name') or device_attr(m,'model'))
+            if m_dev_id else none %}\n  {% set out = out + [dict(entity_id=m, domain=m_domain,
+            state=m_state, name=m_name, device_id=m_dev_id, device_name=m_dev_name,
+            area_id=m_ar_id, area_name=m_ar_name, labels=m_labels)] %}\n{% endfor
+            %} {{ out }}"
+          row: "{{ dict(\n  entity_id=e,\n  domain=ent_domain,\n  state=ent_state,\n
+            \ name=ent_name,\n  device_id=row_dev_id,\n  device_name=row_dev_name,\n
+            \ area_id=row_ar_id,\n  area_name=row_ar_name,\n  labels=labels,\n  group=is_group,\n
+            \ group_entities=group_entities\n) }}"
       - variables:
           results: '{{ results + [row] }}'
   - event: entity_info_list_return
@@ -955,102 +895,6 @@ issue_queue_command:
         text:
           multiline: true
       name: Details
-pump_cycle_every_2_hrs:
-  sequence:
-  - action: switch.turn_on
-    data: {}
-    target:
-      entity_id: switch.120g_aquarium_filter
-  - delay: 00:20:00
-  - action: switch.turn_off
-    data: {}
-    target:
-      entity_id: switch.120g_aquarium_filter
-  - delay: 01:40:00
-  - action: script.turn_on
-    data: {}
-    target:
-      entity_id: script.pump_cycle_every_2_hrs
-  alias: Pump cycle Every 2 hrs
-  description: ''
-pump_duty_cycle_on_off_loop:
-  alias: Pump duty cycle (on/off loop)
-  description: Turns a switch on for a duration, then off until the next interval,
-    repeating.
-  mode: restart
-  fields:
-    target_switch:
-      name: Target switch
-      description: Switch entity to control (smart plug or pump switch).
-      required: true
-      selector:
-        entity:
-          domain: switch
-    on_duration:
-      name: On duration
-      description: How long to keep it ON each cycle.
-      required: true
-      default:
-        hours: 0
-        minutes: 20
-        seconds: 0
-      selector:
-        duration:
-          enable_day: false
-          enable_millisecond: false
-    repeat_interval:
-      name: Repeat interval
-      description: Total time from one ON start to the next ON start.
-      required: true
-      default:
-        hours: 2
-        minutes: 0
-        seconds: 0
-      selector:
-        duration:
-          enable_day: false
-          enable_millisecond: false
-  sequence:
-  - variables:
-      on_s: '{{ on_duration.hours * 3600 + on_duration.minutes * 60 + on_duration.seconds
-        }}'
-      interval_s: '{{ repeat_interval.hours * 3600 + repeat_interval.minutes * 60
-        + repeat_interval.seconds }}'
-      off_s: '{{ [interval_s - on_s, 0] | max }}'
-  - repeat:
-      while:
-      - condition: template
-        value_template: 'true'
-      sequence:
-      - target:
-          entity_id: '{{ target_switch }}'
-        action: switch.turn_on
-      - delay:
-          seconds: '{{ on_s }}'
-      - target:
-          entity_id: '{{ target_switch }}'
-        action: switch.turn_off
-      - delay:
-          seconds: '{{ off_s }}'
-new_script:
-  sequence:
-  - type: turn_off
-    device_id: caa78ec93f1558ce2be969a1774afdf9
-    entity_id: 84cf5a7007a8e688033cd7a432389630
-    domain: switch
-  fields:
-    field:
-      selector:
-        duration:
-          enable_day: true
-          enable_millisecond: true
-      default:
-        hours: 0
-        minutes: 20
-        seconds: 0
-      required: false
-  alias: New script
-  description: ''
 issue_wueue_2:
   alias: Issue Queue 2
   description: Maintain a JSON issue queue stored in input_text.issue_queue
@@ -1167,50 +1011,86 @@ issue_wueue_2:
       issue: '{{ affected_issue | default({}, true) }}'
       queue_length: '{{ new_queue | length }}'
       queue: '{{ new_queue }}'
-entity_info_one_test:
-  alias: Entity Info (One) Test
-  mode: single
+entity_info_ui:
+  alias: Entity Info UI
+  description: Pyscript UI, Emits an event entity_info_list_return and returns a dump
+    of object info
+  mode: parallel
   fields:
-    entity:
-      name: Entity
+    entities:
       selector:
         entity:
-          multiple: false
-      required: true
+          multiple: true
+    flatten_members:
+      selector:
+        boolean:
+      default: true
+    dedupe:
+      selector:
+        boolean:
+      default: true
   sequence:
-  - action: pyscript.entity_info
+  - variables:
+      request_id: '{{ ''ei-'' ~ (now().timestamp() | int) }}'
+      result: NOT SET
+  - parallel:
+    - sequence:
+      - wait_for_trigger:
+        - event_type: entity_info_list_return
+          event_data:
+            request_id: '{{ request_id }}'
+          trigger: event
+        timeout: 00:00:05
+        continue_on_timeout: true
+      - choose:
+        - conditions:
+          - condition: template
+            value_template: '{{ wait.trigger is not none }}'
+          sequence:
+          - variables:
+              result: '{{ wait.trigger.event.data }}'
+          - data:
+              level: info
+              message: 'Got result: {{ result | tojson }}'
+            action: system_log.write
+        default:
+        - data:
+            level: warning
+            message: Timed out waiting for request_id={{ request_id }}
+          action: system_log.write
+    - sequence:
+      - data:
+          entities: '{{ entities }}'
+          flatten_members: '{{ flatten_members }}'
+          dedupe: '{{ dedupe }}'
+          request_id: '{{ request_id }}'
+        action: pyscript.entity_info
+  - stop: ''
+    response_variable: result
+test_consumer:
+  sequence:
+  - variables:
+      result: child not set
+  - action: script.new_entity_info_ui_wait_for_result
+    metadata: {}
     data:
+      flatten_members: true
+      dedupe: true
       entities:
-      - '{{ entity }}'
-      flatten_members: false
-      dedupe: true
-  - wait_for_trigger:
-    - platform: event
-      event_type: entity_info_list_return
-    timeout: '00:00:05'
-    continue_on_timeout: false
+      - sensor.little_tv_bitch_active_app_id
+      - input_number.10g_f_temperature
+      - light.10g_m_elb_aquarium_light
+      - binary_sensor.10g_m_powerstrip_status
+    response_variable: result
+  - action: system_log.write
+    metadata: {}
+    data:
+      level: warning
+      message: GILLIAN! result{{result}}
   - action: logbook.log
+    metadata: {}
     data:
-      name: entity_info_one_test
-      message: '{{ trigger.event.data.items_json }}'
-  description: 'Calls pyscript.entity_info for a single entity and logs the JSON.'
-
-entity_info_smoke_test:
-  alias: Entity Info Smoke Test
-  mode: single
-  sequence:
-  - action: pyscript.entity_info
-    data:
-      entities: []
-      flatten_members: false
-      dedupe: true
-  - wait_for_trigger:
-    - platform: event
-      event_type: entity_info_list_return
-    timeout: '00:00:05'
-    continue_on_timeout: false
-  - action: logbook.log
-    data:
-      name: entity_info_smoke_test
-      message: 'items: {{ (trigger.event.data.items | count) if trigger and trigger.event and trigger.event.data else 0 }} json: {{ trigger.event.data.items_json if trigger and trigger.event and trigger.event.data else "none" }}'
-  description: 'Calls pyscript.entity_info with empty list and logs the result.'
+      name: GBT TEST CONSUMER
+      message: '{{result}}'
+  alias: Entity Info UI Consumer
+  description: Entity Info UI Consumer Info Dump to Log

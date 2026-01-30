@@ -41,6 +41,7 @@
     "github.copilot",
     "davidanson.vscode-markdownlint",
     "ms-python.python",
-    "ms-vscode.vscode-speech"
+    "ms-vscode.vscode-speech",
+    "ms-python.black-formatter"
   ]
 }
