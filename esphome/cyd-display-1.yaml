@@ -12,11 +12,11 @@ substitutions:
   # ----------------------------------------------------------
   device_id: cyd_display_1
   device_hostname: "cyd-display-1"
-  device_friendly_name: "CYD Display 1"
+  device_friendly_name: "CYD NEW Display 1"
   device_description: "Network-only bring-up (no display/touch)"
 
   # OTA/uploader target address (used by override include)
-  wifi_use_address: "192.168.1.129"
+  #wifi_use_address: "192.168.1.129"
 
 packages:
   # ----------------------------------------------------------
@@ -30,31 +30,31 @@ packages:
   # ----------------------------------------------------------
   # NETWORK OVERRIDES (optional, per-device)
   # ----------------------------------------------------------
-  net_perf: !include common/overrides/wifi_performance.yaml
-  net_use_address: !include common/overrides/wifi_use_address.yaml
+ # net_perf: !include common/overrides/wifi_performance.yaml
+  #net_use_address: !include common/overrides/wifi_use_address.yaml
+  test_buttons: !include common/capabilities/test/system_buttons.yaml
 
   # ----------------------------------------------------------
   # CAPABILITIES
   # ----------------------------------------------------------
   diagnostics: !include common/capabilities/diagnostics.yaml
 
-
-# ============================================================ 
+# ============================================================
 # ESPHome Display related setup
 #
-# Create a font to use, add and remove glyphs as needed. 
+# Create a font to use, add and remove glyphs as needed.
 font:
-  - file: 'fonts/Arimo-Regular.ttf'
+  - file: "fonts/Arimo-Regular.ttf"
     id: arimo20
     size: 20
-    glyphs: "!\"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ abcdefghijklmnopqrstuvwxyzåäö"
+    glyphs: '!"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ abcdefghijklmnopqrstuvwxyzåäö'
 
 # Create a Home Assistant blue color
 color:
   - id: ha_blue
     hex: 51c0f2
 
-# ============================================================ 
+# ============================================================
 # Home Assistant related setup
 #
 light:
@@ -62,39 +62,18 @@ light:
     output: backlight_pwm
     name: Display Backlight
     id: backlight
-    restore_mode: ALWAYS_ON
+    #restore_mode: ALWAYS_ON
 
-# ============================================================ 
+# ============================================================
 # Hardware related setup
 #
 # Setup SPI for the display. The ESP32-2432S028R uses separate SPI buses for display and touch
-spi:
-  - id: tft
-    clk_pin: GPIO14
-    mosi_pin: GPIO13
-    miso_pin: GPIO12
-  - id: touch
-    clk_pin: GPIO25
-    mosi_pin: GPIO32
-    miso_pin: GPIO39
 
 # Setup a pin to control the backlight
 output:
   - platform: ledc
     pin: GPIO21
     id: backlight_pwm
-
 # Setup the ili9xxx platform
 #
 # Display is used as 240x320 by default so we rotate it to 90°
-display:
-  - platform: ili9xxx
-    model: ili9341
-    spi_id: tft
-    cs_pin: GPIO15
-    dc_pin: GPIO2
-    rotation: 90
-    invert_colors: false
-    lambda: |-
-      it.print(160, 140, id(arimo20), id(ha_blue), TextAlign::BOTTOM_CENTER, "Hello World!");
-      it.rectangle(0, 0, 320, 240, id(ha_blue));

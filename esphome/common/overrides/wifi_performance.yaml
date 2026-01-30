@@ -4,6 +4,3 @@
 wifi:
   power_save_mode: none
   reboot_timeout: 0s
-
-api:
-  reboot_timeout: 0s

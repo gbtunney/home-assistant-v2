@@ -754,27 +754,57 @@ entity_info_loop_script:
       sequence:
       - variables:
           e: '{{ repeat.item }}'
-          ent_obj: '{{ states(e) }}'
-          ent_name: '{{ state_attr(e, ''friendly_name'') or e }}'
-          ent_state: '{{ ent_obj.state }}'
-          ent_domain: '{{ e.split(''.'')[0] }}'
+          ent_name: '{{ state_attr(e, "friendly_name") or e }}'
+          ent_domain: '{{ e.split(".")[0] }}'
+          ent_raw_state: '{{ states(e) }}'
+          ent_state: '{% set s = ent_raw_state %} {% if s in [''on'',''off'',''unavailable'',''unknown'']
+            %}{{ s }}{% else %}unknown{% endif %}'
           dev_id: '{{ device_id(e) }}'
-          dev_name: "{% if dev_id %}\n  {{ device_attr(e, 'name')\n     or device_attr(e,
-            'model')\n     or 'Unknown Device' }}\n{% else %}\n  none\n{% endif %}\n"
-          ar_id: "{% if dev_id %}\n  {{ area_id(dev_id) }}\n{% else %}\n  {{ area_id(e)
-            }}\n{% endif %}\n"
-          ar_name: "{% if ar_id %}\n  {{ area_name(ar_id) }}\n{% else %}\n  none\n{%
-            endif %}\n"
-          lbls: '{{ device_attr(e, ''labels'') or [] }}'
-          row: "{{\n  {\n    \"entity_id\": e,\n    \"name\": ent_name,\n    \"state\":
-            ent_state,\n    \"domain\": ent_domain,\n    \"device_id\": dev_id,\n
-            \   \"device_name\": dev_name,\n    \"area_id\": ar_id,\n    \"area_name\":
-            ar_name,\n    \"labels\": lbls\n  }\n}}\n"
+          ar_id: '{% if dev_id %}{{ area_id(dev_id) }}{% else %}{{ area_id(e) }}{%
+            endif %}'
+          ar_name: '{% if ar_id %}{{ area_name(ar_id) }}{% else %}{{ none }}{% endif
+            %}'
+          lbl_raw: '{{ device_attr(e, "labels") }}'
+          labels: '{% set v = lbl_raw %}{{ (v | list) if (v is iterable) else [] }}'
+          grp_members: '{{ state_attr(e, "entity_id") or [] }}'
+          is_group: '{{ grp_members is list and (grp_members | count) > 0 }}'
+          grp_first_dev_id: "{% set _d = none %} {% for m in grp_members %}\n  {%
+            if _d is none and device_id(m) %}{% set _d = device_id(m) %}{% endif %}\n{%
+            endfor %} {{ _d }}"
+          row_dev_id: '{% if dev_id %}{{ dev_id }}{% else %}{{ grp_first_dev_id }}{%
+            endif %}'
+          row_dev_name: '{% if row_dev_id %}{{ device_attr(row_dev_id,''name'') or
+            device_attr(row_dev_id,''model'') }}{% else %}{{ none }}{% endif %}'
+          row_ar_id: "{% if ar_id %}{{ ar_id }}{% else %}\n  {% set _a = none %}\n
+            \ {% for m in grp_members %}\n    {% set ma = area_id(m) %}\n    {% if
+            _a is none and ma %}{% set _a = ma %}{% endif %}\n  {% endfor %}\n  {{
+            _a }}\n{% endif %}"
+          row_ar_name: '{% if row_ar_id %}{{ area_name(row_ar_id) }}{% else %}{{ none
+            }}{% endif %}'
+          group_entities: "{% set out = [] %} {% for m in grp_members %}\n  {% set
+            m_name = state_attr(m,'friendly_name') or m %}\n  {% set m_domain = m.split('.')[0]
+            %}\n  {% set ms = states(m) %}\n  {% set m_state = ms if ms in ['on','off','unavailable','unknown']
+            else 'unknown' %}\n  {% set m_dev_id = device_id(m) %}\n  {% set m_ar_id
+            = (area_id(m_dev_id) if m_dev_id else area_id(m)) %}\n  {% set m_ar_name
+            = (area_name(m_ar_id) if m_ar_id else none) %}\n  {% set m_lbl_raw = device_attr(m,'labels')
+            %}\n  {% set m_labels = (m_lbl_raw | list) if (m_lbl_raw is iterable)
+            else [] %}\n  {% set m_dev_name = (device_attr(m,'name') or device_attr(m,'model'))
+            if m_dev_id else none %}\n  {% set out = out + [dict(entity_id=m, domain=m_domain,
+            state=m_state, name=m_name, device_id=m_dev_id, device_name=m_dev_name,
+            area_id=m_ar_id, area_name=m_ar_name, labels=m_labels)] %}\n{% endfor
+            %} {{ out }}"
+          row: "{{ dict(\n  entity_id=e,\n  domain=ent_domain,\n  state=ent_state,\n
+            \ name=ent_name,\n  device_id=row_dev_id,\n  device_name=row_dev_name,\n
+            \ area_id=row_ar_id,\n  area_name=row_ar_name,\n  labels=labels,\n  group=is_group,\n
+            \ group_entities=group_entities\n) }}"
       - variables:
           results: '{{ results + [row] }}'
   - event: entity_info_list_return
     event_data:
       items: '{{ results }}'
+      items_json: '{{ results | to_json }}'
+  - stop: completed
+    response_variable: results
   description: ''
 issue_queue_command:
   alias: Issue Queue Command
