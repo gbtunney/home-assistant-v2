@@ -7,7 +7,10 @@ homeassistant:
   packages: !include_dir_named packages
   customize: !include_dir_merge_named entities/customize/entities
   customize_glob: !include_dir_merge_named entities/customize/globs
-
+#####
+# Pyscript Integration
+#####
+pyscript:
 #####
 # Configures the official Home Assistant frontend.
 # https://www.home-assistant.io/components/frontend/
