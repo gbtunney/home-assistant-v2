@@ -1,10 +1,12 @@
-#pyscript/entity_info.py
+# /config/pyscript/entity_info.py
 import json
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import area_registry as ar
 
 BINARY_DOMAINS = {"light", "switch", "binary_sensor", "input_boolean"}
+
+log.info("Loaded entity_info.py")  # helps confirm file is loading
 
 def _norm_state(hass, entity_id: str, domain: str):
     st = hass.states.get(entity_id)
@@ -87,8 +89,7 @@ def _build_entry(hass, entity_id: str, dreg, ereg, areg):
     group_entities = []
     if is_group:
         for m in group_members:
-            child = _core_entity(hass, m, dreg, ereg, areg)
-            group_entities.append(child)
+            group_entities.append(_core_entity(hass, m, dreg, ereg, areg))
 
         if not base.get("device_id") and group_entities:
             base["device_id"] = group_entities[0].get("device_id")
@@ -100,9 +101,9 @@ def _build_entry(hass, entity_id: str, dreg, ereg, areg):
     base["group_entities"] = group_entities
     return base
 
-@service("entity_info")
-async def entity_info(entities: list = None, flatten_members: bool = False, dedupe: bool = True):
-    """Emit entity info for one or many entities via event 'entity_info_list_return'."""
+@service
+def entity_info(entities=None, flatten_members=False, dedupe=True):
+    """Emit entity info via event 'entity_info_list_return'."""
     if not entities:
         entities = []
 
@@ -118,10 +119,14 @@ async def entity_info(entities: list = None, flatten_members: bool = False, dedu
         for entry in items:
             for child in entry.get("group_entities", []):
                 eid = child["entity_id"]
-                if not dedupe or eid not in seen:
+                if (not dedupe) or (eid not in seen):
                     flat.append(child)
                     seen.add(eid)
         items = flat
 
-    payload = {"items": items, "items_json": json.dumps(items)}
-    event.fire("entity_info_list_return", payload)
+    event.fire(
+        "entity_info_list_return",
+        items=items,
+        items_json=json.dumps(items),
+    )
+    log.info(f"entity_info: returned {len(items)} items")
