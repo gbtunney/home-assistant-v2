@@ -12,7 +12,7 @@ substitutions:
   # ----------------------------------------------------------
   device_id: cyd_display_1
   device_hostname: "cyd-display-1"
-  device_friendly_name: "CYD Display 1"
+  device_friendly_name: "GBT CYD Display 1"
   device_description: "Network-only bring-up (no display/touch)"
 
   # OTA/uploader target address (used by override include)
@@ -30,31 +30,31 @@ packages:
   # ----------------------------------------------------------
   # NETWORK OVERRIDES (optional, per-device)
   # ----------------------------------------------------------
-  net_perf: !include common/overrides/wifi_performance.yaml
+  #net_perf: !include common/overrides/wifi_performance.yaml
   net_use_address: !include common/overrides/wifi_use_address.yaml
 
   # ----------------------------------------------------------
   # CAPABILITIES
   # ----------------------------------------------------------
   diagnostics: !include common/capabilities/diagnostics.yaml
+  test_buttons: !include common/capabilities/test/system_buttons.yaml
 
-
-# ============================================================ 
+# ============================================================
 # ESPHome Display related setup
 #
-# Create a font to use, add and remove glyphs as needed. 
+# Create a font to use, add and remove glyphs as needed.
 font:
-  - file: 'fonts/Arimo-Regular.ttf'
+  - file: "fonts/Arimo-Regular.ttf"
     id: arimo20
     size: 20
-    glyphs: "!\"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ abcdefghijklmnopqrstuvwxyzåäö"
+    glyphs: '!"%()+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ abcdefghijklmnopqrstuvwxyzåäö'
 
 # Create a Home Assistant blue color
 color:
   - id: ha_blue
     hex: 51c0f2
 
-# ============================================================ 
+# ============================================================
 # Home Assistant related setup
 #
 light:
@@ -63,20 +63,11 @@ light:
     name: Display Backlight
     id: backlight
     restore_mode: ALWAYS_ON
-
-# ============================================================ 
+# ============================================================
 # Hardware related setup
 #
 # Setup SPI for the display. The ESP32-2432S028R uses separate SPI buses for display and touch
 spi:
-  - id: tft
-    clk_pin: GPIO14
-    mosi_pin: GPIO13
-    miso_pin: GPIO12
-  - id: touch
-    clk_pin: GPIO25
-    mosi_pin: GPIO32
-    miso_pin: GPIO39
 
 # Setup a pin to control the backlight
 output:

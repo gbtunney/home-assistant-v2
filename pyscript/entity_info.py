@@ -3,6 +3,11 @@ entity_info PyScript service
 
 Service: pyscript.entity_info
 Emits event: entity_info_list_return
+
+Notes:
+- PyScript has limited AST support. Avoid generator expressions, comprehensions,
+  and typing-heavy constructs.
+- Services do not return values; this service emits an event with the payload.
 """
 
 import json
@@ -17,7 +22,7 @@ SCHEMA_VERSION = 1
 
 BINARY_DOMAINS = {"light", "switch", "binary_sensor", "input_boolean"}
 
-log.info("Loaded entity_info.py")
+log.info("Loaded entity_info.py (rewrite: no generators/comprehensions)")
 
 
 # -----------------------------
@@ -41,20 +46,41 @@ def _as_entities(x):
     if isinstance(x, str):
         return [x]
     if isinstance(x, (list, tuple)):
-        return [e for e in x if isinstance(e, str)]
+        out = []
+        for e in x:
+            if isinstance(e, str):
+                out.append(e)
+        return out
     return []
+
+
+def _as_request_id(x):
+    if x is None:
+        return None
+    try:
+        s = str(x).strip()
+        if s:
+            return s
+        return None
+    except Exception:
+        return None
 
 
 def _parse_args(entities, flatten_members, dedupe, request_id):
     ents = _as_entities(entities)
     flat = _as_bool(flatten_members, False)
     ddp = _as_bool(dedupe, True)
-    rid = request_id if isinstance(request_id, str) and request_id.strip() else None
+    rid = _as_request_id(request_id)
     return ents, flat, ddp, rid
 
 
 def _is_entity_id(x):
-    return isinstance(x, str) and "." in x and x.split(".", 1)[0] and x.split(".", 1)[1]
+    if not isinstance(x, str):
+        return False
+    if "." not in x:
+        return False
+    parts = x.split(".", 1)
+    return bool(parts[0]) and bool(parts[1])
 
 
 # -----------------------------
@@ -67,10 +93,9 @@ def _norm_state(hass, entity_id, domain):
     raw = st.state if st else "unknown"
 
     if domain in BINARY_DOMAINS:
-        normalized = (
-            raw if raw in ("on", "off", "unavailable", "unknown") else "unknown"
-        )
-        return normalized, "binary", None
+        if raw in ("on", "off", "unavailable", "unknown"):
+            return raw, "binary", None
+        return "unknown", "binary", None
 
     try:
         num = float(raw)
@@ -81,8 +106,17 @@ def _norm_state(hass, entity_id, domain):
 
 def _labels_from_device(device):
     try:
-        lbl = getattr(device, "labels", []) or []
-        return list(lbl) if hasattr(lbl, "__iter__") else []
+        lbl = getattr(device, "labels", None)
+        if lbl is None:
+            return []
+        # labels is iterable-ish; normalize to list of strings
+        out = []
+        try:
+            for v in lbl:
+                out.append(v)
+        except Exception:
+            return []
+        return out
     except Exception:
         return []
 
@@ -94,7 +128,12 @@ def _core_entity(hass, entity_id, dreg, ereg, areg):
 
     domain = entity_id.split(".", 1)[0]
     st = hass.states.get(entity_id)
-    name = (st.attributes.get("friendly_name") if st else None) or entity_id
+
+    name = entity_id
+    if st:
+        fn = st.attributes.get("friendly_name")
+        if isinstance(fn, str) and fn:
+            name = fn
 
     area_id = None
     if device and getattr(device, "area_id", None):
@@ -105,7 +144,8 @@ def _core_entity(hass, entity_id, dreg, ereg, areg):
     area_name = None
     if area_id:
         area = areg.async_get_area(area_id)
-        area_name = area.name if area else None
+        if area:
+            area_name = area.name
 
     device_name = None
     if device:
@@ -147,7 +187,7 @@ def _build_entry(hass, entity_id, dreg, ereg, areg, errors):
                 errors.append(
                     {
                         "code": "BAD_GROUP_MEMBER",
-                        "message": f"Non-entity member: {m!r}",
+                        "message": "Non-entity member: %r" % (m,),
                         "entity_id": entity_id,
                     }
                 )
@@ -160,6 +200,7 @@ def _build_entry(hass, entity_id, dreg, ereg, areg, errors):
     group_entities = []
     if is_group:
         for m in valid_members:
+            # skip stale members
             if hass.states.get(m) is None and ereg.async_get(m) is None:
                 errors.append(
                     {
@@ -173,13 +214,18 @@ def _build_entry(hass, entity_id, dreg, ereg, areg, errors):
                 group_entities.append(_core_entity(hass, m, dreg, ereg, areg))
             except Exception as ex:
                 errors.append(
-                    {"code": "CHILD_BUILD_FAILED", "message": str(ex), "entity_id": m}
+                    {
+                        "code": "CHILD_BUILD_FAILED",
+                        "message": str(ex),
+                        "entity_id": m,
+                    }
                 )
 
-        if not base.get("device_id") and group_entities:
+        # Inherit device/area from first usable child if parent lacks it
+        if (not base.get("device_id")) and group_entities:
             base["device_id"] = group_entities[0].get("device_id")
             base["device_name"] = group_entities[0].get("device_name")
-        if not base.get("area_id") and group_entities:
+        if (not base.get("area_id")) and group_entities:
             base["area_id"] = group_entities[0].get("area_id")
             base["area_name"] = group_entities[0].get("area_name")
 
@@ -196,7 +242,8 @@ def _build_entry(hass, entity_id, dreg, ereg, areg, errors):
 def entity_info(entities=None, flatten_members=False, dedupe=True, request_id=None):
     ents, flat, ddp, rid = _parse_args(entities, flatten_members, dedupe, request_id)
     log.info(
-        f"entity_info: entities={ents!r} flatten_members={flat!r} dedupe={ddp!r} request_id={rid!r}"
+        "entity_info: entities=%r flatten_members=%r dedupe=%r request_id=%r"
+        % (ents, flat, ddp, rid)
     )
 
     dreg = dr.async_get(hass)
@@ -211,7 +258,7 @@ def entity_info(entities=None, flatten_members=False, dedupe=True, request_id=No
             errors.append(
                 {
                     "code": "BAD_ENTITY_ID",
-                    "message": f"Not a valid entity_id: {e!r}",
+                    "message": "Not a valid entity_id: %r" % (e,),
                     "entity_id": None,
                 }
             )
@@ -220,23 +267,41 @@ def entity_info(entities=None, flatten_members=False, dedupe=True, request_id=No
             items.append(_build_entry(hass, e, dreg, ereg, areg, errors))
         except Exception as ex:
             errors.append(
-                {"code": "ENTRY_BUILD_FAILED", "message": str(ex), "entity_id": e}
+                {
+                    "code": "ENTRY_BUILD_FAILED",
+                    "message": str(ex),
+                    "entity_id": e,
+                }
             )
 
+    # Flatten group members into top-level list
     if flat:
         try:
-            flat_items = list(items)
-            seen = set(
-                i.get("entity_id")
-                for i in flat_items
-                if isinstance(i.get("entity_id"), str)
-            )
+            flat_items = []
+            for it in items:
+                flat_items.append(it)
+
+            seen = set()
+            for it in flat_items:
+                if isinstance(it, dict):
+                    eid = it.get("entity_id")
+                    if isinstance(eid, str):
+                        seen.add(eid)
 
             for entry in items:
-                for child in entry.get("group_entities", []) or []:
+                if not isinstance(entry, dict):
+                    continue
+                children = entry.get("group_entities")
+                if not isinstance(children, list):
+                    continue
+
+                for child in children:
+                    if not isinstance(child, dict):
+                        continue
                     eid = child.get("entity_id")
                     if not isinstance(eid, str):
                         continue
+
                     if (not ddp) or (eid not in seen):
                         flat_items.append(child)
                         seen.add(eid)
@@ -247,15 +312,22 @@ def entity_info(entities=None, flatten_members=False, dedupe=True, request_id=No
                 {"code": "FLATTEN_FAILED", "message": str(ex), "entity_id": None}
             )
 
+    # Serialize items_json
     try:
         items_json = json.dumps(items)
     except Exception as ex:
         errors.append(
             {"code": "JSON_DUMPS_FAILED", "message": str(ex), "entity_id": None}
         )
-        items_json = json.dumps(
-            [{"entity_id": i.get("entity_id"), "error": "json_failed"} for i in items]
-        )
+        fallback = []
+        for it in items:
+            if isinstance(it, dict):
+                fallback.append(
+                    {"entity_id": it.get("entity_id"), "error": "json_failed"}
+                )
+            else:
+                fallback.append({"entity_id": None, "error": "json_failed"})
+        items_json = json.dumps(fallback)
 
     payload = {
         "schema_id": SCHEMA_ID,
@@ -271,5 +343,6 @@ def entity_info(entities=None, flatten_members=False, dedupe=True, request_id=No
         "items": items,
         "items_json": items_json,
     }
+
     event.fire(EVENT_TYPE, **payload)
-    log.info(f"entity_info: returned {len(items)} items; errors={len(errors)}")
+    log.info("entity_info: returned %d items; errors=%d" % (len(items), len(errors)))
