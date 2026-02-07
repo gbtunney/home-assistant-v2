@@ -42,6 +42,7 @@
     "davidanson.vscode-markdownlint",
     "ms-python.python",
     "ms-vscode.vscode-speech",
-    "ms-python.black-formatter"
+    "ms-python.black-formatter",
+    "sndst00m.markdown-github-dark-pack"
   ]
 }

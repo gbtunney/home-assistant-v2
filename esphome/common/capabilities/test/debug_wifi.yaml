@@ -1,0 +1,16 @@
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: "CYD IP Address"
+    ssid:
+      name: "CYD Connected SSID"
+    mac_address:
+      name: "CYD MAC Address"
+
+  - platform: version
+    name: "ESPHome Version"
+
+  - platform: template
+    name: ESP32 Chip Info
+    lambda: |-
+      return std::string(ESP.getChipModel()) + " / Rev " + std::to_string(ESP.getChipRevision());
