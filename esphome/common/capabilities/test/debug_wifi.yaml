@@ -1,3 +1,6 @@
+debug:
+  update_interval: 60s
+
 text_sensor:
   - platform: wifi_info
     ip_address:
@@ -6,6 +9,10 @@ text_sensor:
       name: "CYD Connected SSID"
     mac_address:
       name: "CYD MAC Address"
+
+  - platform: debug
+    reset_reason:
+      name: Reset Reason
 
   - platform: version
     name: "ESPHome Version"

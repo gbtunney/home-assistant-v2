@@ -1,0 +1,61 @@
+# ============================================================
+# DEVICE — CYD 3-BUTTON PANEL (Network-only bring-up)
+# ============================================================
+
+substitutions:
+  # Logging inherits default INFO from the universal base.
+  # For troubleshooting, temporarily set per-device to DEBUG, then revert.
+  #log_level: INFO
+
+  # ----------------------------------------------------------
+  # DEVICE IDENTITY
+  # ----------------------------------------------------------
+  device_id: cyd_display_2
+  device_hostname: "cyd-display-2"
+  device_friendly_name: "CYD Display 2"
+  device_description: "CYD Network-only bring-up (no display/touch)"
+
+  # OTA/uploader target address (used by override include)
+  # wifi_use_address: "192.168.1.129"
+
+packages:
+  # ----------------------------------------------------------
+  # BASE + PLATFORM
+  # (assumes these define esphome/wifi/api/ota/logger basics)
+  # ----------------------------------------------------------
+  base: !include common/universal_base.yaml
+  board: !include common/platforms/esp32.yaml
+  fleet: !include fleets/cyd_panel.yaml
+
+  # ----------------------------------------------------------
+  # NETWORK OVERRIDES (optional, per-device)
+  # ----------------------------------------------------------
+  #net_perf: !include common/overrides/wifi_performance.yaml
+  #net_use_address: !include common/overrides/wifi_use_address.yaml
+
+  # ----------------------------------------------------------
+  # CAPABILITIES
+  # ----------------------------------------------------------
+  diagnostics: !include common/capabilities/diagnostics.yaml
+  test_buttons: !include common/capabilities/test/system_buttons.yaml
+  debug_wifi: !include common/capabilities/test/debug_wifi.yaml
+# ============================================================
+# ESPHome Display related setup
+#
+# Create a font to use, add and remove glyphs as needed.
+
+# ============================================================
+# Home Assistant related setup
+#
+
+# ============================================================
+# Hardware related setup
+#
+#
+# Setup SPI for the display. The ESP32-2432S028R uses separate SPI buses for display and touch
+
+# Setup a pin to control the backlight
+
+# Setup the ili9xxx platform
+#
+# Display is used as 240x320 by default so we rotate it to 90°

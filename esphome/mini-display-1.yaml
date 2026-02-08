@@ -1,0 +1,79 @@
+# ============================================================
+# DEVICE — ENV TEMP 1 (DEPLOYED)
+# ============================================================
+#
+# This is a DEPLOYED device file.
+# It lives at the root of the ESPHome config directory so it
+# appears in the ESPHome add-on UI.
+#
+# Role:
+# - Environmental temperature monitoring
+# - 3 Dallas probe pairs
+# - Bluetooth Proxy infrastructure
+# - Standard diagnostics
+#
+# ============================================================
+
+substitutions:
+  # ----------------------------------------------------------
+  # DEVICE IDENTITY
+  # ----------------------------------------------------------
+  device_id: mini_display_1
+  device_hostname: "mini-display-1"
+  device_friendly_name: "Mini Display 1"
+  device_description: "Cute little TTGO OLED!!"
+
+  ble_rescan_duration: "10s"
+  ble_rescan_button_name: "BLE Active Scan"
+  ble_active_scan: false
+packages:
+  # ----------------------------------------------------------
+  # BASE + FLEET
+  # ----------------------------------------------------------
+  base: !include common/universal_base.yaml
+  board: !include common/platforms/esp32.yaml
+  fleet: !include fleets/ble_proxy.yaml
+  # NETWORK (Wi‑Fi inherited from base; DHCP by default — no static IP)
+  net_perf: !include common/overrides/wifi_performance.yaml
+  # Optional later: target a specific uploader address
+  # net_use_address: !include common/overrides/wifi_use_address.yaml
+
+  # ----------------------------------------------------------
+  # CAPABILITIES
+  # ----------------------------------------------------------
+  diagnostics: !include common/capabilities/diagnostics.yaml
+  ble: !include common/capabilities/bluetooth_proxy.yaml
+  test_buttons: !include common/capabilities/test/system_buttons.yaml
+  #test_ble_scan_button: !include common/capabilities/test/ble_scan_button.yaml
+
+# REST OF CONFIG
+
+spi:
+  clk_pin: 18
+  mosi_pin: 23
+
+font:
+  - file: "gfonts://Roboto"
+    id: f
+    size: 12
+
+display:
+  - platform: ssd1306_spi
+    id: oled
+    model: "SSD1306 128x64"
+    cs_pin: 14
+    dc_pin: 16
+    reset_pin: 17
+    lambda: |-
+      it.print(0, 0, id(f), "HELLO");
+
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      id: my_ip
+
+globals:
+  - id: wifi_ssid
+    type: std::string
+    initial_value: '"your-wifi"' # optional; you can delete these 2 lines if you don't care

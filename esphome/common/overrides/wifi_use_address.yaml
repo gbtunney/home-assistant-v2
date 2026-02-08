@@ -7,5 +7,8 @@ substitutions:
 
 wifi:
   use_address: ${wifi_use_address}
-  #fast_connect: true
+  fast_connect: true
+  power_save_mode: NONE
+  fast_connect: true
+  reboot_timeout: 0s 
   #power_save_mode: NONE

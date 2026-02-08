@@ -16,7 +16,7 @@ substitutions:
   device_description: "Network-only bring-up (no display/touch)"
 
   # OTA/uploader target address (used by override include)
-  wifi_use_address: "192.168.1.129"
+  #wifi_use_address: "192.168.1.129"
 
 packages:
   # ----------------------------------------------------------
@@ -31,7 +31,7 @@ packages:
   # NETWORK OVERRIDES (optional, per-device)
   # ----------------------------------------------------------
   net_perf: !include common/overrides/wifi_performance.yaml
-  net_use_address: !include common/overrides/wifi_use_address.yaml
+  #net_use_address: !include common/overrides/wifi_use_address.yaml
 
   # ----------------------------------------------------------
   # CAPABILITIES
