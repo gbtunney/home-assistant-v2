@@ -62,7 +62,7 @@ display:
     id: oled
     model: "SSD1306 128x64"
     cs_pin: 14
-    dc_pin: 16
+    dc_pin: 15
     reset_pin: 17
     lambda: |-
       it.print(0, 0, id(f), "HELLO");
