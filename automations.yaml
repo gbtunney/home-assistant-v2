@@ -595,3 +595,43 @@
       message: '{{ trigger.event.data.action }} {{ trigger.event.data.issue_id }}
 
         '
+- id: '1773960014699'
+  alias: Target - Return to Work Screecher
+  description: I Screech at 7 PM if I am off today but work tomorrow
+  triggers:
+  - trigger: time
+    at: '19:00:00'
+  conditions: []
+  actions:
+  - action: calendar.get_events
+    target:
+      entity_id: calendar.target_work
+    data:
+      start_date_time: '{{ today_at(''00:00:00'') }}'
+      end_date_time: '{{ today_at(''23:59:59'') }}'
+    response_variable: target_today
+  - action: calendar.get_events
+    target:
+      entity_id: calendar.target_work
+    data:
+      start_date_time: '{{ today_at(''00:00:00'') + timedelta(days=1) }}'
+      end_date_time: '{{ today_at(''23:59:59'') + timedelta(days=1) }}'
+    response_variable: target_tomorrow
+  - condition: template
+    value_template: '{% set today_events = target_today[''calendar.target_work''][''events'']
+      %} {% set tomorrow_events = target_tomorrow[''calendar.target_work''][''events'']
+      %} {{ (today_events | count == 0) and (tomorrow_events | count > 0) }}
+
+      '
+  - action: script.notification_dispatcher
+    metadata: {}
+    data:
+      message: YOU work tomarrow - a poem{{ state_attr('calendar.target_work', 'description')
+        }}
+      notification_channel:
+      - iPhone
+      - iPad
+      - persistant
+      - alexa
+      sound: default
+  mode: single

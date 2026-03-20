@@ -454,40 +454,6 @@ tv_remote_volume_2:
       name: Units
   alias: TV Remote Volume
   description: ''
-set_speaker_volume:
-  sequence:
-  - variables:
-      _max: '{{ 100 / ( 100 if (max is not defined) else max ) | int  }}'
-      __inc: '{{ ( 10 if ( step is not defined) else step ) | int }}'
-      _inc: '{{ (100 / __inc ) if (__inc > 0 ) else 0 }}'
-    alias: define variables defaults
-  fields:
-    value:
-      selector:
-        number:
-          min: 0
-          max: 100
-          step: 1
-      default: 1
-      name: Value
-    step:
-      selector:
-        number:
-          min: 0
-          max: 20
-          step: 1
-      name: Step
-      default: 10
-    max:
-      selector:
-        number:
-          min: 1
-          max: 100
-          step: 1
-      name: Maximum Volume
-      default: 100
-  alias: Set Speaker Volume
-  description: ''
 roku_test:
   sequence:
   - action: media_player.play_media
@@ -696,7 +662,7 @@ set_state_switch_light_test_version:
       description: Negates on and off states to toggle
       default: 'Off'
       required: false
-  description: Target to turn on or off (setting the state)
+  description: TODO Target to turn on or off (setting the state)
   icon: mdi:toggle-switch-off
 entity_info_loop_script:
   alias: Entity Info Loop Script
@@ -1011,86 +977,270 @@ issue_wueue_2:
       issue: '{{ affected_issue | default({}, true) }}'
       queue_length: '{{ new_queue | length }}'
       queue: '{{ new_queue }}'
-entity_info_ui:
-  alias: Entity Info UI
-  description: Pyscript UI, Emits an event entity_info_list_return and returns a dump
-    of object info
-  mode: parallel
+function_natural_language_date:
+  sequence:
+  - variables:
+      result:
+        natural_date: NOT SET
+  - variables:
+      here_is_test: '{{result.natural_date}}'
+  - action: pyscript.format_natural_date
+    metadata: {}
+    data:
+      date_and_time: '{{ date_and_time }}'
+    response_variable: result
+  - variables:
+      here_is_test: '{{result.natural_date}}'
+  - stop: Script is complete
+    response_variable: result
+  alias: Function - Natural Language Date
+  description: ''
   fields:
-    entities:
+    date_and_time:
       selector:
-        entity:
-          multiple: true
-    flatten_members:
+        datetime:
+      name: Date i am
+      required: true
+    field1:
       selector:
-        boolean:
-      default: true
-    dedupe:
+        text:
+      default: hello there
+      name: 'field 1 '
+    message_test:
       selector:
-        boolean:
-      default: true
+        text:
+      default: I am.a message
+      name: Message Test
+event_dump_tester:
   sequence:
   - variables:
-      request_id: '{{ ''ei-'' ~ (now().timestamp() | int) }}'
-      result: NOT SET
-  - parallel:
-    - sequence:
-      - wait_for_trigger:
-        - event_type: entity_info_list_return
-          event_data:
-            request_id: '{{ request_id }}'
-          trigger: event
-        timeout: 00:00:05
-        continue_on_timeout: true
-      - choose:
-        - conditions:
-          - condition: template
-            value_template: '{{ wait.trigger is not none }}'
-          sequence:
-          - variables:
-              result: '{{ wait.trigger.event.data }}'
-          - data:
-              level: info
-              message: 'Got result: {{ result | tojson }}'
-            action: system_log.write
-        default:
-        - data:
-            level: warning
-            message: Timed out waiting for request_id={{ request_id }}
-          action: system_log.write
-    - sequence:
-      - data:
-          entities: '{{ entities }}'
-          flatten_members: '{{ flatten_members }}'
-          dedupe: '{{ dedupe }}'
-          request_id: '{{ request_id }}'
-        action: pyscript.entity_info
-  - stop: ''
-    response_variable: result
-test_consumer:
+      start: '{{now() if start_time is not defined else start_time}}'
+      end: '{{now() - timedelta(days=1)}}'
+      format_result_start: NOT SET
+      format_result_end: NOT SET
+      response:
+  - action: pyscript.format_natural_date
+    metadata: {}
+    data:
+      date_and_time: '{{start}}'
+    response_variable: format_result_start
+    alias: FOrmat Start
+  - action: pyscript.format_natural_date
+    metadata: {}
+    data:
+      date_and_time: '{{end}}'
+    response_variable: format_result_end
+    alias: FOrmat end
+  - action: pyscript.get_events_range
+    metadata: {}
+    data:
+      entity_id: calendar.target_work
+      start_time: '{{start}}'
+      end_time: '{{end}}'
+    response_variable: response
+  - repeat:
+      for_each: '{{ response.events }}'
+      sequence:
+      - variables:
+          event: '{{ repeat.item }}'
+          item_dump: '{{ repeat.item  | tojson }}'
+      - action: logbook.log
+        data:
+          name: Event
+          message: '{{ event.title }} — {{ event.start_local }}
+
+            '
+  fields:
+    start_time:
+      selector:
+        datetime:
+      required: false
+      name: Start Time
+      description: Beginning of range. Defaults to now.
+    end_time:
+      selector:
+        datetime:
+      name: End Time
+      required: false
+      description: End of range. Defaults to 7 days from now.
+  alias: Event Dump Tester
+  description: ''
+alexa_custom_notification_v2:
+  alias: Alexa WIP Custom Notification v2
+  description: Send an alexa notification with louder volume. Respects a 'quiet hours'
+    policy
+  fields:
+    target_alexa_speaker:
+      selector:
+        target:
+          entity:
+            domain: media_player
+            integration: alexa_media
+      name: Alexa Speaker
+      required: false
+      default:
+        entity_id: media_player.alexa_s_baby
+    message:
+      selector:
+        text:
+      name: Message
+      default: 'No message set. '
+      required: true
+    volume:
+      selector:
+        select:
+          options:
+          - Maximum Volume
+          - Normal Volume
+          - Current
+      description: If it is quiet hours, vol will only be set to .5 max, and .35 for
+        normal/current fallback
+      default: Normal Volume
+      required: true
+      name: Volume
+    sound:
+      selector:
+        select:
+          options:
+          - no_sound
+          - amzn_sfx_doorbell_chime_01
+          - bell_02
+          - buzzers_pistols_01
+          - amzn_sfx_church_bell_1x_02
+          - amzn_sfx_doorbell_01
+          - amzn_sfx_doorbell_chime_02
+          - christmas_05
+          - horror_10
+          - air_horn_03
+          - boing_01
+          - boing_03
+          - camera_01
+          - squeaky_12
+          - clock_01
+          - amzn_sfx_trumpet_bugle_04
+          - amzn_sfx_cat_meow_1x_01
+          - amzn_sfx_dog_med_bark_1x_02
+          - amzn_sfx_lion_roar_02
+          - amzn_sfx_rooster_crow_01
+          - amzn_sfx_wolf_howl_02
+          - futuristic_10
+          - amzn_sfx_scifi_engines_on_02
+          - amzn_sfx_scifi_alarm_04
+          - amzn_sfx_scifi_sheilds_up_01
+          - amzn_sfx_scifi_alarm_01
+          - zap_01
+          - amzn_sfx_crowd_applause_01
+          - amzn_sfx_large_crowd_cheer_01
+      name: Sound
+      description: Be annoying!!
+    local_mute:
+      selector:
+        select:
+          options:
+          - 'On'
+          - 'Off'
+      name: Local Mute
+      description: Mute for testing purposes. Global alexa mute entity is input_boolean.bool_mute_alexa_notifications
   sequence:
   - variables:
-      result: child not set
-  - action: script.new_entity_info_ui_wait_for_result
-    metadata: {}
-    data:
-      flatten_members: true
-      dedupe: true
-      entities:
-      - sensor.little_tv_bitch_active_app_id
-      - input_number.10g_f_temperature
-      - light.10g_m_elb_aquarium_light
-      - binary_sensor.10g_m_powerstrip_status
-    response_variable: result
-  - action: system_log.write
-    metadata: {}
-    data:
-      level: warning
-      message: GILLIAN! result{{result}}
-  - action: logbook.log
-    metadata: {}
-    data:
-      name: GBT TEST CONSUMER
-      message: '{{result}}'
-  alias: Entity Info UI Consumer
-  description: Entity Info UI Consumer Info Dump to Log
+      speaker_id: '{{ target_alexa_speaker.entity_id }}'
+      previous_volume: '{{ state_attr(speaker_id, ''volume_level'') | float(0.5) }}'
+      bool_local_mute: '{{ local_mute | default(''Off'') == ''On'' }}'
+      global_mute: '{{ is_state(''input_boolean.bool_mute_alexa_notifications'', ''on'')
+        }}'
+      bool_mute: '{{ global_mute or bool_local_mute }}'
+      quiet_hours: '{{ is_state(''binary_sensor.quiet_hours'', ''on'') }}'
+      bool_clear_message: '{{ ''clear_notification'' in message }}'
+      play_sound: '{{ sound is defined and sound != ''no_sound'' }}'
+      do_volume_change: '{{ volume != ''Current'' or (volume == ''Current'' and quiet_hours)
+        }}
+
+        '
+      volume_float: "{% if quiet_hours %}\n  {% if volume == 'Maximum Volume' %}\n
+        \   0.5\n  {% elif volume == 'Normal Volume' %}\n    0.35\n  {% else %}\n
+        \   0.35\n  {% endif %}\n{% else %}\n  {% if volume == 'Maximum Volume' %}\n
+        \   1.0\n  {% elif volume == 'Normal Volume' %}\n    0.65\n  {% else %}\n
+        \   {{ previous_volume }}\n  {% endif %}\n{% endif %}\n"
+      message_real: '{{ message | regex_replace(find=''(\\d+)\\s*g\\s+'', replace=''\\1
+        gallon '', ignorecase=True) }}'
+  - alias: Clear the message if contains "clear_notification"
+    if:
+    - condition: template
+      value_template: '{{ bool_clear_message }}'
+    then:
+    - action: logbook.log
+      data:
+        entity_id: '{{ speaker_id }}'
+        name: Alexa Clear_Notification
+        message: Alexa was MUTED bc the notification is being cleared.
+    else:
+    - choose:
+      - conditions:
+        - condition: template
+          value_template: '{{ bool_mute }}'
+        sequence:
+        - action: logbook.log
+          data:
+            entity_id: '{{ speaker_id }}'
+            name: Alexa Muted
+            message: 'Alexa was MUTED and is not allowed to say the following message,
+              {{ message_real }} | Sound: {{ play_sound }} {{ sound }} | Volume: {{
+              volume_float }} | Quiet Hrs: {{ quiet_hours }} | Prev Volume: {{ previous_volume
+              }}'
+      default:
+      - alias: Set temporary vol
+        if:
+        - condition: template
+          value_template: '{{ do_volume_change }}'
+        then:
+        - action: media_player.volume_set
+          target:
+            entity_id: '{{ speaker_id }}'
+          data:
+            volume_level: '{{ volume_float | float(0.5) }}'
+      - alias: play a sound!
+        if:
+        - condition: template
+          value_template: '{{ play_sound }}'
+        then:
+        - action: media_player.play_media
+          target:
+            entity_id: '{{ speaker_id }}'
+          data:
+            media:
+              media_content_id: '{{ sound }}'
+              media_content_type: sound
+      - alias: send notification
+        action: notify.alexa_media
+        data:
+          target: '{{ speaker_id }}'
+          message: '{{ message_real }}'
+      - alias: Restore orig. volume
+        if:
+        - condition: template
+          value_template: '{{ do_volume_change }}'
+        then:
+        - action: media_player.volume_set
+          target:
+            entity_id: '{{ speaker_id }}'
+          data:
+            volume_level: '{{ previous_volume | float(0.5) }}'
+      - alias: play sound again
+        if:
+        - condition: template
+          value_template: '{{ play_sound }}'
+        then:
+        - action: media_player.play_media
+          target:
+            entity_id: '{{ speaker_id }}'
+          data:
+            media:
+              media_content_id: '{{ sound }}'
+              media_content_type: sound
+      - action: logbook.log
+        data:
+          entity_id: '{{ speaker_id }}'
+          name: Alexa Notification Dispatched
+          message: 'Alexa was dispatched to say the following message, {{ message_real
+            }} | Sound: {{ play_sound }} {{ sound }} | Volume: {{ volume_float }}
+            | Quiet Hrs: {{ quiet_hours }} | Prev Volume: {{ previous_volume }}'
