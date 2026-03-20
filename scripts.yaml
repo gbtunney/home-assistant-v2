@@ -614,7 +614,7 @@ set_state_switch_light_test_version:
       %}'
     response_variable: result
     enabled: true
-  alias: Set State Switch/Light TEST VERSIOn
+  alias: Set State Switch/Light v2.0
   fields:
     target_entity_set:
       selector:
