@@ -1,28 +1,16 @@
-"""
-entity_info PyScript service
-
-Service: pyscript.entity_info
-Emits event: entity_info_list_return
-
-Notes:
-- PyScript has limited AST support. Avoid generator expressions, comprehensions,
-  and typing-heavy constructs.
-- Services do not return values; this service emits an event with the payload.
-"""
-
 import json
+import time
 
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import area_registry as ar
 
-EVENT_TYPE = "entity_info_list_return"
 SCHEMA_ID = "snailicide.entity_info.v1"
 SCHEMA_VERSION = 1
 
 BINARY_DOMAINS = {"light", "switch", "binary_sensor", "input_boolean"}
 
-log.info("Loaded entity_info.py (rewrite: no generators/comprehensions)")
+log.info("Loaded entity_info.py (response-data version)")
 
 
 # -----------------------------
@@ -54,16 +42,23 @@ def _as_entities(x):
     return []
 
 
+def _make_request_id():
+    try:
+        return "entity-info-%d" % int(time.time() * 1000)
+    except Exception:
+        return "entity-info-auto"
+
+
 def _as_request_id(x):
     if x is None:
-        return None
+        return _make_request_id()
     try:
         s = str(x).strip()
         if s:
             return s
-        return None
+        return _make_request_id()
     except Exception:
-        return None
+        return _make_request_id()
 
 
 def _parse_args(entities, flatten_members, dedupe, request_id):
@@ -109,7 +104,6 @@ def _labels_from_device(device):
         lbl = getattr(device, "labels", None)
         if lbl is None:
             return []
-        # labels is iterable-ish; normalize to list of strings
         out = []
         try:
             for v in lbl:
@@ -196,11 +190,11 @@ def _build_entry(hass, entity_id, dreg, ereg, areg, errors):
 
     is_group = len(valid_members) > 0
     base["group"] = is_group
+    base["group_member_count"] = len(valid_members)
 
     group_entities = []
     if is_group:
         for m in valid_members:
-            # skip stale members
             if hass.states.get(m) is None and ereg.async_get(m) is None:
                 errors.append(
                     {
@@ -221,7 +215,6 @@ def _build_entry(hass, entity_id, dreg, ereg, areg, errors):
                     }
                 )
 
-        # Inherit device/area from first usable child if parent lacks it
         if (not base.get("device_id")) and group_entities:
             base["device_id"] = group_entities[0].get("device_id")
             base["device_name"] = group_entities[0].get("device_name")
@@ -234,12 +227,67 @@ def _build_entry(hass, entity_id, dreg, ereg, areg, errors):
 
 
 # -----------------------------
-# Service
+# Service (response data)
 # -----------------------------
 
 
-@service("pyscript.entity_info")
+@service("pyscript.entity_info", supports_response="only")
 def entity_info(entities=None, flatten_members=False, dedupe=True, request_id=None):
+    """yaml
+    name: Entity Info
+    description: Fetch metadata for one or more Home Assistant entities, including device, area, state, and optional group expansion.
+
+    fields:
+      entities:
+        name: Entities
+        description: One or more entities to inspect.
+        required: false
+        example: light.kitchen
+        selector:
+          entity:
+            multiple: true
+
+      flatten_members:
+        name: Flatten group members
+        description: Include group members as top-level items in the returned response.
+        required: false
+        default: false
+        selector:
+          boolean:
+
+      dedupe:
+        name: Dedupe flattened members
+        description: When flattening, avoid returning duplicate entity IDs.
+        required: false
+        default: true
+        selector:
+          boolean:
+
+      request_id:
+        name: Request ID
+        description: Optional label for this request. If omitted, one is generated automatically and echoed in the response.
+        example: kitchen-check
+        selector:
+          text:
+
+    response:
+      schema_id:
+        description: Stable schema identifier
+      version:
+        description: Schema version
+      request_id:
+        description: Provided or auto-generated request identifier
+      meta:
+        description: Summary metadata about the result set
+      errors:
+        description: Any validation or processing errors
+      items:
+        description: Structured entity info records
+      items_json:
+        description: JSON string of items for templating
+      items_json_pretty:
+        description: Pretty-printed JSON string of items for easier reading
+    """
     ents, flat, ddp, rid = _parse_args(entities, flatten_members, dedupe, request_id)
     log.info(
         "entity_info: entities=%r flatten_members=%r dedupe=%r request_id=%r"
@@ -274,7 +322,21 @@ def entity_info(entities=None, flatten_members=False, dedupe=True, request_id=No
                 }
             )
 
-    # Flatten group members into top-level list
+    root_count = len(items)
+    # root_group_count = number of top-level requested entities that are groups (not including children)
+    root_group_count = 0
+    child_count = 0
+    for entry in items:
+        if isinstance(entry, dict):
+            if bool(entry.get("group", False)):
+                root_group_count += 1
+            children = entry.get("group_entities")
+            if isinstance(children, list):
+                child_count += len(children)
+
+    flattened_added_count = 0
+    deduped_skipped_count = 0
+
     if flat:
         try:
             flat_items = []
@@ -305,6 +367,9 @@ def entity_info(entities=None, flatten_members=False, dedupe=True, request_id=No
                     if (not ddp) or (eid not in seen):
                         flat_items.append(child)
                         seen.add(eid)
+                        flattened_added_count += 1
+                    else:
+                        deduped_skipped_count += 1
 
             items = flat_items
         except Exception as ex:
@@ -312,9 +377,9 @@ def entity_info(entities=None, flatten_members=False, dedupe=True, request_id=No
                 {"code": "FLATTEN_FAILED", "message": str(ex), "entity_id": None}
             )
 
-    # Serialize items_json
     try:
         items_json = json.dumps(items)
+        items_json_pretty = json.dumps(items, indent=2, sort_keys=True)
     except Exception as ex:
         errors.append(
             {"code": "JSON_DUMPS_FAILED", "message": str(ex), "entity_id": None}
@@ -328,21 +393,26 @@ def entity_info(entities=None, flatten_members=False, dedupe=True, request_id=No
             else:
                 fallback.append({"entity_id": None, "error": "json_failed"})
         items_json = json.dumps(fallback)
+        items_json_pretty = json.dumps(fallback, indent=2, sort_keys=True)
 
-    payload = {
+    return {
         "schema_id": SCHEMA_ID,
         "version": SCHEMA_VERSION,
         "request_id": rid,
         "meta": {
             "count": len(items),
             "input_count": len(ents),
+            "root_count": root_count,
+            "root_group_count": root_group_count,
+            "child_count": child_count,
             "flatten_members": flat,
+            "flattened_added_count": flattened_added_count,
+            "returned_count": len(items),
             "dedupe": ddp,
+            "deduped_skipped_count": deduped_skipped_count,
         },
         "errors": errors,
         "items": items,
         "items_json": items_json,
+        "items_json_pretty": items_json_pretty,
     }
-
-    event.fire(EVENT_TYPE, **payload)
-    log.info("entity_info: returned %d items; errors=%d" % (len(items), len(errors)))
