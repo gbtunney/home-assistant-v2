@@ -1,16 +1,17 @@
 import json
 import time
 
+from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
-from homeassistant.helpers import area_registry as ar
+from homeassistant.helpers import label_registry as lr
 
-SCHEMA_ID = "snailicide.entity_info.v1"
-SCHEMA_VERSION = 1
+SCHEMA_ID = "snailicide.entity_info.v2"
+SCHEMA_VERSION = 2
 
 BINARY_DOMAINS = {"light", "switch", "binary_sensor", "input_boolean"}
 
-log.info("Loaded entity_info.py (response-data version)")
+log.info("Loaded entity_info.py (response-data version with area/device/label support)")
 
 
 # -----------------------------
@@ -28,18 +29,31 @@ def _as_bool(x, default=False):
     return bool(x)
 
 
-def _as_entities(x):
+def _as_str_list(x):
     if x is None:
         return []
     if isinstance(x, str):
-        return [x]
+        s = x.strip()
+        if s:
+            return [s]
+        return []
     if isinstance(x, (list, tuple)):
         out = []
-        for e in x:
-            if isinstance(e, str):
-                out.append(e)
+        for item in x:
+            if isinstance(item, str):
+                s = item.strip()
+                if s:
+                    out.append(s)
         return out
     return []
+
+
+def _as_entities(x):
+    out = []
+    for value in _as_str_list(x):
+        if _is_entity_id(value):
+            out.append(value)
+    return out
 
 
 def _make_request_id():
@@ -61,12 +75,15 @@ def _as_request_id(x):
         return _make_request_id()
 
 
-def _parse_args(entities, flatten_members, dedupe, request_id):
+def _parse_args(entities, areas, devices, labels, flatten_members, dedupe, request_id):
     ents = _as_entities(entities)
+    ars = _as_str_list(areas)
+    devs = _as_str_list(devices)
+    lbls = _as_str_list(labels)
     flat = _as_bool(flatten_members, False)
     ddp = _as_bool(dedupe, True)
     rid = _as_request_id(request_id)
-    return ents, flat, ddp, rid
+    return ents, ars, devs, lbls, flat, ddp, rid
 
 
 def _is_entity_id(x):
@@ -76,6 +93,218 @@ def _is_entity_id(x):
         return False
     parts = x.split(".", 1)
     return bool(parts[0]) and bool(parts[1])
+
+
+def _add_unique_str(out, seen, value):
+    if not isinstance(value, str):
+        return False
+    if not value:
+        return False
+    if value in seen:
+        return False
+    out.append(value)
+    seen.add(value)
+    return True
+
+
+# -----------------------------
+# Registry helpers
+# -----------------------------
+
+
+def _resolve_area_ids(area_values, areg, errors):
+    out = []
+    seen = set()
+
+    for value in area_values:
+        area = areg.async_get_area(value)
+        if area is None and hasattr(areg, "async_get_area_by_name"):
+            try:
+                area = areg.async_get_area_by_name(value)
+            except Exception:
+                area = None
+
+        if area is None:
+            errors.append(
+                {
+                    "code": "BAD_AREA",
+                    "message": "Unknown area: %r" % (value,),
+                    "entity_id": None,
+                }
+            )
+            continue
+
+        _add_unique_str(out, seen, area.id)
+
+    return out
+
+
+def _resolve_device_ids(device_values, dreg, errors):
+    out = []
+    seen = set()
+
+    for value in device_values:
+        device = dreg.async_get(value)
+        if device is None:
+            errors.append(
+                {
+                    "code": "BAD_DEVICE",
+                    "message": "Unknown device_id: %r" % (value,),
+                    "entity_id": None,
+                }
+            )
+            continue
+
+        _add_unique_str(out, seen, value)
+
+    return out
+
+
+def _resolve_label_ids(label_values, lreg, errors):
+    out = []
+    seen = set()
+
+    for value in label_values:
+        label = None
+
+        if hasattr(lreg, "async_get_label"):
+            try:
+                label = lreg.async_get_label(value)
+            except Exception:
+                label = None
+
+        if label is None and hasattr(lreg, "async_get_label_by_name"):
+            try:
+                label = lreg.async_get_label_by_name(value)
+            except Exception:
+                label = None
+
+        if label is None:
+            errors.append(
+                {
+                    "code": "BAD_LABEL",
+                    "message": "Unknown label: %r" % (value,),
+                    "entity_id": None,
+                }
+            )
+            continue
+
+        label_id = getattr(label, "label_id", None) or getattr(label, "id", None)
+        if not isinstance(label_id, str):
+            errors.append(
+                {
+                    "code": "BAD_LABEL",
+                    "message": "Label did not provide a usable ID: %r" % (value,),
+                    "entity_id": None,
+                }
+            )
+            continue
+
+        _add_unique_str(out, seen, label_id)
+
+    return out
+
+
+def _collect_entity_ids_from_devices(device_ids, ereg):
+    out = []
+    seen = set()
+
+    for device_id in device_ids:
+        try:
+            entries = er.async_entries_for_device(ereg, device_id)
+        except Exception:
+            entries = []
+
+        for entry in entries:
+            entity_id = getattr(entry, "entity_id", None)
+            _add_unique_str(out, seen, entity_id)
+
+    return out
+
+
+def _collect_entity_ids_from_areas(area_ids, dreg, ereg):
+    out = []
+    seen = set()
+
+    for area_id in area_ids:
+        try:
+            entity_entries = er.async_entries_for_area(ereg, area_id)
+        except Exception:
+            entity_entries = []
+
+        for entry in entity_entries:
+            entity_id = getattr(entry, "entity_id", None)
+            _add_unique_str(out, seen, entity_id)
+
+        try:
+            device_entries = dr.async_entries_for_area(dreg, area_id)
+        except Exception:
+            device_entries = []
+
+        for device in device_entries:
+            device_id = getattr(device, "id", None)
+            if not isinstance(device_id, str):
+                continue
+
+            try:
+                child_entries = er.async_entries_for_device(ereg, device_id)
+            except Exception:
+                child_entries = []
+
+            for entry in child_entries:
+                entity_id = getattr(entry, "entity_id", None)
+                _add_unique_str(out, seen, entity_id)
+
+    return out
+
+
+def _collect_entity_ids_from_labels(label_ids, areg, dreg, ereg):
+    out = []
+    seen = set()
+
+    for label_id in label_ids:
+        try:
+            entity_entries = er.async_entries_for_label(ereg, label_id)
+        except Exception:
+            entity_entries = []
+
+        for entry in entity_entries:
+            entity_id = getattr(entry, "entity_id", None)
+            _add_unique_str(out, seen, entity_id)
+
+        try:
+            device_entries = dr.async_entries_for_label(dreg, label_id)
+        except Exception:
+            device_entries = []
+
+        for device in device_entries:
+            device_id = getattr(device, "id", None)
+            if not isinstance(device_id, str):
+                continue
+
+            try:
+                child_entries = er.async_entries_for_device(ereg, device_id)
+            except Exception:
+                child_entries = []
+
+            for entry in child_entries:
+                entity_id = getattr(entry, "entity_id", None)
+                _add_unique_str(out, seen, entity_id)
+
+        try:
+            area_entries = ar.async_entries_for_label(areg, label_id)
+        except Exception:
+            area_entries = []
+
+        for area in area_entries:
+            area_id = getattr(area, "id", None)
+            if not isinstance(area_id, str):
+                continue
+
+            for entity_id in _collect_entity_ids_from_areas([area_id], dreg, ereg):
+                _add_unique_str(out, seen, entity_id)
+
+    return out
 
 
 # -----------------------------
@@ -99,17 +328,14 @@ def _norm_state(hass, entity_id, domain):
         return raw, "text", None
 
 
-def _labels_from_device(device):
+def _labels_from_entry(entry):
     try:
-        lbl = getattr(device, "labels", None)
-        if lbl is None:
+        labels = getattr(entry, "labels", None)
+        if labels is None:
             return []
         out = []
-        try:
-            for v in lbl:
-                out.append(v)
-        except Exception:
-            return []
+        for value in labels:
+            out.append(value)
         return out
     except Exception:
         return []
@@ -145,8 +371,6 @@ def _core_entity(hass, entity_id, dreg, ereg, areg):
     if device:
         device_name = device.name or device.model
 
-    labels = _labels_from_device(device) if device else []
-
     state, state_kind, state_number = _norm_state(hass, entity_id, domain)
 
     return {
@@ -158,9 +382,10 @@ def _core_entity(hass, entity_id, dreg, ereg, areg):
         "state_number": state_number,
         "device_id": dev_id,
         "device_name": device_name,
+        "device_labels": _labels_from_entry(device) if device else [],
+        "entity_labels": _labels_from_entry(entry) if entry else [],
         "area_id": area_id,
         "area_name": area_name,
-        "labels": labels,
     }
 
 
@@ -218,6 +443,7 @@ def _build_entry(hass, entity_id, dreg, ereg, areg, errors):
         if (not base.get("device_id")) and group_entities:
             base["device_id"] = group_entities[0].get("device_id")
             base["device_name"] = group_entities[0].get("device_name")
+            base["device_labels"] = group_entities[0].get("device_labels")
         if (not base.get("area_id")) and group_entities:
             base["area_id"] = group_entities[0].get("area_id")
             base["area_name"] = group_entities[0].get("area_name")
@@ -232,25 +458,52 @@ def _build_entry(hass, entity_id, dreg, ereg, areg, errors):
 
 
 @service("pyscript.entity_info", supports_response="only")
-def entity_info(entities=None, flatten_members=False, dedupe=True, request_id=None):
+def entity_info(
+    entities=None,
+    areas=None,
+    devices=None,
+    labels=None,
+    flatten_members=False,
+    dedupe=True,
+    request_id=None,
+):
     """yaml
     name: Entity Info
-    description: Fetch metadata for one or more Home Assistant entities, including device, area, state, and optional group expansion.
+    description: Fetch metadata for one or more Home Assistant entities, areas, devices, or labels, with optional group expansion.
 
     fields:
       entities:
         name: Entities
-        description: One or more entities to inspect.
-        required: false
+        description: One or more entities to inspect directly.
         example: light.kitchen
         selector:
           entity:
             multiple: true
 
+      areas:
+        name: Areas
+        description: One or more areas. Entities from these areas will be included.
+        selector:
+          area:
+            multiple: true
+
+      devices:
+        name: Devices
+        description: One or more devices. Entities from these devices will be included.
+        selector:
+          device:
+            multiple: true
+
+      labels:
+        name: Labels
+        description: Select one or more labels. Matching labeled entities, devices, and areas will be expanded to entities.
+        selector:
+          label:
+            multiple: true
+
       flatten_members:
         name: Flatten group members
         description: Include group members as top-level items in the returned response.
-        required: false
         default: false
         selector:
           boolean:
@@ -258,7 +511,6 @@ def entity_info(entities=None, flatten_members=False, dedupe=True, request_id=No
       dedupe:
         name: Dedupe flattened members
         description: When flattening, avoid returning duplicate entity IDs.
-        required: false
         default: true
         selector:
           boolean:
@@ -285,23 +537,49 @@ def entity_info(entities=None, flatten_members=False, dedupe=True, request_id=No
         description: Structured entity info records
       items_json:
         description: JSON string of items for templating
-      items_json_pretty:
-        description: Pretty-printed JSON string of items for easier reading
     """
-    ents, flat, ddp, rid = _parse_args(entities, flatten_members, dedupe, request_id)
+    ents, area_values, device_values, label_values, flat, ddp, rid = _parse_args(
+        entities,
+        areas,
+        devices,
+        labels,
+        flatten_members,
+        dedupe,
+        request_id,
+    )
     log.info(
-        "entity_info: entities=%r flatten_members=%r dedupe=%r request_id=%r"
-        % (ents, flat, ddp, rid)
+        "entity_info: entities=%r areas=%r devices=%r labels=%r flatten_members=%r dedupe=%r request_id=%r"
+        % (ents, area_values, device_values, label_values, flat, ddp, rid)
     )
 
     dreg = dr.async_get(hass)
     ereg = er.async_get(hass)
     areg = ar.async_get(hass)
+    lreg = lr.async_get(hass)
 
     errors = []
     items = []
 
-    for e in ents:
+    area_ids = _resolve_area_ids(area_values, areg, errors)
+    device_ids = _resolve_device_ids(device_values, dreg, errors)
+    label_ids = _resolve_label_ids(label_values, lreg, errors)
+
+    candidate_entity_ids = []
+    seen_candidate_entity_ids = set()
+
+    for entity_id in ents:
+        _add_unique_str(candidate_entity_ids, seen_candidate_entity_ids, entity_id)
+
+    for entity_id in _collect_entity_ids_from_areas(area_ids, dreg, ereg):
+        _add_unique_str(candidate_entity_ids, seen_candidate_entity_ids, entity_id)
+
+    for entity_id in _collect_entity_ids_from_devices(device_ids, ereg):
+        _add_unique_str(candidate_entity_ids, seen_candidate_entity_ids, entity_id)
+
+    for entity_id in _collect_entity_ids_from_labels(label_ids, areg, dreg, ereg):
+        _add_unique_str(candidate_entity_ids, seen_candidate_entity_ids, entity_id)
+
+    for e in candidate_entity_ids:
         if not _is_entity_id(e):
             errors.append(
                 {
@@ -323,7 +601,7 @@ def entity_info(entities=None, flatten_members=False, dedupe=True, request_id=No
             )
 
     root_count = len(items)
-    # root_group_count = number of top-level requested entities that are groups (not including children)
+    # root_group_count = number of top-level returned entities that are groups (not including children)
     root_group_count = 0
     child_count = 0
     for entry in items:
@@ -379,7 +657,6 @@ def entity_info(entities=None, flatten_members=False, dedupe=True, request_id=No
 
     try:
         items_json = json.dumps(items)
-        items_json_pretty = json.dumps(items, indent=2, sort_keys=True)
     except Exception as ex:
         errors.append(
             {"code": "JSON_DUMPS_FAILED", "message": str(ex), "entity_id": None}
@@ -393,7 +670,6 @@ def entity_info(entities=None, flatten_members=False, dedupe=True, request_id=No
             else:
                 fallback.append({"entity_id": None, "error": "json_failed"})
         items_json = json.dumps(fallback)
-        items_json_pretty = json.dumps(fallback, indent=2, sort_keys=True)
 
     return {
         "schema_id": SCHEMA_ID,
@@ -401,7 +677,14 @@ def entity_info(entities=None, flatten_members=False, dedupe=True, request_id=No
         "request_id": rid,
         "meta": {
             "count": len(items),
-            "input_count": len(ents),
+            "entity_input_count": len(ents),
+            "area_input_count": len(area_values),
+            "device_input_count": len(device_values),
+            "label_input_count": len(label_values),
+            "resolved_area_count": len(area_ids),
+            "resolved_device_count": len(device_ids),
+            "resolved_label_count": len(label_ids),
+            "candidate_entity_count": len(candidate_entity_ids),
             "root_count": root_count,
             "root_group_count": root_group_count,
             "child_count": child_count,
@@ -414,5 +697,4 @@ def entity_info(entities=None, flatten_members=False, dedupe=True, request_id=No
         "errors": errors,
         "items": items,
         "items_json": items_json,
-        "items_json_pretty": items_json_pretty,
     }
