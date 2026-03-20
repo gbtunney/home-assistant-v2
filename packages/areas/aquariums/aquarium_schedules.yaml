@@ -73,7 +73,7 @@ automation:
 
       - action: script.notification_dispatcher
         data:
-          message: Co2 is {% if is_state("switch.20_gallon_rack_c02",["on"]) -%}on{%- else -%}off{% endif -%}
+          message: Co2 is {% if is_state("switch.20_gallon_rack_c02",["off"]) -%}on{%- else -%}on{% endif -%}
           sound: default
           notification_channel:
             - alexa
