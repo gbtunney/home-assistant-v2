@@ -8,7 +8,7 @@ switch:
     switches:
       - name: "Cozy Life Outlet 1"
         ip: !secret cl1_ip_address
-        description: !secret cl1_ip_address
+        #  description: !secret cl1_ip_address
         did: 733969430050c2827748
         pid: O28YAL
         dmn: Smart Switch
