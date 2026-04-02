@@ -959,3 +959,38 @@ event_dump_tester:
       description: End of range. Defaults to 7 days from now.
   alias: Event Dump Tester
   description: ''
+open_ai_test:
+  sequence:
+  - variables:
+      info: not set
+      response_text: not set
+  - action: pyscript.entity_info
+    metadata: {}
+    data:
+      flatten_members: 'false'
+      dedupe: 'true'
+      entities:
+      - switch.55g_pumps_heaters
+    response_variable: info
+    enabled: true
+  - action: pyscript.openai_text
+    metadata: {}
+    data:
+      model: gpt-4.1-mini
+      prompt: say green !
+    response_variable: response_text
+  alias: Open AI Test
+  description: ''
+  fields:
+    model_selection:
+      selector:
+        select:
+          options:
+          - gpt-4.1-mini
+          - gpt-4.1
+          - gpt-4.1-nano
+          - gpt-5-mini
+          - gpt-5
+      default: gpt-4.1-mini
+      name: Model
+      description: The model to use for OpenAi
