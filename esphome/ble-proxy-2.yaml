@@ -1,0 +1,47 @@
+# ============================================================
+# DEVICE — ENV TEMP 2 (DEPLOYED)
+# ============================================================
+#
+# This is a DEPLOYED device file.
+# It lives at the root of the ESPHome config directory so it
+# appears in the ESPHome add-on UI.
+#
+# Role:
+# - Environmental temperature monitoring
+# - 3 Dallas probe pairs
+# - Bluetooth Proxy infrastructure
+# - Standard diagnostics
+#
+# ============================================================
+
+substitutions:
+  # ----------------------------------------------------------
+  # DEVICE IDENTITY
+  # ----------------------------------------------------------
+  device_id: ble_proxy_2
+  device_hostname: "ble-proxy-2"
+  device_friendly_name: "BLE Proxy 2"
+  device_description: "BLE proxy 2 (Library)"
+
+  ble_rescan_duration: "30s"
+  ble_rescan_button_name: "BLE Active Scan"
+  ble_active_scan: true
+packages:
+  # ----------------------------------------------------------
+  # BASE + FLEET
+  # ----------------------------------------------------------
+  base: !include common/universal_base.yaml
+  board: !include common/platforms/esp32.yaml
+  fleet: !include fleets/ble_proxy.yaml
+  # NETWORK (Wi‑Fi inherited from base; DHCP by default — no static IP)
+  net_perf: !include common/overrides/wifi_performance.yaml
+  # Optional later: target a specific uploader address
+  # net_use_address: !include common/overrides/wifi_use_address.yaml
+
+  # ----------------------------------------------------------
+  # CAPABILITIES
+  # ----------------------------------------------------------
+  diagnostics: !include common/capabilities/diagnostics.yaml
+  ble: !include common/capabilities/bluetooth_proxy.yaml
+  test_buttons: !include common/capabilities/test/system_buttons.yaml
+  test_ble_scan_button: !include common/capabilities/test/ble_scan_button.yaml
