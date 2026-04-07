@@ -1,16 +1,13 @@
 # ============================================================
-# DEVICE — ENV TEMP 1 (DEPLOYED)
+# DEVICE — BLE Proxy 1
 # ============================================================
 #
 # This is a DEPLOYED device file.
 # It lives at the root of the ESPHome config directory so it
 # appears in the ESPHome add-on UI.
 #
-# Role:
-# - Environmental temperature monitoring
-# - 3 Dallas probe pairs
-# - Bluetooth Proxy infrastructure
-# - Standard diagnostics
+# Fleet:
+# - ble_proxy
 #
 # ============================================================
 
@@ -21,7 +18,7 @@ substitutions:
   device_id: ble_proxy_1
   device_hostname: "ble-proxy-1"
   device_friendly_name: "Ble Proxy 1"
-  device_description: "Ble Proxy 1 (Living Room)"
+  device_description: "BLE proxy 1 (Living Room)"
 
   ble_rescan_duration: "30s"
   ble_rescan_button_name: "BLE Active Scan"
