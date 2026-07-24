@@ -135,7 +135,7 @@ api_adapter_notification_dispatcher:
       notification_channel_count: '{{target_notification_channel |  list | count }}'
       action_callback: '{{callback}}'
     enabled: false
-  - action: script.notification_dispatcher_ui
+  - action: script.notification_dispatcher
     metadata: {}
     data:
       message: '{{message}}'

@@ -608,3 +608,18 @@
       - alexa
       sound: default
   mode: single
+- id: '1780807287332'
+  alias: Tag Bathroom Dashboard is scanned
+  description: ''
+  triggers:
+  - trigger: tag
+    tag_id: c8efbcec-a5f4-4ed5-aaa0-a989b594d20e
+  conditions: []
+  actions:
+  - action: notify.mobile_app_iphone
+    metadata: {}
+    data:
+      message: command_webview
+      data:
+        url: homeassistant://navigate/dashboard-bathroom
+  mode: single
