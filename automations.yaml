@@ -529,6 +529,17 @@
         - light.aquarium_lighting
         - light.120g_aquarium_light
         - switch.120g_aquarium_pump
+    enabled: true
+  - action: script.set_state_switch_light_test_version
+    metadata: {}
+    data:
+      mode: manual
+      manual_state: 'on'
+      target_entities:
+      - light.aquarium_lighting
+      - light.120g_aquarium_light
+      - switch.120g_aquarium_pump
+    enabled: false
   mode: single
 - id: '1760738048232'
   alias: Carbon Monoxide Alert
@@ -623,3 +634,84 @@
       data:
         url: homeassistant://navigate/dashboard-bathroom
   mode: single
+- id: '1784938280801'
+  alias: Bambu Status Updates
+  description: Log Bambu print progress at selected milestones
+  triggers:
+  - trigger: state
+    entity_id: sensor.bambu_printer_mechlab_print_progress
+    enabled: false
+  - trigger: state
+    entity_id:
+    - input_boolean.dummy_button
+    to:
+  conditions:
+  - condition: state
+    entity_id: sensor.bambu_printer_mechlab_print_status
+    state: running
+    enabled: false
+  - condition: state
+    entity_id: input_boolean.dummy_button
+    state:
+    - 'on'
+  actions:
+  - variables:
+      progress_milestones:
+      - 50
+      - 60
+      - 70
+      - 80
+      - 95
+      - 98
+      - 99
+      ordered_milestones: "{{ progress_milestones\n    | map('int')\n    | select('gt',
+        0)\n    | select('le', 100)\n    | sort(reverse=true)}}"
+      print_progress_value: '{{ states(''sensor.bambu_printer_mechlab_bambu_dummy_progress'')
+        | int(0) }}'
+      test_list: '{{ ordered_milestones | list }}'
+  - repeat:
+      for_each: '{{ test_list }}'
+      sequence:
+      - variables:
+          testy: '{{repeat.item }}'
+          current_milestone: '{{ repeat.item | int(0) }}'
+          curr_progress_value: '{{print_progress_value| int(0)}}'
+          match_bool: '{{  ( curr_progress_value > current_milestone ) }}'
+          current_index: '{{repeat.index}}'
+          message: PRINT INDEX IS {{current_index }} Print is {{ print_progress_value
+            | int(0) }}% complete. Crossed the {{ current_milestone | int(0) }}% milestone.
+            Printer status is {{ states('sensor.bambu_printer_mechlab_print_status')
+            }}.
+      - if:
+        - condition: template
+          value_template: '{{ match_bool  }}'
+        then:
+        - action: logbook.log
+          metadata: {}
+          data:
+            name: LogStatus
+            message: '{{ message }}'
+            entity_id: sensor.bambu_printer_mechlab_bambu_dummy_progress
+        - action: script.notification_dispatcher
+          metadata: {}
+          data:
+            message: Print is {{ print_progress_value | int(0) }}% complete. Crossed
+              the {{ current_milestone | int(0) }}% milestone. Printer status is {{
+              states('sensor.bambu_printer_mechlab_print_status') }}.
+            notification_channel:
+            - iPad
+            - iPhone
+            - persistant
+            sound: default
+            alexa_sound: amzn_sfx_rooster_crow_01
+        else:
+        - action: logbook.log
+          metadata: {}
+          data:
+            name: LogStatus
+            message: BYPASSING EVERYTHING!!!!!!!!! {{ message }}
+        - stop: Matching Bambu progress milestone was logged DEBUG
+          enabled: true
+          response_variable: current_index
+  mode: queued
+  max: 5

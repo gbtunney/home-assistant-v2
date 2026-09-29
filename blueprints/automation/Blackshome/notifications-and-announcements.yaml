@@ -1,6 +1,6 @@
 blueprint:
   name: Notifications & Announcements
-  description: "# \U0001F4E2 Notifications & Announcements\n**Version: 1.3**\n\nState
+  description: "# \U0001F4E2 Notifications & Announcements\n**Version: 1.5**\n\nState
     your trigger and spread the word \U0001F4AC\U0001F509\n\n**If you like my blueprints,
     and would like to show your support or just say thank you?** [Click Here](https://www.paypal.com/donate/?hosted_button_id=WAZS3QSDTPGA8)
     \U0001F642\n<details> <summary><b>The Automation Process:</b> - Click here to
@@ -14,11 +14,11 @@ blueprint:
     Options:**\n\n    - Opt to send messages to one or multiple devices. Compatible
     with Apple iOS and Android devices.\n    - Opt to display your notifications directly
     within the Home Assistant user interface (UI).\n    - Opt to send Text-to-Speech
-    Announcement to your selected media players.\n\n  - **Time-Based Automation:**\n\n
-    \   - Specify precise start and end times along with weekday selections to define
-    when the automation can run.\n\n  - **Custom Conditions:**\n\n    - Enter any
-    custom conditions to further customize the automation process.\n\n</details>\n\nNeed
-    help? See our FAQ: [Click Here](https://community.home-assistant.io/t/notifications-announcements/728100/2?u=blacky)\nLet
+    Announcement to your selected media players.\n    - Opt to use a custom action.\n\n
+    \ - **Time-Based Automation:**\n\n    - Specify precise start and end times along
+    with weekday selections to define when the automation can run.\n\n  - **Global
+    Conditions:**\n\n    - Enter any custom conditions to further customize the automation
+    process.\n\n</details>\n\nNeed help? See our FAQ: [Click Here](https://community.home-assistant.io/t/notifications-announcements/728100/2?u=blacky)\nLet
     us know what you think of this blueprint and for community support including updates:
     [Click Here](https://community.home-assistant.io/t/notifications-announcements/728100?u=blacky)\n\nRequired
     = *\n"
@@ -104,6 +104,7 @@ blueprint:
           selector:
             entity:
               multiple: true
+              reorder: false
         trigger_numeric_entity:
           name: Numeric State Entities
           description: '**Used in options 8, 9 or 10**. Enter the entities that will
@@ -114,6 +115,7 @@ blueprint:
           selector:
             entity:
               multiple: true
+              reorder: false
         above_state:
           name: Numeric State Above Option
           description: '**Used in options 8, or 10**. Set the above value. The numeric
@@ -155,7 +157,8 @@ blueprint:
             minutes: 0
             seconds: 0
           selector:
-            duration: {}
+            duration:
+              enable_second: true
     device_notify_settings:
       name: Mobile App Notify
       icon: mdi:devices
@@ -173,8 +176,8 @@ blueprint:
                 value: enable_mobile_app_notify
               - label: Disable Mobile App Notify Options
                 value: disable_mobile_app_notify
-              custom_value: false
               multiple: false
+              custom_value: false
               sort: false
         notify_device:
           name: Devices Notified
@@ -194,7 +197,9 @@ blueprint:
             '
           default: "\U0001F4E2 Enter Notify Title Here"
           selector:
-            text: {}
+            text:
+              multiline: false
+              multiple: false
         notify_message:
           name: Message
           description: 'Enter in the message of your notification.
@@ -202,7 +207,29 @@ blueprint:
             '
           default: "Enter Notify Message Here \U0001F642"
           selector:
-            text: {}
+            text:
+              multiline: false
+              multiple: false
+        notify_tag:
+          name: Notification Tag
+          description: 'Use a tag to keep your notifications organized. When a new
+            notification with the same tag is sent, it replaces the old one, so you
+            won''t get cluttered with duplicates.
+
+
+            If this input is left blank, no tag will be applied and each notification
+            will be treated as separate.
+
+
+            For best results, use short, unique tags for each automation - for example:
+            `dinner-ready`, `time-for-bed`, `front-door-bell`, etc.
+
+            '
+          default: []
+          selector:
+            text:
+              multiline: false
+              multiple: false
         notify_interruption_level:
           name: Interruption Level - iOS Only
           description: 'On devices running iOS 15 and later, you can configure the
@@ -229,8 +256,8 @@ blueprint:
                 value: time-sensitive
               - label: Quiet Notifications Without Waking Screen
                 value: passive
-              custom_value: false
               multiple: false
+              custom_value: false
               sort: false
         notify_sound:
           name: Notification Sound - iOS Only
@@ -246,7 +273,9 @@ blueprint:
             '
           default: []
           selector:
-            text: {}
+            text:
+              multiline: false
+              multiple: false
         notify_data:
           name: Android Only Options (Optional)
           description: '**High Priority** notifications ensure that you receive important
@@ -265,6 +294,12 @@ blueprint:
             features. If you choose this option, please enter your desired channel
             name below.
 
+
+            **Icon** allows you to replace the default Home Assistant icon with one
+            of your choice. If selected, choose your preferred icon using the **Icon
+            - Android Only** option below, and set the icon colour using **Icon Colour
+            - Android Only**.
+
             '
           default: []
           selector:
@@ -277,6 +312,8 @@ blueprint:
                 value: sticky
               - label: Notification Channel
                 value: channel
+              - label: Icon
+                value: icon
               custom_value: false
               sort: false
         notify_channel:
@@ -295,7 +332,67 @@ blueprint:
             '
           default: []
           selector:
-            text: {}
+            text:
+              multiline: false
+              multiple: false
+        notify_icon:
+          name: Icon - Android Only
+          description: 'Select a custom icon to replace the default Home Assistant
+            icon in the notification. This setting applies only if the **Icon** option
+            is selected in **Android Only Options** above.
+
+            '
+          default: mdi:emoticon-happy-outline
+          selector:
+            icon: {}
+        notify_icon_colour:
+          name: Icon Colour - Android Only
+          description: 'Choose a colour for your custom notification icon. This setting
+            applies only if the **Icon** option is selected in **Android Only Options**
+            above.
+
+            '
+          default:
+          - 0
+          - 200
+          - 83
+          selector:
+            color_rgb: {}
+        include_notify_zone:
+          name: Use The Notify Zone Option (Optional)
+          description: 'Home Assistant can track the location of your devices, such
+            as mobile phones, within designated zones using the Mobile App''s device
+            tracker integration. To utilize this feature, you need to set up zones
+            in Home Assistant, such as Home, Work, or Gym, and ensure your devices
+            are configured for location tracking via the Home Assistant mobile app.
+            When this option is enabled, notifications will only be sent to devices
+            currently located within the selected zone.
+
+            '
+          default: zone_disabled
+          selector:
+            select:
+              options:
+              - label: Enable the zone option
+                value: zone_enabled
+              - label: Disable the zone option
+                value: zone_disabled
+              multiple: false
+              custom_value: false
+              sort: false
+        notify_zone:
+          name: Notify Zone
+          description: 'Choose the notify zone for your notifications.
+
+            '
+          default: []
+          selector:
+            entity:
+              filter:
+              - domain:
+                - zone
+              multiple: false
+              reorder: false
     persistent_notify_settings:
       name: Notifications
       icon: mdi:bell-outline
@@ -313,8 +410,8 @@ blueprint:
                 value: enable_persistent_notification
               - label: Disable UI Notifications
                 value: disabled_persistent_notification
-              custom_value: false
               multiple: false
+              custom_value: false
               sort: false
         persistent_title:
           name: Title
@@ -323,7 +420,9 @@ blueprint:
             '
           default: "\U0001F4E2 Enter UI Title Here"
           selector:
-            text: {}
+            text:
+              multiline: false
+              multiple: false
         persistent_message:
           name: Message
           description: 'Enter in the message of your UI notification.
@@ -331,7 +430,29 @@ blueprint:
             '
           default: "Enter UI Message Here \U0001F642"
           selector:
-            text: {}
+            text:
+              multiline: false
+              multiple: false
+        persistent_id:
+          name: Notification ID
+          description: 'Use a **Notification ID** to keep your notifications organized.
+            When a new notification with the same **Notification ID** is sent, it
+            replaces the old one, so you won''t get cluttered with duplicates.
+
+
+            If this input is left blank, no **Notification ID** will be applied and
+            each notification will be treated as separate.
+
+
+            For best results, use short, unique **Notification ID** for each automation
+            - for example: `dinner-ready`, `time-for-bed`, `front-door-bell`, etc.
+
+            '
+          default: []
+          selector:
+            text:
+              multiline: false
+              multiple: false
     tts_notify_settings:
       name: Text-to-Speech Announcement
       icon: mdi:bullhorn-outline
@@ -351,8 +472,8 @@ blueprint:
                 value: enable_tts_announcement
               - label: Disable Text-to-Speech Announcements
                 value: disable_tts_announcement
-              custom_value: false
               multiple: false
+              custom_value: false
               sort: false
         text_to_speech_engine:
           name: Text-to-Speech Service Provider
@@ -366,6 +487,7 @@ blueprint:
               - domain:
                 - tts
               multiple: false
+              reorder: false
         media_player:
           name: Media Player
           description: 'Select the Media Player/s that will play your Text-to-Speech
@@ -379,6 +501,7 @@ blueprint:
               - domain:
                 - media_player
               multiple: true
+              reorder: false
         notify_tts_message:
           name: Announcement Message
           description: 'Enter in the message of your Text-to-Speech announcement.
@@ -389,6 +512,38 @@ blueprint:
             text:
               multiline: true
               multiple: false
+    custom_actions_settings:
+      name: Custom Actions
+      icon: mdi:code-tags
+      collapsed: true
+      input:
+        include_custom_actions:
+          name: Use The Custom Action Options (Optional)
+          description: 'Customize your automation with any action you desire. It is
+            commonly used for playing announcements on The Voice (HA), Google, Alexa,
+            etc. Additionally, it can be utilized for other notification services
+            or any other actions you would like to perform.
+
+            '
+          default: disable_custom_actions
+          selector:
+            select:
+              options:
+              - label: Enable Custom Actions
+                value: enable_custom_actions
+              - label: Disable Custom Actions
+                value: disable_custom_actions
+              multiple: false
+              custom_value: false
+              sort: false
+        custom_actions:
+          name: Custom Actions
+          description: 'Enter the custom actions you would like to run.
+
+            '
+          default: []
+          selector:
+            action: {}
     time_settings:
       name: Time
       icon: mdi:clock-outline
@@ -412,8 +567,8 @@ blueprint:
                 value: time_enabled
               - label: Disable the time options
                 value: time_disabled
-              custom_value: false
               multiple: false
+              custom_value: false
               sort: false
         after_time:
           name: Start Time
@@ -495,17 +650,25 @@ variables:
   notify_device: !input notify_device
   notify_title: !input notify_title
   notify_message: !input notify_message
+  notify_tag: !input notify_tag
   notify_interruption_level: !input notify_interruption_level
   notify_sound: !input notify_sound
   notify_data: !input notify_data
   notify_channel: !input notify_channel
+  notify_icon: !input notify_icon
+  notify_icon_colour: !input notify_icon_colour
+  include_notify_zone: !input include_notify_zone
+  notify_zone: !input notify_zone
   include_persistent_notification: !input include_persistent_notification
   persistent_title: !input persistent_title
   persistent_message: !input persistent_message
+  persistent_id: !input persistent_id
   include_tts_announcement: !input include_tts_announcement
   text_to_speech_engine: !input text_to_speech_engine
   media_player: !input media_player
   notify_tts_message: !input notify_tts_message
+  include_custom_actions: !input include_custom_actions
+  custom_actions: !input custom_actions
   include_time: !input include_time
   after_time: !input after_time
   before_time: !input before_time
@@ -521,8 +684,24 @@ variables:
     = dict(message.data, **{ 'ttl': 0, 'priority': 'high' }) %}\n{% endif %} {% if
     'channel' in notify_data %}\n  {% set message.data = dict(message.data, **{ 'channel':
     notify_channel }) %}\n{% endif %} {% if 'sticky' in notify_data %}\n  {% set message.data
-    = dict(message.data, **{ 'sticky': \"true\" }) %}\n{% endif %} {{ message.data
-    }}"
+    = dict(message.data, **{ 'sticky': \"true\" }) %}\n{% endif %} {% if 'icon' in
+    notify_data %}\n  {% set message.data = dict(message.data, **{ 'notification_icon':
+    notify_icon }) %}\n  {% if notify_icon_colour | length == 3 %}\n    {% set icon_colour
+    = '#%02x%02x%02x' | format(notify_icon_colour[0], notify_icon_colour[1], notify_icon_colour[2])
+    %}\n    {% set message.data = dict(message.data, **{ 'color': icon_colour }) %}\n
+    \ {% endif %}\n{% endif %} {% if notify_tag != [] %}\n  {% set message.data =
+    dict(message.data, **{ 'tag': notify_tag }) %}\n{% endif %} {{ message.data }}"
+  ui_message_data: "{% set message = namespace(data={}) %} {% if persistent_title
+    != [] %}\n  {% set message.data = dict(message.data, **{ 'title': persistent_title
+    }) %}\n{% endif %} {% if persistent_message != [] %}\n  {% set message.data =
+    dict(message.data, **{ 'message': persistent_message }) %}\n{% endif %} {% if
+    persistent_id != [] %}\n  {% set message.data = dict(message.data, **{ 'notification_id':
+    persistent_id }) %}\n{% endif %} {{ message.data }}"
+  filtered_devices: "{% if include_notify_zone == 'zone_enabled' %}\n  {% set zone_name
+    = notify_zone.split('.')[1] %}\n  {% set device_trackers = notify_device | map('device_entities')
+    | list %}\n  {% set devices_in_zone = expand(device_trackers)\n    | selectattr('state',
+    'eq', zone_name)\n    | map(attribute='entity_id')\n    | list %}\n  {{ devices_in_zone
+    }}\n{% else %}\n  {{ notify_device }}\n{% endif %}\n"
 triggers:
 - trigger: state
   id: t0
@@ -587,10 +766,11 @@ action:
   - alias: Check if notification is enabled
     conditions:
     - '{{ include_notify == ''enable_mobile_app_notify'' }}'
+    - '{{ filtered_devices | length > 0 }}'
     sequence:
     - alias: Send a notification to each device
       repeat:
-        for_each: !input notify_device
+        for_each: '{{ filtered_devices }}'
         sequence:
         - action: notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify
             }}
@@ -598,6 +778,7 @@ action:
             title: !input notify_title
             message: !input notify_message
             data: '{{ device_message_data }}'
+          continue_on_error: true
 - choose:
   - alias: Use the persistent notification is enabled
     conditions:
@@ -606,9 +787,7 @@ action:
         }}'
     sequence:
     - action: persistent_notification.create
-      data:
-        title: !input persistent_title
-        message: !input persistent_message
+      data: '{{ ui_message_data }}'
 - choose:
   - alias: Check if tts announcement is enabled
     conditions:
@@ -620,3 +799,9 @@ action:
       data:
         media_player_entity_id: !input media_player
         message: !input notify_tts_message
+- choose:
+  - alias: Perform the custom action
+    conditions:
+    - condition: template
+      value_template: '{{ ''enable_custom_actions'' in include_custom_actions }}'
+    sequence: !input custom_actions
