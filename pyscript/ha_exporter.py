@@ -1,3 +1,13 @@
+"""Home Assistant registry export service.
+
+This Pyscript module exposes a Home Assistant service that runs the existing
+/config/ha_exporter.sh registry exporter without requiring an SSH session.
+
+The shell exporter remains the source of truth for the actual export format.
+This wrapper only launches it, captures a bounded amount of output, and
+returns a structured result to the caller.
+"""
+
 import shutil
 import subprocess
 import time
@@ -9,6 +19,11 @@ OUTPUT_LIMIT = 8000
 
 @pyscript_compile
 def _run_exporter():
+    """Run the registry exporter synchronously and return a structured result.
+
+    This function is executed through task.executor() so the blocking
+    subprocess call does not run on Home Assistant's event loop.
+    """
     started_at = time.time()
     bash_path = shutil.which("bash")
     jq_path = shutil.which("jq")
@@ -87,7 +102,29 @@ def _run_exporter():
 def refresh_ha_registry_dump():
     """yaml
     name: Refresh HA registry dump
-    description: Runs /config/ha_exporter.sh and returns the exporter result.
+    description: >
+      Run the existing /config/ha_exporter.sh script and refresh the Home
+      Assistant registry export files under /config/www/ha_exports. The
+      exporter writes the entity, device, area, label, and floor CSV/JSON
+      dumps used by external inventory tooling.
+
+    response:
+      ok:
+        description: True when the exporter exited successfully.
+      returncode:
+        description: Shell process exit code, or null if the process could not start.
+      duration_seconds:
+        description: Time spent running the exporter.
+      stdout:
+        description: Bounded tail of the exporter's standard output.
+      stderr:
+        description: Bounded tail of the exporter's standard error or validation failure.
+      exporter_path:
+        description: Absolute path of the exporter that was invoked.
+      bash_path:
+        description: Bash executable found in the Home Assistant Core environment.
+      jq_path:
+        description: jq executable found in the Home Assistant Core environment.
     """
     result = task.executor(_run_exporter)
 
