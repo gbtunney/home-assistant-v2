@@ -1,6 +1,10 @@
+import json
 import shutil
 import subprocess
 import time
+
+SCHEMA_ID = "snailicide.ha_registry_export.v1"
+SCHEMA_VERSION = 1
 
 EXPORTER_PATH = "/config/ha_exporter.sh"
 EXPORT_LOCAL_PATH = "/local/ha_exports"
@@ -8,21 +12,48 @@ COMMAND_TIMEOUT_SECONDS = 120
 OUTPUT_LIMIT = 8000
 
 EXPORT_FILES = {
-    "json": {
-        "entities": "ha_entities_raw.json",
-        "devices": "ha_devices_raw.json",
-        "areas": "ha_areas_raw.json",
-        "labels": "ha_labels_raw.json",
-        "floors": "ha_floors_raw.json",
+    "entities": {
+        "json": "ha_entities_raw.json",
+        "csv": "ha_entities_raw.csv",
     },
-    "csv": {
-        "entities": "ha_entities_raw.csv",
-        "devices": "ha_devices_raw.csv",
-        "areas": "ha_areas_raw.csv",
-        "labels": "ha_labels_raw.csv",
-        "floors": "ha_floors_raw.csv",
+    "devices": {
+        "json": "ha_devices_raw.json",
+        "csv": "ha_devices_raw.csv",
+    },
+    "areas": {
+        "json": "ha_areas_raw.json",
+        "csv": "ha_areas_raw.csv",
+    },
+    "labels": {
+        "json": "ha_labels_raw.json",
+        "csv": "ha_labels_raw.csv",
+    },
+    "floors": {
+        "json": "ha_floors_raw.json",
+        "csv": "ha_floors_raw.csv",
     },
 }
+
+
+def _make_request_id():
+    try:
+        return "ha-export-%d" % int(time.time() * 1000)
+    except Exception:
+        return "ha-export-auto"
+
+
+def _as_request_id(value):
+    if value is None:
+        return _make_request_id()
+
+    try:
+        request_id = str(value).strip()
+        if request_id:
+            return request_id
+    except Exception:
+        pass
+
+    return _make_request_id()
 
 
 @pyscript_compile
@@ -86,51 +117,46 @@ def _run_exporter():
             "jq_path": jq_path,
         }
 
-    stdout = completed.stdout or ""
-    stderr = completed.stderr or ""
-
     return {
         "ok": completed.returncode == 0,
         "returncode": completed.returncode,
         "duration_seconds": round(time.time() - started_at, 3),
-        "stdout": stdout[-OUTPUT_LIMIT:],
-        "stderr": stderr[-OUTPUT_LIMIT:],
+        "stdout": (completed.stdout or "")[-OUTPUT_LIMIT:],
+        "stderr": (completed.stderr or "")[-OUTPUT_LIMIT:],
         "exporter_path": EXPORTER_PATH,
         "bash_path": bash_path,
         "jq_path": jq_path,
     }
 
 
-def _export_urls():
+def _build_export_items():
     configured_base_url = hass.config.external_url or hass.config.internal_url
-    absolute_base_url = None
+    base_url = None
 
     if configured_base_url:
-        absolute_base_url = (
-            str(configured_base_url).rstrip("/") + EXPORT_LOCAL_PATH
-        )
+        base_url = str(configured_base_url).rstrip("/") + EXPORT_LOCAL_PATH
 
-    urls = {
-        "base_url": absolute_base_url,
-        "relative_base_path": EXPORT_LOCAL_PATH,
-        "json": {},
-        "csv": {},
-    }
+    items = []
 
-    for format_name, files in EXPORT_FILES.items():
-        for registry_name, file_name in files.items():
-            relative_url = EXPORT_LOCAL_PATH + "/" + file_name
-            absolute_url = (
-                absolute_base_url + "/" + file_name
-                if absolute_base_url
-                else None
-            )
-            urls[format_name][registry_name] = {
-                "url": absolute_url,
-                "relative_url": relative_url,
-            }
+    for registry_name, files in EXPORT_FILES.items():
+        json_relative_url = EXPORT_LOCAL_PATH + "/" + files["json"]
+        csv_relative_url = EXPORT_LOCAL_PATH + "/" + files["csv"]
 
-    return urls
+        item = {
+            "registry": registry_name,
+            "json_url": None,
+            "json_relative_url": json_relative_url,
+            "csv_url": None,
+            "csv_relative_url": csv_relative_url,
+        }
+
+        if base_url:
+            item["json_url"] = base_url + "/" + files["json"]
+            item["csv_url"] = base_url + "/" + files["csv"]
+
+        items.append(item)
+
+    return items, base_url
 
 
 # -----------------------------
@@ -139,43 +165,87 @@ def _export_urls():
 
 
 @service("pyscript.refresh_ha_registry_dump", supports_response="only")
-def refresh_ha_registry_dump():
+def refresh_ha_registry_dump(request_id=None):
     """yaml
     name: Refresh HA Registry Dump
-    description: Run the Home Assistant registry exporter and return the generated entity, device, area, label, and floor export URLs.
+    description: Run the Home Assistant registry exporter and return the generated registry export URLs.
+
+    fields:
+      request_id:
+        name: Request ID
+        description: Optional label for this request. If omitted, one is generated automatically and echoed in the response.
+        example: inventory-refresh
+        selector:
+          text:
 
     response:
-      ok:
-        description: Whether the exporter completed successfully
-      returncode:
-        description: Exporter process exit code, or null if it could not start
-      duration_seconds:
-        description: Exporter runtime in seconds
-      stdout:
-        description: Bounded tail of exporter standard output
-      stderr:
-        description: Bounded tail of exporter standard error
-      exporter_path:
-        description: Exporter script path
-      bash_path:
-        description: Bash executable used to run the exporter
-      jq_path:
-        description: jq executable used by the exporter
-      export_urls:
-        description: JSON and CSV export URLs for entities, devices, areas, labels, and floors
+      schema_id:
+        description: Stable schema identifier
+      version:
+        description: Schema version
+      request_id:
+        description: Provided or auto-generated request identifier
+      meta:
+        description: Summary metadata about the export run
+      errors:
+        description: Any validation or exporter errors
+      items:
+        description: Registry export records with JSON and CSV URLs
+      items_json:
+        description: JSON string of export records for templating
     """
-    result = task.executor(_run_exporter)
-    result["export_urls"] = _export_urls()
+    rid = _as_request_id(request_id)
+    process_result = task.executor(_run_exporter)
+    items, base_url = _build_export_items()
+    errors = []
 
-    if result.get("ok"):
+    if not process_result.get("ok"):
+        errors.append(
+            {
+                "code": "EXPORT_FAILED",
+                "message": process_result.get("stderr") or "Registry export failed",
+                "returncode": process_result.get("returncode"),
+            }
+        )
+
+    try:
+        items_json = json.dumps(items)
+    except Exception as error:
+        errors.append(
+            {
+                "code": "JSON_DUMPS_FAILED",
+                "message": str(error),
+            }
+        )
+        items_json = "[]"
+
+    if process_result.get("ok"):
         log.info(
-            "HA registry export completed in %s seconds"
-            % result.get("duration_seconds")
+            "ha_registry_export: request_id=%r count=%d duration_seconds=%s"
+            % (rid, len(items), process_result.get("duration_seconds"))
         )
     else:
         log.error(
-            "HA registry export failed: %s"
-            % (result.get("stderr") or "unknown error")
+            "ha_registry_export: request_id=%r failed=%s"
+            % (rid, process_result.get("stderr") or "unknown error")
         )
 
-    return result
+    return {
+        "schema_id": SCHEMA_ID,
+        "version": SCHEMA_VERSION,
+        "request_id": rid,
+        "meta": {
+            "ok": bool(process_result.get("ok")),
+            "count": len(items),
+            "base_url": base_url,
+            "relative_base_path": EXPORT_LOCAL_PATH,
+            "duration_seconds": process_result.get("duration_seconds"),
+            "returncode": process_result.get("returncode"),
+            "exporter_path": process_result.get("exporter_path"),
+            "bash_path": process_result.get("bash_path"),
+            "jq_path": process_result.get("jq_path"),
+        },
+        "errors": errors,
+        "items": items,
+        "items_json": items_json,
+    }
