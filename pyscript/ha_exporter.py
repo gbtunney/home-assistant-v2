@@ -1,13 +1,3 @@
-"""Home Assistant registry export service.
-
-This Pyscript module exposes a Home Assistant service that runs the existing
-/config/ha_exporter.sh registry exporter without requiring an SSH session.
-
-The shell exporter remains the source of truth for the actual export format.
-This wrapper only launches it, captures a bounded amount of output, and
-returns a structured result plus the generated /local/ha_exports URLs.
-"""
-
 import shutil
 import subprocess
 import time
@@ -37,11 +27,6 @@ EXPORT_FILES = {
 
 @pyscript_compile
 def _run_exporter():
-    """Run the registry exporter synchronously and return process details.
-
-    This function is executed through task.executor() so the blocking
-    subprocess call does not run on Home Assistant's event loop.
-    """
     started_at = time.time()
     bash_path = shutil.which("bash")
     jq_path = shutil.which("jq")
@@ -117,11 +102,6 @@ def _run_exporter():
 
 
 def _export_urls():
-    """Build absolute export URLs when HA has an external or internal URL.
-
-    Relative /local/ha_exports paths are always returned as a fallback so
-    callers can still resolve the files against their own Home Assistant URL.
-    """
     configured_base_url = hass.config.external_url or hass.config.internal_url
     absolute_base_url = None
 
@@ -153,52 +133,49 @@ def _export_urls():
     return urls
 
 
+# -----------------------------
+# Service (response data)
+# -----------------------------
+
+
 @service("pyscript.refresh_ha_registry_dump", supports_response="only")
 def refresh_ha_registry_dump():
     """yaml
-    name: Refresh HA registry dump
-    description: >
-      Run /config/ha_exporter.sh and refresh the Home Assistant registry
-      exports under /config/www/ha_exports. The exporter writes entity,
-      device, area, label, and floor data as both JSON and CSV. The response
-      includes the corresponding /local/ha_exports URLs for downstream tools.
+    name: Refresh HA Registry Dump
+    description: Run the Home Assistant registry exporter and return the generated entity, device, area, label, and floor export URLs.
 
     response:
       ok:
-        description: True when the exporter exited successfully.
+        description: Whether the exporter completed successfully
       returncode:
-        description: Shell process exit code, or null if the process could not start.
+        description: Exporter process exit code, or null if it could not start
       duration_seconds:
-        description: Time spent running the exporter.
+        description: Exporter runtime in seconds
       stdout:
-        description: Bounded tail of the exporter's standard output.
+        description: Bounded tail of exporter standard output
       stderr:
-        description: Bounded tail of the exporter's standard error or validation failure.
+        description: Bounded tail of exporter standard error
       exporter_path:
-        description: Absolute path of the exporter that was invoked.
+        description: Exporter script path
       bash_path:
-        description: Bash executable found in the Home Assistant Core environment.
+        description: Bash executable used to run the exporter
       jq_path:
-        description: jq executable found in the Home Assistant Core environment.
+        description: jq executable used by the exporter
       export_urls:
-        description: >
-          Generated entity, device, area, label, and floor URLs for both JSON
-          and CSV. Absolute URLs are included when Home Assistant has an
-          external_url or internal_url configured; relative /local paths are
-          always included.
+        description: JSON and CSV export URLs for entities, devices, areas, labels, and floors
     """
     result = task.executor(_run_exporter)
     result["export_urls"] = _export_urls()
 
     if result.get("ok"):
         log.info(
-            "HA registry export completed in %s seconds",
-            result.get("duration_seconds"),
+            "HA registry export completed in %s seconds"
+            % result.get("duration_seconds")
         )
     else:
         log.error(
-            "HA registry export failed: %s",
-            result.get("stderr") or "unknown error",
+            "HA registry export failed: %s"
+            % (result.get("stderr") or "unknown error")
         )
 
     return result
