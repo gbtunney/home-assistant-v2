@@ -129,34 +129,43 @@ def _run_exporter():
     }
 
 
-def _build_export_items():
+def _build_export_urls():
     configured_base_url = hass.config.external_url or hass.config.internal_url
     base_url = None
 
     if configured_base_url:
         base_url = str(configured_base_url).rstrip("/") + EXPORT_LOCAL_PATH
 
+    urls = {}
     items = []
 
     for registry_name, files in EXPORT_FILES.items():
         json_relative_url = EXPORT_LOCAL_PATH + "/" + files["json"]
         csv_relative_url = EXPORT_LOCAL_PATH + "/" + files["csv"]
 
-        item = {
-            "registry": registry_name,
-            "json_url": None,
-            "json_relative_url": json_relative_url,
-            "csv_url": None,
-            "csv_relative_url": csv_relative_url,
+        json_url = base_url + "/" + files["json"] if base_url else None
+        csv_url = base_url + "/" + files["csv"] if base_url else None
+
+        urls[registry_name] = {
+            "json": json_url or json_relative_url,
+            "csv": csv_url or csv_relative_url,
+            "json_absolute": json_url,
+            "csv_absolute": csv_url,
+            "json_relative": json_relative_url,
+            "csv_relative": csv_relative_url,
         }
 
-        if base_url:
-            item["json_url"] = base_url + "/" + files["json"]
-            item["csv_url"] = base_url + "/" + files["csv"]
+        items.append(
+            {
+                "registry": registry_name,
+                "json_url": json_url,
+                "json_relative_url": json_relative_url,
+                "csv_url": csv_url,
+                "csv_relative_url": csv_relative_url,
+            }
+        )
 
-        items.append(item)
-
-    return items, base_url
+    return urls, items, base_url
 
 
 # -----------------------------
@@ -189,6 +198,10 @@ def refresh_ha_registry_dump(request_id=None):
         description: Summary metadata about the export run
       errors:
         description: Any validation or exporter errors
+      urls:
+        description: Registry-keyed object containing the preferred JSON and CSV URLs plus absolute and relative variants
+      urls_json:
+        description: JSON string of the registry-keyed URL object for templating
       items:
         description: Registry export records with JSON and CSV URLs
       items_json:
@@ -196,7 +209,7 @@ def refresh_ha_registry_dump(request_id=None):
     """
     rid = _as_request_id(request_id)
     process_result = task.executor(_run_exporter)
-    items, base_url = _build_export_items()
+    urls, items, base_url = _build_export_urls()
     errors = []
 
     if not process_result.get("ok"):
@@ -209,6 +222,7 @@ def refresh_ha_registry_dump(request_id=None):
         )
 
     try:
+        urls_json = json.dumps(urls)
         items_json = json.dumps(items)
     except Exception as error:
         errors.append(
@@ -217,6 +231,7 @@ def refresh_ha_registry_dump(request_id=None):
                 "message": str(error),
             }
         )
+        urls_json = "{}"
         items_json = "[]"
 
     if process_result.get("ok"):
@@ -246,6 +261,8 @@ def refresh_ha_registry_dump(request_id=None):
             "jq_path": process_result.get("jq_path"),
         },
         "errors": errors,
+        "urls": urls,
+        "urls_json": urls_json,
         "items": items,
         "items_json": items_json,
     }
