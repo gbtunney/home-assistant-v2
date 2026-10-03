@@ -1,5 +1,370 @@
+#####
+# Area package: Reptile schedules
+#
+# Seasonal photoperiod model
+#
+# Natural daylight:       9h ─────────────── 15h
+#                         ↓                   ↓
+# Reptile photoperiod:   10h ─────────────── 12h
+#
+# Linear mapping:
+#   9h natural  = 10h artificial
+#   12h natural = 11h artificial
+#   15h natural = 12h artificial
+#
+# Artificial-day midpoint: 14:15
+#
+# Winter:    09:15 ────────── 19:15  (10h)
+# Equinox:   08:45 ──────────── 19:45  (11h)
+# Summer:    08:15 ────────────── 20:15  (12h)
+#
+# Hard rails: 08:00 ───────────────── 20:30
+#
+# Seasonal input is DAY LENGTH, not clock sunrise/sunset.
+# Therefore DST does not cause a one-hour schedule jump.
+#####
+
+
 template:
 
-  # Photoperiod/debug sensor
+  #####
+  # Reptile Photoperiod
+  #
+  # Numeric/debug entity.
+  # State = today's target artificial photoperiod, in hours.
+  #####
 
-  # Lighting schedule binary sensor
+  - sensor:
+      - name: Reptile Photoperiod
+        unique_id: reptile_photoperiod
+        icon: mdi:theme-light-dark
+        unit_of_measurement: h
+        state_class: measurement
+
+        state: >
+          {% set natural_min = 9.0 %}
+          {% set natural_max = 15.0 %}
+          {% set photo_min = 10.0 %}
+          {% set photo_max = 12.0 %}
+
+          {% set next_rise =
+            as_datetime(state_attr('sun.sun', 'next_rising')) | as_local
+          %}
+          {% set next_set =
+            as_datetime(state_attr('sun.sun', 'next_setting')) | as_local
+          %}
+
+          {# Put sunrise and sunset on the same solar day. #}
+          {% if next_set < next_rise %}
+            {% set rise = next_rise - timedelta(days=1) %}
+            {% set set = next_set %}
+          {% else %}
+            {% set rise = next_rise %}
+            {% set set = next_set %}
+          {% endif %}
+
+          {% set daylight =
+            (set - rise).total_seconds() / 3600
+          %}
+
+          {# Clamp the natural input to 9–15h. #}
+          {% set bounded =
+            [[daylight, natural_min] | max, natural_max] | min
+          %}
+
+          {% set position =
+            (bounded - natural_min)
+            / (natural_max - natural_min)
+          %}
+
+          {% set photoperiod =
+            photo_min
+            + position * (photo_max - photo_min)
+          %}
+
+          {{ photoperiod | round(3) }}
+
+        attributes:
+
+          # ─── Model configuration ─────────────────────
+
+          model: "Linear daylight → photoperiod"
+
+          natural_day_min: 9
+          natural_day_max: 15
+
+          photoperiod_min: 10
+          photoperiod_max: 12
+
+          midpoint: "14:15"
+
+          earliest_on: "08:00"
+          latest_off: "20:30"
+
+          dst_independent: true
+
+
+          # ─── Today's natural daylight ────────────────
+
+          natural_daylight_hours: >
+            {% set rise =
+              as_datetime(state_attr('sun.sun', 'next_rising')) | as_local
+            %}
+            {% set set =
+              as_datetime(state_attr('sun.sun', 'next_setting')) | as_local
+            %}
+
+            {% if set < rise %}
+              {% set rise = rise - timedelta(days=1) %}
+            {% endif %}
+
+            {{
+              ((set - rise).total_seconds() / 3600)
+              | round(3)
+            }}
+
+          natural_daylight: >
+            {% set h =
+              this.attributes.natural_daylight_hours | float(0)
+            %}
+            {% set hours = h | int %}
+            {% set minutes =
+              ((h - hours) * 60) | round | int
+            %}
+
+            {{ hours }}h {{ minutes }}m
+
+
+          # ─── Daylight position ───────────────────────
+          #
+          # 0%   = natural daylight at/below 9h
+          # 50%  = 12h natural daylight
+          # 100% = natural daylight at/above 15h
+          #
+          # This describes daylight LENGTH, not a season.
+          # The same value can occur on both sides of the year.
+
+          daylight_position: >
+            {% set h =
+              this.attributes.natural_daylight_hours | float(12)
+            %}
+            {% set bounded =
+              [[h, 9] | max, 15] | min
+            %}
+
+            {{
+              (((bounded - 9) / 6) * 100)
+              | round(1)
+            }}
+
+
+          # ─── Target photoperiod ──────────────────────
+
+          target_photoperiod: >
+            {% set h =
+              states('sensor.reptile_photoperiod') | float(0)
+            %}
+            {% set hours = h | int %}
+            {% set minutes =
+              ((h - hours) * 60) | round | int
+            %}
+
+            {{ hours }}h {{ minutes }}m
+
+
+          # ─── Calculated schedule ─────────────────────
+
+          calculated_on: >
+            {% set h =
+              states('sensor.reptile_photoperiod') | float(11)
+            %}
+
+            {{
+              (
+                today_at('14:15')
+                - timedelta(hours=h / 2)
+              ).strftime('%I:%M %p')
+            }}
+
+          calculated_off: >
+            {% set h =
+              states('sensor.reptile_photoperiod') | float(11)
+            %}
+
+            {{
+              (
+                today_at('14:15')
+                + timedelta(hours=h / 2)
+              ).strftime('%I:%M %p')
+            }}
+
+
+          # ─── Schedule after hard rails ───────────────
+
+          actual_on: >
+            {% set h =
+              states('sensor.reptile_photoperiod') | float(11)
+            %}
+            {% set raw =
+              today_at('14:15')
+              - timedelta(hours=h / 2)
+            %}
+            {% set actual =
+              [raw, today_at('08:00')] | max
+            %}
+
+            {{ actual.strftime('%I:%M %p') }}
+
+          actual_off: >
+            {% set h =
+              states('sensor.reptile_photoperiod') | float(11)
+            %}
+            {% set raw =
+              today_at('14:15')
+              + timedelta(hours=h / 2)
+            %}
+            {% set actual =
+              [raw, today_at('20:30')] | min
+            %}
+
+            {{ actual.strftime('%I:%M %p') }}
+
+
+          # ─── Diagnostics ─────────────────────────────
+
+          on_cap_active: >
+            {% set h =
+              states('sensor.reptile_photoperiod') | float(11)
+            %}
+
+            {{
+              today_at('14:15')
+              - timedelta(hours=h / 2)
+              < today_at('08:00')
+            }}
+
+          off_cap_active: >
+            {% set h =
+              states('sensor.reptile_photoperiod') | float(11)
+            %}
+
+            {{
+              today_at('14:15')
+              + timedelta(hours=h / 2)
+              > today_at('20:30')
+            }}
+
+          in_range: >
+            {% set h =
+              states('sensor.reptile_photoperiod') | float(-1)
+            %}
+
+            {{ 10 <= h <= 12 }}
+
+
+          # ─── Explainer/reference ─────────────────────
+
+          winter_example: "09:15 AM → 07:15 PM · 10h"
+          equinox_example: "08:45 AM → 07:45 PM · 11h"
+          summer_example: "08:15 AM → 08:15 PM · 12h"
+
+          hard_rails: "08:00 AM → 08:30 PM"
+
+
+  #####
+  # Reptile Lighting Schedule
+  #
+  # Operational entity.
+  # Existing automations can watch this ON/OFF state.
+  #####
+
+  - binary_sensor:
+      - name: Reptile Lighting Schedule
+        unique_id: reptile_lighting_schedule
+        icon: mdi:lightbulb-on-outline
+
+        state: >
+          {% set photo =
+            states('sensor.reptile_photoperiod') | float(11)
+          %}
+
+          {% set midpoint = today_at('14:15') %}
+
+          {% set raw_on =
+            midpoint - timedelta(hours=photo / 2)
+          %}
+          {% set raw_off =
+            midpoint + timedelta(hours=photo / 2)
+          %}
+
+          {% set on =
+            [raw_on, today_at('08:00')] | max
+          %}
+          {% set off =
+            [raw_off, today_at('20:30')] | min
+          %}
+
+          {{ on <= now() < off }}
+
+        attributes:
+
+          on_time: >
+            {{
+              state_attr(
+                'sensor.reptile_photoperiod',
+                'actual_on'
+              )
+            }}
+
+          off_time: >
+            {{
+              state_attr(
+                'sensor.reptile_photoperiod',
+                'actual_off'
+              )
+            }}
+
+          photoperiod: >
+            {{
+              state_attr(
+                'sensor.reptile_photoperiod',
+                'target_photoperiod'
+              )
+            }}
+
+          natural_daylight: >
+            {{
+              state_attr(
+                'sensor.reptile_photoperiod',
+                'natural_daylight'
+              )
+            }}
+
+          daylight_position: >
+            {{
+              state_attr(
+                'sensor.reptile_photoperiod',
+                'daylight_position'
+              )
+            }}
+
+          cap_active: >
+            {{
+              state_attr(
+                'sensor.reptile_photoperiod',
+                'on_cap_active'
+              )
+              or
+              state_attr(
+                'sensor.reptile_photoperiod',
+                'off_cap_active'
+              )
+            }}
+
+          schedule_ok: >
+            {{
+              state_attr(
+                'sensor.reptile_photoperiod',
+                'in_range'
+              )
+            }}

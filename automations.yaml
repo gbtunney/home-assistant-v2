@@ -371,93 +371,21 @@
     entity_id:
     - binary_sensor.reptile_lighting_schedule
     enabled: true
-    attribute: next_update
   conditions:
-  - condition: template
-    value_template: '{{ trigger.to_state.state in [''on'', ''off''] }}'
+  - condition: state
+    entity_id: binary_sensor.reptile_lighting_schedule
+    state:
+    - 'on'
+    - 'off'
   actions:
-  - variables:
-      list_lights:
-      - light.dorn_and_marceline_lighting
-      - light.seafoam_styx_lighting_switch_1
-      list_status:
-      - binary_sensor.dorn_lighting_status
-      - binary_sensor.seafoam_light_status
-  - repeat:
-      sequence:
-      - if:
-        - condition: template
-          value_template: '{{  is_state( repeat.item ,[''on'',''off''])     }}  '
-          enabled: true
-        then:
-        - alias: if disconnected,
-          if:
-          - condition: template
-            value_template: '{{ bool( is_state( repeat.item ,''off'' ) ,false )  }}'
-          then:
-          - variables:
-              message: Reptile Schedule Error! {{ state_attr( repeat.item,'friendly_name'
-                ) }} is disconnected. Cannot turn device to {{ trigger.to_state.state
-                }}
-          - action: logbook.log
-            metadata: {}
-            data:
-              name: Reptile Schedule Error!
-              message: '{{message}}||||'
-              entity_id: automation.reptile_lighting_schedule_ui
-          - action: script.custom_alexa_notification
-            metadata: {}
-            data:
-              target_alexa_speaker:
-                entity_id: media_player.alexa_s_baby
-              message: '{{message}}'
-              volume: Normal Volume
-              sound: christmas_05
-          else:
-          - if:
-            - condition: template
-              value_template: '{{ is_state( list_lights[(repeat.index - 1) | int  ]
-                , [''on'',''off''])  }}'
-            then:
-            - variables:
-                message: Reptile lights schedule executed, setting {{ state_attr(
-                  list_lights[(repeat.index - 1) | int  ],'friendly_name' ) }} to
-                  {{ trigger.to_state.state }}
-            - action: logbook.log
-              metadata: {}
-              data:
-                name: Reptile Schedule Executed
-                message: '{{message}}|||'
-                entity_id: automation.reptile_lighting_schedule_ui
-              enabled: false
-            - action: script.custom_alexa_notification
-              metadata: {}
-              data:
-                target_alexa_speaker:
-                  entity_id: media_player.alexa_s_baby
-                message: '{{message}}'
-                volume: Normal Volume
-                sound: christmas_05
-              enabled: false
-            - action: script.set_state_switch_light
-              data:
-                bool_invert_state: 'Off'
-                select_state: Unknown
-                target_entity_set:
-                  entity_id: '{{list_lights[(repeat.index - 1) | int  ]}}'
-                entity_trigger:
-                  entity_id: '{{trigger.entity_id}}'
-              enabled: true
-            else:
-            - action: logbook.log
-              metadata: {}
-              data:
-                name: Reptile Schedule Error!
-                message: Problem with reptile lights schedule, {{ state_attr(list_lights[(repeat.index
-                  - 1) | int  ], 'friendly_name') }} is unavailable, Cannot turn device
-                  to {{ trigger.to_state.state }}
-                entity_id: automation.reptile_lighting_schedule_ui
-      for_each: '{{ list_status | list }}'
+  - action: script.set_state_switch_light_test_version
+    metadata: {}
+    data:
+      mode: mirror
+      manual_state: 'off'
+      target_entities:
+      - light.reptile_lights
+      reference_entity: binary_sensor.reptile_lighting_schedule
   mode: single
 - id: '1744768566586'
   alias: Staging LED Strip  Motion Detect
