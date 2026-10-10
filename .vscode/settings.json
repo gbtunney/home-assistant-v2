@@ -15,9 +15,9 @@
     "!include sequence",
     "!include scalar"
   ],
-  "editor.formatOnPaste": true,
+  "editor.formatOnPaste": false,
   //"editor.formatOnSave": true,
   "prettier.documentSelectors": [
-    "{*,**/*}.{ts,js,cjs,mjs,cts,mts,sh,html,json,yaml,yml,graphql,md}"
+    "{*,**/*}.{ts,js,cjs,mjs,cts,mts,sh,html,json,graphql,md}"
   ]
 }
