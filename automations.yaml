@@ -221,27 +221,41 @@
   mode: single
 - id: '1735089085485'
   alias: 'Sensor: Home Assistant Last Started'
-  description: ''
+  description: 'On every start: stamps HA Last Started (feeds the uptime badge), then
+    after 1 minute re-runs every automation labeled Schedule so anything that changed
+    during the reboot gets set right.'
   triggers:
-  - trigger: homeassistant
-    event: start
+  - event: start
+    trigger: homeassistant
   conditions: []
   actions:
   - action: input_datetime.set_datetime
-    metadata: {}
     data:
       timestamp: '{{float(as_timestamp(now()),0)}}'
+    metadata: {}
     target:
       entity_id: input_datetime.ha_last_start
+  - delay:
+      minutes: 1
+  - action: automation.trigger
+    data:
+      skip_condition: false
+    target:
+      label_id:
+      - schedule
   mode: single
 - id: '1744261059099'
   alias: Reptile Lighting Schedule UI
-  description: Uses Time of day sensor now
+  description: 'Reptile lights follow the Reptile Lighting Schedule sensor (adjusted
+    daylight) via Set Entity State v3. Re-synced after every restart by Sensor: Home
+    Assistant Last Started.'
   triggers:
-  - trigger: state
-    entity_id:
+  - entity_id:
     - binary_sensor.reptile_lighting_schedule
-    enabled: true
+    to:
+    - 'on'
+    - 'off'
+    trigger: state
   conditions:
   - condition: state
     entity_id: binary_sensor.reptile_lighting_schedule
@@ -250,53 +264,36 @@
     - 'off'
   actions:
   - action: script.set_state_switch_light_test_version
-    metadata: {}
     data:
       mode: mirror
-      manual_state: 'off'
+      reference_entity: binary_sensor.reptile_lighting_schedule
       target_entities:
       - light.reptile_lights
-      reference_entity: binary_sensor.reptile_lighting_schedule
-  mode: single
+  mode: queued
 - id: '1750134524312'
   alias: Aquarium Lighting Scheduled On/Off UI
-  description: Aquarium Lighting turned On/Off according to a schedule
+  description: 'Aquarium lighting and 120g pump follow the Aquarium Lighting Schedule
+    helper (3:30 PM to midnight) via Set Entity State v3. Re-synced after every restart
+    by Sensor: Home Assistant Last Started.'
   triggers:
-  - trigger: state
-    entity_id:
-    - binary_sensor.aquarium_lighting_schedule
-    attribute: next_update
-    enabled: true
-  conditions:
-  - condition: template
-    value_template: '{{ trigger.to_state.state in [''on'', ''off''] }}'
-    enabled: true
+  - target:
+      entity_id: schedule.aquarium_lighting_schedule
+    trigger: schedule.block_started
+  - target:
+      entity_id: schedule.aquarium_lighting_schedule
+    trigger: schedule.block_ended
+  conditions: []
   actions:
-  - variables:
-      my_trigger: entity_id
-  - action: script.set_state_switch_light
-    data:
-      select_state: 'Off'
-      bool_invert_state: 'Off'
-      entity_trigger:
-        entity_id: binary_sensor.aquarium_lighting_schedule
-      target_entity_set:
-        entity_id:
-        - light.aquarium_lighting
-        - light.120g_aquarium_light
-        - switch.120g_aquarium_pump
-    enabled: true
   - action: script.set_state_switch_light_test_version
-    metadata: {}
     data:
-      mode: manual
-      manual_state: 'on'
+      mode: mirror
+      reference_entity: schedule.aquarium_lighting_schedule
       target_entities:
       - light.aquarium_lighting
       - light.120g_aquarium_light
       - switch.120g_aquarium_pump
-    enabled: false
-  mode: single
+    metadata: {}
+  mode: queued
 - id: '1760738048232'
   alias: Carbon Monoxide Alert
   description: ''
@@ -322,19 +319,6 @@
       sound: default
       alexa_sound: amzn_sfx_lion_roar_02
   mode: single
-- id: '1767621098256'
-  alias: Issue Queue - Debug Log
-  description: ''
-  triggers:
-  - event_type: issue_queue_event
-    trigger: event
-  actions:
-  - action: logbook.log
-    data:
-      name: Issue Queue
-      message: '{{ trigger.event.data.action }} {{ trigger.event.data.issue_id }}
-
-        '
 - id: '1773960014699'
   alias: Target - Return to Work Screecher
   description: I Screech at 7 PM if I am off today but work tomorrow
@@ -471,156 +455,6 @@
           response_variable: current_index
   mode: queued
   max: 5
-- id: '1791006695681'
-  alias: Device Activity Timestamp Tests
-  description: 'Device timestamp tests. hyg_15: changed BTHome packet ID = newly processed
-    report. cs_22: observed door/tamper or changed battery value through Tuya, not
-    a heartbeat; unchanged messages are not captured. 120g: availability helper becomes
-    on = last observed connection/availability transition, not every packet. Stored
-    timestamps restore across restart; initial null/restored states are excluded for
-    activity. No device commands or health alerts. Returns from unavailable to a valid
-    value count as an observed update; initial unknown/null states are skipped. Tuya
-    cloud availability/data can be cached, so cs_22 is explicitly activity observed
-    by HA, not proof of every physical transmission. Bathroom Light: observe existing
-    connectivity helper becoming on; suitable for unplug/replug testing. Turning the
-    lamp off normally is still connected. Bathroom WiZ bulb 44:4f:8e:0a:52:20: record
-    unavailable/unknown -> on/off as last observed reachable transition, independent
-    of illumination. Unknown until a transition is observed; no fabricated timestamp
-    for currently unavailable bulb. Library Door Sensor cs_21: last observed valid
-    door/tamper/battery state change via Tuya; silence alone does not imply failure.
-    Initial unknown/null states excluded; repeated unchanged messages are not captured.'
-  triggers:
-  - trigger: state
-    entity_id: sensor.kitchen_hygrometer_packet_id
-    not_from:
-    - unknown
-    not_to:
-    - unknown
-    - unavailable
-    id: ble
-  - trigger: state
-    entity_id:
-    - binary_sensor.contact_sensor_3_door
-    - binary_sensor.contact_sensor_3_tamper
-    not_from:
-    - unknown
-    to:
-    - 'on'
-    - 'off'
-    id: contact
-  - trigger: state
-    entity_id: sensor.contact_sensor_3_battery
-    not_from:
-    - unknown
-    not_to:
-    - unknown
-    - unavailable
-    id: contact
-  - trigger: state
-    entity_id: binary_sensor.120g_powerstrip_status
-    from:
-    - 'off'
-    - unknown
-    - unavailable
-    to: 'on'
-    id: connected
-  - trigger: state
-    entity_id: binary_sensor.bathroom_light_status
-    from:
-    - 'off'
-    - unknown
-    - unavailable
-    to: 'on'
-    id: bathroom_connected
-  - trigger: state
-    entity_id: light.wiz_rgbw_tunable_0a5220
-    from:
-    - unavailable
-    - unknown
-    to:
-    - 'on'
-    - 'off'
-    id: bathroom_bulb_connected
-  - trigger: state
-    entity_id:
-    - binary_sensor.library_door_sensor_door
-    - binary_sensor.library_door_sensor_tamper
-    not_from:
-    - unknown
-    to:
-    - 'on'
-    - 'off'
-    id: library_contact
-  - trigger: state
-    entity_id: sensor.library_door_sensor_battery
-    not_from:
-    - unknown
-    not_to:
-    - unknown
-    - unavailable
-    id: library_contact
-  conditions:
-  - condition: template
-    value_template: '{{ trigger.from_state is not none and trigger.to_state is not
-      none and trigger.from_state.state != trigger.to_state.state }}'
-  actions:
-  - choose:
-    - conditions:
-      - condition: trigger
-        id: ble
-      sequence:
-      - action: input_text.set_value
-        target:
-          entity_id: input_text.hyg_15_last_heard_storage
-        data:
-          value: '{{ trigger.to_state.last_updated.isoformat() }}'
-    - conditions:
-      - condition: trigger
-        id: contact
-      sequence:
-      - action: input_text.set_value
-        target:
-          entity_id: input_text.cs_22_last_activity_storage
-        data:
-          value: '{{ trigger.to_state.last_updated.isoformat() }}'
-    - conditions:
-      - condition: trigger
-        id: connected
-      sequence:
-      - action: input_text.set_value
-        target:
-          entity_id: input_text.120g_powerstrip_last_connected_storage
-        data:
-          value: '{{ trigger.to_state.last_changed.isoformat() }}'
-    - conditions:
-      - condition: trigger
-        id: bathroom_connected
-      sequence:
-      - action: input_text.set_value
-        target:
-          entity_id: input_text.bathroom_light_last_connected_storage
-        data:
-          value: '{{ trigger.to_state.last_changed.isoformat() }}'
-    - conditions:
-      - condition: trigger
-        id: bathroom_bulb_connected
-      sequence:
-      - action: input_text.set_value
-        target:
-          entity_id: input_text.bathroom_bulb_last_connected_storage
-        data:
-          value: '{{ trigger.to_state.last_changed.isoformat() }}'
-    - conditions:
-      - condition: trigger
-        id: library_contact
-      sequence:
-      - action: input_text.set_value
-        target:
-          entity_id: input_text.library_door_last_activity_storage
-        data:
-          value: '{{ trigger.to_state.last_updated.isoformat() }}'
-  mode: queued
-  max: 20
 - id: '1791615435128'
   alias: MS1 Motion Sensor Test
   description: Debug/testing automation for MS1. Motion detected turns the LED strip
@@ -677,3 +511,39 @@
           entity_id: script.notification_dispatcher
         data: {}
   mode: restart
+- id: '1792467048039'
+  alias: Aquarium CO2 Scheduled On/Off UI
+  description: 'Aquarium CO2 follows the Aquarium CO2 Schedule helper (1:30 PM to
+    10:30 PM) via Set Entity State v3. Re-synced after every restart by Sensor: Home
+    Assistant Last Started; the Alexa announcement plays only on real schedule changes,
+    not on that re-sync.'
+  triggers:
+  - id: schedule_change
+    target:
+      entity_id: schedule.aquarium_co2_schedule
+    trigger: schedule.block_started
+  - id: schedule_change
+    target:
+      entity_id: schedule.aquarium_co2_schedule
+    trigger: schedule.block_ended
+  conditions: []
+  actions:
+  - action: script.set_state_switch_light_test_version
+    data:
+      mode: mirror
+      reference_entity: schedule.aquarium_co2_schedule
+      target_entities:
+      - switch.20_gallon_rack_c02
+  - if:
+    - condition: trigger
+      id: schedule_change
+    then:
+    - action: script.notification_dispatcher
+      data:
+        alexa_sound: amzn_sfx_trumpet_bugle_04
+        message: CO2 is {{ 'on' if is_state('switch.20_gallon_rack_c02', 'on') else
+          'off' }}
+        notification_channel:
+        - alexa
+        sound: default
+  mode: queued

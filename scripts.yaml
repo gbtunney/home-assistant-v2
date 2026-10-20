@@ -1,70 +1,3 @@
-llv_numeric_question:
-  alias: LLV Numeric Question
-  sequence:
-  - variables:
-      camera_image_file: undefined
-      test_count: 0
-  - action: script.camera_snapshot_and_upload
-    metadata: {}
-    data:
-      capture_camera_stream:
-        entity_id: '{{capture_camera_stream.entity_id }}'
-      capture_mime_type: image/png
-    response_variable: camera_image_file
-  - action: llmvision.data_analyzer
-    metadata: {}
-    data:
-      message: '{{ questions_prompt }}'
-      include_filename: false
-      target_width: 1280
-      detail: high
-      max_tokens: 5
-      temperature: 0.1
-      provider: 01JDVNFP4KWD6XERDGQ5V3TY6W
-      sensor_entity: '{{ file_path_save_target.entity_id }}'
-      image_file: '{{camera_image_file.media_rel }}'
-  description: ''
-  fields:
-    questions_prompt:
-      selector:
-        text:
-      name: Questions Prompt
-      default: Can you count the pictures on the wall ?
-      required: true
-    file_path_save_target:
-      selector:
-        target:
-          entity:
-            domain: input_number
-      name: File Path Save Target
-      required: true
-      description: Input text entity to save the file path to
-    capture_camera_stream:
-      selector:
-        target:
-          entity:
-            domain: camera
-      name: Camera Stream
-      default:
-        entity_id: camera.camera_1_q5_profile1
-      required: true
-purge_logbook_by_entiity:
-  alias: Purge Logbook by Entiity
-  sequence:
-  - action: recorder.purge_entities
-    metadata: {}
-    data:
-      domains:
-      - logbook
-      entity_globs: '{{target_entities.entity_id}}'
-    enabled: false
-  fields:
-    target_entities:
-      selector:
-        target:
-      name: Target Entities to purge
-      required: true
-  description: ''
 api_adapter_notification_dispatcher:
   sequence:
   - alias: Set up variables
@@ -85,274 +18,6 @@ api_adapter_notification_dispatcher:
   alias: API Adapter Notification Dispatcher
   description: ''
   fields: {}
-alexa_test_service:
-  sequence:
-  - action: script.custom_alexa_notification
-    metadata: {}
-    data:
-      target_alexa_speaker:
-        entity_id: media_player.alexa_s_baby
-      message: 'No message set. '
-      volume: Normal Volume
-      sound: buzzers_pistols_01
-  alias: Alexa Test Service
-  description: ''
-test_response:
-  sequence:
-  - variables:
-      value: '{{number_to_add | int }}'
-      test_response_var:
-        value_plus_five: '{{  value + 5}}
-
-          '
-      value_plus_five: '{{  value |int + 5 }}
-
-        '
-  - sequence: []
-  - action: logbook.log
-    metadata: {}
-    data:
-      name: script.test_response
-      message: '{{ test_response_var | to_json}}'
-  - stop: '''returning value + 5'''
-    response_variable: test_response_var
-  alias: Test Response
-  description: ''
-  fields:
-    testvalue:
-      selector:
-        text:
-      name: testvalue
-      default: this is the default
-    number_to_add:
-      selector:
-        number:
-          min: 1
-          max: 100
-      name: number to add
-      default: 37
-      required: true
-test_parent_resp:
-  sequence:
-  - variables:
-      result: not set yet!
-  - action: script.test_response
-    data:
-      testvalue: i am a value
-      number_to_add: 100
-    response_variable: result
-  - action: logbook.log
-    metadata: {}
-    data:
-      name: LogBook test response
-      message: RESULT Child Script {{result}}
-  alias: Test Parent Resp
-  description: ''
-alert_replacement_script_ui:
-  sequence:
-  - variables:
-      resolved:
-        alert_name: '{{alert_name}}'
-        label_id: '{{label_id}}'
-        controlling_timer: '{{notification_timer}}'
-        controlling_binary_sensor: '{{controlling_binary_sensor}}'
-        alert_type: '{{alert_type}}'
-        event_uid: '{{event_uid}}'
-      controlling_sensor_state: '{{ bool( is_state(resolved.controlling_binary_sensor
-        ,[''on''] ) )}}'
-      controlling_timer_state: '{{ states( resolved.controlling_timer) }}'
-      error: '{{ bool( is_state(resolved.controlling_binary_sensor ,[''unavailable'',''unknown'']
-        ),false  ) or  bool( is_state(resolved.controlling_timer,[''unavailable'',''unknown'']
-        ),false  )}}'
-  - choose:
-    - conditions:
-      - alias: Send Notification and Start Timer
-        condition: template
-        value_template: '{{ bool(controlling_sensor_state, false) and not bool(controlling_timer_state
-          in [''paused''], false) }}'
-      sequence:
-      - variables:
-          message: "{% set label_list = label_entities(resolved.label_id) | select('is_state',
-            'off') | list %}    \n{%- for entity_id in label_list -%}\n  {% set entity_name
-            = state_attr(entity_id, \"friendly_name\") %}\n  {% set entity_area_name
-            = area_name(entity_id) %}\n  {% if entity_area_name is none %}\n    {%
-            set device_id = device_id(entity_id) %}\n    {% set entity_area_name =
-            area_name(device_id) %}\n  {% endif %}\n  Entity {{ entity_name }} in
-            Area: {{ entity_area_name }} has been off for {{ relative_time(states[entity_id].last_updated)
-            }}. Please fix immediately!!      \n{%- endfor %}\n"
-        alias: Defined MESSAGE FIELD
-      - action: script.notification_dispatcher
-        metadata: {}
-        data:
-          message: '{{message}}'
-          title: '{{alert_name}}'
-          notification_channel:
-          - iPhone
-          - alexa
-          - persistant
-          sound: default
-          alexa_volume: Normal Volume
-          alexa_sound: buzzers_pistols_01
-          mobile_callback: '{{resolved.event_uid}}'
-      - alias: START TIMER IF NEEDED
-        if:
-        - condition: template
-          value_template: '{{ controlling_timer_state== ''idle'' }}'
-        then:
-        - action: logbook.log
-          data:
-            name: ALERT REPLACEMENT
-            message: 'Starting Timer: Alert controlling
-
-              {{resolved.controlling_binary_sensor}}
-
-              ({{controlling_sensor_state|upper}}) | Timer
-
-              {{resolved.controlling_timer }}
-
-              ({{controlling_timer_state|upper}})
-
-              '
-            entity_id: '{{ resolved.controlling_binary_sensor }}'
-        - action: timer.start
-          target:
-            entity_id: '{{ resolved.controlling_timer }}'
-          data:
-            duration:
-              hours: 0
-              minutes: '{{repeat_minutes|int}}'
-              seconds: 0
-      alias: If CONTROLLER IS ON, send notification, start timer if needed
-    - conditions:
-      - condition: template
-        value_template: '{{ bool( controlling_sensor_state,false ) == false and  bool(controlling_timer_state
-          in [''active'',''paused''],false) }}'
-      sequence:
-      - action: logbook.log
-        data:
-          name: ALERT REPLACEMENT
-          message: 'Canceling Timer: Alert | Controller
-
-            {{resolved.controlling_binary_sensor}}
-
-            ({{controlling_sensor_state|upper}}) | Timer
-
-            {{resolved.controlling_timer }}
-
-            ({{controlling_timer_state|upper}})
-
-            '
-          entity_id: '{{ resolved.controlling_binary_sensor }}'
-        enabled: true
-      - action: timer.cancel
-        target:
-          entity_id: '{{ resolved.controlling_timer }}'
-      - action: script.notification_dispatcher
-        metadata: {}
-        data:
-          message: clear_notification
-          title: '{{alert_name}}'
-          notification_channel:
-          - iPhone
-          - alexa
-          - persistant
-          sound: default
-          alexa_volume: Normal Volume
-          alexa_sound: buzzers_pistols_01
-          mobile_callback: '{{resolved.event_uid}}'
-        alias: Clear Notification
-      alias: CONTROLLER IS OFF AND  TIMER IS ACTIVE
-    - conditions:
-      - alias: IF POSIBLE ERROR STATE
-        condition: template
-        value_template: '{{bool(error,false)}}'
-      sequence:
-      - action: logbook.log
-        data:
-          name: INSERT TITLE
-          message: Possible error state. Doc issues.
-          entity_id: '{{ resolved.controlling_binary_sensor }}'
-        enabled: true
-    enabled: true
-    default:
-    - action: logbook.log
-      data:
-        name: INSERT TITLE
-        message: MISSED ALL CATCHES, need trace.
-        entity_id: '{{ resolved.controlling_binary_sensor }}'
-      enabled: true
-  alias: Alert Replacement Script UI
-  description: 'The core functionality is a pairing of an alert state binary_sensor
-    and a timer entity. It then runs on a cycle and sends notifications. Todo remove
-    testing defaults. '
-  fields:
-    alert_name:
-      name: Title
-      selector:
-        text:
-      required: true
-      default: 'WARNING Alert: Irregular_off'
-    label_id:
-      name: Label ID
-      selector:
-        text:
-      required: true
-      default: entity_list_aquarium_group_switch
-    notification_timer:
-      name: Notification Timer
-      selector:
-        entity:
-          filter:
-          - domain:
-            - timer
-          multiple: false
-      default: timer.notification_warn_irregular_off
-      required: true
-    controlling_binary_sensor:
-      name: Controlling Binary Sensor
-      selector:
-        entity:
-          filter:
-          - domain:
-            - binary_sensor
-            - input_boolean
-          multiple: false
-      default: binary_sensor.alert_state_warn_irregular_off
-      required: true
-    alert_type:
-      name: Alert Type
-      selector:
-        select:
-          options:
-          - INFO
-          - WARNING
-          - CRITICAL
-          - TEST
-      default: WARNING
-      required: true
-    event_uid:
-      name: Event UID
-      description: For actionable notificcations and clearing example- ACK_WARN_IRREGULAR_OFF
-      selector:
-        text:
-      required: true
-      default: ACK_WARN_IRREGULAR_OFF
-    trigger_state:
-      selector:
-        text:
-      name: Trigger State
-      description: like alert.state="on" in alert integration exccept idk message
-        field
-    repeat_minutes:
-      selector:
-        number:
-          min: 2
-          max: 500
-          step: 1
-      name: Repeat Minutes
-      description: like "repeat" in alert integration
-      required: true
-      default: 5
 tv_remote_volume_2:
   sequence:
   - variables:
@@ -388,28 +53,31 @@ tv_remote_volume_2:
   description: ''
 set_state_switch_light_test_version:
   alias: Set Entity State v3.0
-  description: Turn on or off one or more entities. State source is either manual
-    selection, mirrored from a reference entity, or inverted from a reference entity.
-  icon: mdi:toggle-switch-off
+  description: 'Turn one or more entities on or off. State comes from a manual choice,
+    or mirrors/inverts a reference entity. Targets in ''unknown'' still get the command;
+    ''unavailable'' ones are skipped. Each target is checked after the command. Every
+    failure is logged to Activity. Optional: raise a Spook repair per failure (clears
+    itself on the next success), and Fail on error ends the run with an error after
+    every target has been tried.'
   fields:
     target_entities:
-      name: Target Entities
       description: One or more switch/light/input_boolean entities to control.
+      name: Target Entities
       required: true
       selector:
         entity:
-          multiple: true
           domain:
           - switch
           - light
           - input_boolean
+          multiple: true
     mode:
-      name: Mode
+      default: manual
       description: 'How to determine the state to apply. Manual: use the State field.
         Mirror: copy state from the reference entity. Invert: apply the opposite of
         the reference entity''s state.'
+      name: Mode
       required: true
-      default: manual
       selector:
         select:
           options:
@@ -420,10 +88,10 @@ set_state_switch_light_test_version:
           - label: Invert reference entity
             value: invert
     manual_state:
-      name: State
-      description: The state to apply. Only used when Mode is Manual.
-      required: false
       default: 'off'
+      description: The state to apply. Only used when Mode is Manual.
+      name: State
+      required: false
       selector:
         select:
           options:
@@ -432,9 +100,9 @@ set_state_switch_light_test_version:
           - label: 'Off'
             value: 'off'
     reference_entity:
-      name: Reference Entity
       description: Entity whose state is mirrored or inverted. Only used when Mode
         is Mirror or Invert.
+      name: Reference Entity
       required: false
       selector:
         entity:
@@ -444,6 +112,27 @@ set_state_switch_light_test_version:
           - switch
           - light
           - input_boolean
+    fail_on_error:
+      default: false
+      description: 'On: if inputs are invalid or any target doesn''t end up in the
+        right state, the run ends with an error (after trying every target) so the
+        calling automation sees it fail. Off: log it and keep going.'
+      name: Fail on error
+      required: false
+      selector:
+        boolean:
+    raise_repair:
+      default: false
+      description: Also raise a Spook repair issue for each failure. One issue per
+        entity, cleared automatically the next time this script sets that entity successfully
+        with this option on.
+      name: Raise repair issue
+      required: false
+      selector:
+        boolean:
+  icon: mdi:toggle-switch-off
+  max: 10
+  mode: queued
   sequence:
   - variables:
       _mode: '{{ mode | default(''manual'') | lower }}'
@@ -460,18 +149,61 @@ set_state_switch_light_test_version:
         endif -%}"
       _valid: "{{\n  _resolved_state in ['on', 'off']\n  and _target_list | length
         > 0\n}}"
+      _strict: '{{ fail_on_error | default(false) | bool }}'
+      _repair: '{{ raise_repair | default(false) | bool }}'
+      _failures: []
   - if:
     - condition: template
       value_template: '{{ not _valid }}'
     then:
     - action: logbook.log
       data:
-        name: Set Entity State — SKIPPED
-        message: Mode={{ _mode }}, resolved_state={{ _resolved_state }}, targets={{
-          _target_list | join(', ') or 'none' }}, ref={{ _ref_id or 'none' }}, ref_state={{
-          _ref_state }}
-    - stop: Invalid inputs — action not called
-      response_variable: result
+        message: Invalid inputs, nothing sent. Mode={{ _mode }}, resolved_state={{
+          _resolved_state }}, targets={{ _target_list | join(', ') or 'none' }}, ref={{
+          _ref_id or 'none' }}{% if _ref_id %} ({{ states(_ref_id) }}){% endif %}.
+          {{ 'Failing the run.' if _strict else 'Stopping quietly.' }}
+        name: Set Entity State — FAILED
+    - if:
+      - condition: template
+        value_template: '{{ _repair }}'
+      then:
+      - action: repairs.create
+        continue_on_error: true
+        data:
+          description: 'Nothing was sent to {{ _target_list | join('', '') or ''any
+            entity'' }}.
+
+
+            {% if _mode in [''mirror'', ''invert''] %}The reference `{{ _ref_id or
+            ''not set'' }}` was **{{ states(_ref_id) if _ref_id else ''not set'' }}**,
+            so there was no on/off to {{ _mode }}.{% else %}Mode `{{ _mode }}` resolved
+            to `{{ _resolved_state }}`.{% endif %}
+
+
+            Last seen {{ now().strftime(''%b %-d %H:%M'') }}. Clears itself the next
+            time a run with this reference succeeds.'
+          issue_id: set_entity_state_invalid_{{ (_ref_id or 'no_reference') | replace('.',
+            '_') }}
+          persistent: true
+          severity: warning
+          title: 'Set Entity State: nothing sent (invalid inputs)'
+    - variables:
+        result:
+          mode: '{{ _mode }}'
+          reason: invalid inputs
+          reference_entity: '{{ _ref_id or none }}'
+          reference_state: '{{ _ref_state }}'
+          resolved_state: '{{ _resolved_state }}'
+          skipped: true
+          targets: '{{ _target_list }}'
+    - if:
+      - condition: template
+        value_template: '{{ _strict }}'
+      then:
+      - error: true
+        stop: Invalid inputs — nothing sent
+    - response_variable: result
+      stop: Invalid inputs — nothing sent
   - repeat:
       for_each: '{{ _target_list }}'
       sequence:
@@ -481,310 +213,99 @@ set_state_switch_light_test_version:
             else -%}\n  switch\n{%- endif -%}"
           _action: '{{ _domain }}.turn_{{ _resolved_state }}'
           _name: '{{ state_attr(_entity, ''friendly_name'') or _entity }}'
+          _entity_state: '{{ states(_entity) }}'
+          _issue_id: set_entity_state_{{ _entity | replace('.', '_') }}
       - if:
         - condition: template
-          value_template: '{{ is_state(_entity, [''on'', ''off'']) }}'
+          value_template: '{{ _entity_state != ''unavailable'' }}'
         then:
         - action: '{{ _action }}'
+          continue_on_error: true
           target:
             entity_id: '{{ _entity }}'
+        - continue_on_timeout: true
+          timeout: 00:00:10
+          wait_template: '{{ is_state(_entity, _resolved_state) }}'
+      - variables:
+          _fail_reason: "{%- if _entity_state == 'unavailable' -%}\n  it was unavailable,
+            so the command wasn't sent\n{%- else -%}\n  sent {{ _action }} but it
+            was still {{ states(_entity) }} after 10 s\n{%- endif -%}"
+          _ok: '{{ is_state(_entity, _resolved_state) }}'
+      - else:
+        - variables:
+            _failures: '{{ _failures + [_entity] }}'
         - action: logbook.log
           data:
-            name: Set Entity State — {{ _resolved_state | upper }}
-            message: Called {{ _action }} on {{ _name }} (mode={{ _mode }} {%- if
-              _mode in ['mirror','invert'] %}, ref={{ _ref_id }}, ref_state={{ _ref_state
-              }}{% endif %})
             entity_id: '{{ _entity }}'
-        else:
+            message: '{{ _name }} didn''t turn {{ _resolved_state }}: {{ _fail_reason
+              }}. {{ ''The run will end with an error.'' if _strict else ''Continuing
+              with the rest.'' }}'
+            name: Set Entity State — FAILED
+        - if:
+          - condition: template
+            value_template: '{{ _repair }}'
+          then:
+          - action: repairs.create
+            continue_on_error: true
+            data:
+              description: '**{{ _name }}** (`{{ _entity }}`): {{ _fail_reason }}.
+
+
+                Mode `{{ _mode }}`{% if _ref_id %}, reference `{{ _ref_id }}` = {{
+                states(_ref_id) }}{% endif %}. Last seen {{ now().strftime(''%b %-d
+                %H:%M'') }}.
+
+
+                Clears itself the next time Set Entity State sets this entity successfully
+                with repairs on.'
+              issue_id: '{{ _issue_id }}'
+              persistent: true
+              severity: warning
+              title: Set Entity State couldn't turn {{ _name }} {{ _resolved_state
+                }}
+        if:
+        - condition: template
+          value_template: '{{ _ok }}'
+        then:
         - action: logbook.log
           data:
-            name: Set Entity State — SKIPPED entity
-            message: '{{ _name }} ({{ _entity }}) is {{ states(_entity) }} — not on/off,
-              skipping.'
+            entity_id: '{{ _entity }}'
+            message: Set {{ _name }} {{ _resolved_state }} (was {{ _entity_state }},
+              mode={{ _mode }} {%- if _mode in ['mirror','invert'] %}, ref={{ _ref_id
+              }}, ref_state={{ _ref_state }}{% endif %})
+            name: Set Entity State — {{ _resolved_state | upper }}
+        - if:
+          - condition: template
+            value_template: '{{ _repair }}'
+          then:
+          - action: repairs.remove
+            continue_on_error: true
+            data:
+              issue_id: '{{ _issue_id }}'
+  - if:
+    - condition: template
+      value_template: '{{ _repair and _ref_id != '''' }}'
+    then:
+    - action: repairs.remove
+      continue_on_error: true
+      data:
+        issue_id: set_entity_state_invalid_{{ _ref_id | replace('.', '_') }}
   - variables:
       result:
+        failures: '{{ _failures }}'
         mode: '{{ _mode }}'
-        resolved_state: '{{ _resolved_state }}'
-        targets: '{{ _target_list }}'
         reference_entity: '{{ _ref_id or none }}'
         reference_state: '{{ _ref_state }}'
-  - stop: Done
-    response_variable: result
-issue_queue_command:
-  alias: Issue Queue Command
-  mode: parallel
-  sequence:
-  - variables:
-      queue: '{{ states(''input_text.issue_queue'') | from_json(default=[]) }}'
-      cid: '{{ issue_id }}'
-      idx: "{% set i = -1 %} {% for item in queue %}\n  {% if item.id == cid %}\n
-        \   {% set i = loop.index0 %}\n  {% endif %}\n{% endfor %} {{ i }}\n"
-  - choose:
-    - conditions:
-      - condition: template
-        value_template: '{{ command == ''create'' and idx == -1 }}'
-      sequence:
-      - variables:
-          issue: "{{\n  {\n    \"id\": cid,\n    \"summary\": summary or cid,\n    \"details\":
-            details or \"\",\n    \"active\": true,\n    \"tags\": tags or [],\n    \"updated\":
-            now()\n  }\n}}\n"
-          new_queue: '{{ queue + [issue] }}'
-      - data:
-          entity_id: input_text.issue_queue
-          value: '{{ new_queue | to_json }}'
-        action: input_text.set_value
-      - event: issue_queue_event
-        event_data:
-          action: create
-          issue: '{{ issue }}'
-    - conditions:
-      - condition: template
-        value_template: '{{ command == ''update'' and idx != -1 }}'
-      sequence:
-      - variables:
-          issue: "{{\n  queue[idx] | combine({\n    \"summary\": summary or queue[idx].summary,\n
-            \   \"details\": details or queue[idx].details,\n    \"tags\": tags or
-            queue[idx].tags,\n    \"updated\": now()\n  })\n}}\n"
-          new_queue: '{{ queue[:idx] + [issue] + queue[idx+1:] }}'
-      - data:
-          entity_id: input_text.issue_queue
-          value: '{{ new_queue | to_json }}'
-        action: input_text.set_value
-      - event: issue_queue_event
-        event_data:
-          action: update
-          issue: '{{ issue }}'
-    - conditions:
-      - condition: template
-        value_template: '{{ command == ''resolve'' and idx != -1 }}'
-      sequence:
-      - variables:
-          issue: "{{\n  queue[idx] | combine({\n    \"active\": false,\n    \"updated\":
-            now()\n  })\n}}\n"
-          new_queue: '{{ queue[:idx] + [issue] + queue[idx+1:] }}'
-      - data:
-          entity_id: input_text.issue_queue
-          value: '{{ new_queue | to_json }}'
-        action: input_text.set_value
-      - event: issue_queue_event
-        event_data:
-          action: resolve
-          issue: '{{ issue }}'
-    - conditions:
-      - condition: template
-        value_template: '{{ command == ''remove'' and idx != -1 }}'
-      sequence:
-      - variables:
-          new_queue: '{{ queue | rejectattr(''id'',''equalto'',cid) | list }}'
-      - data:
-          entity_id: input_text.issue_queue
-          value: '{{ new_queue | to_json }}'
-        action: input_text.set_value
-      - event: issue_queue_event
-        event_data:
-          action: remove
-          id: '{{ cid }}'
-    - conditions:
-      - condition: template
-        value_template: '{{ command == ''exists'' }}'
-      sequence:
-      - event: issue_queue_event
-        event_data:
-          action: exists
-          exists: '{{ idx != -1 }}'
-          active: '{{ idx != -1 and queue[idx].active }}'
-  - action: input_text.set_value
-    metadata: {}
-    target:
-      entity_id: input_text.issue_queue
-    data:
-      value: 'i am a value '
-  description: ''
-  fields:
-    field:
-      selector:
-        text:
-      default: hello
-    field_2:
-      selector:
-        text:
-    command:
-      name: Command
-      description: Queue operation
-      required: true
-      selector:
-        select:
-          options:
-          - create
-          - update
-          - resolve
-          - remove
-          - exists
-    issue_id:
-      selector:
-        text:
-      name: Issue ID
-      description: 'this is a test '
-      required: true
-    summary:
-      selector:
-        text:
-      name: summary
-    details:
-      selector:
-        text:
-          multiline: true
-      name: Details
-issue_wueue_2:
-  alias: Issue Queue 2
-  description: Maintain a JSON issue queue stored in input_text.issue_queue
-  mode: queued
-  fields:
-    action:
-      name: Action
-      description: add | update | remove | clear | list
-      required: true
-      selector:
-        select:
-          options:
-          - add
-          - update
-          - remove
-          - clear
-          - list
-    issue_id:
-      name: Issue ID
-      description: Unique issue identifier
-      required: false
-      selector:
-        text:
-          multiline: false
-    summary:
-      name: Summary
-      required: false
-      selector:
-        text:
-          multiline: false
-    details:
-      name: Details
-      required: false
-      selector:
-        text:
-          multiline: true
-    severity:
-      name: Severity
-      required: false
-      selector:
-        select:
-          options:
-          - low
-          - medium
-          - high
-          - critical
-  variables:
-    queue_entity: input_text.issue_queue
-    queue_raw: '{{ states(queue_entity) | default(''[]'', true) }}'
-    queue: "{% set s = queue_raw | trim %} {% if s in ['unknown', 'unavailable', 'none',
-      ''] %}\n  []\n{% else %}\n  {{ s | from_json }}\n{% endif %}\n"
-    v_action: '{{ action | default('''', true) | lower }}'
-    v_issue_id: '{{ issue_id | default('''', true) | trim }}'
-    v_summary: '{{ summary | default('''', true) | trim }}'
-    v_details: '{{ details | default('''', true) | trim }}'
-    v_severity: '{{ severity | default('''', true) | lower }}'
-    now_iso: '{{ now().isoformat() }}'
-    incoming_issue: '{% set obj = dict(issue_id=v_issue_id, updated_at=now_iso) %}
-      {% if v_summary != '''' %}{% set obj = dict(obj, summary=v_summary) %}{% endif
-      %} {% if v_details != '''' %}{% set obj = dict(obj, details=v_details) %}{%
-      endif %} {% if v_severity != '''' %}{% set obj = dict(obj, severity=v_severity)
-      %}{% endif %} {{ obj }}
-
-      '
-    existing_index: "{% set idx = -1 %} {% for item in queue %}\n  {% if item is mapping
-      and (item.get('issue_id','') == v_issue_id) %}\n    {% set idx = loop.index0
-      %}\n  {% endif %}\n{% endfor %} {{ idx }}\n"
-    new_queue: "{% if v_action == 'clear' %}\n  []\n{% elif v_action == 'list' %}\n
-      \ {{ queue }}\n{% elif v_action in ['add','update','remove'] %}\n  {% if v_issue_id
-      == '' %}\n    {{ queue }}\n  {% else %}\n    {% if v_action == 'remove' %}\n
-      \     {{ queue | rejectattr('issue_id', 'equalto', v_issue_id) | list }}\n    {%
-      elif v_action == 'add' %}\n      {% if existing_index | int >= 0 %}\n        {{
-      queue }}\n      {% else %}\n        {{ queue + [incoming_issue] }}\n      {%
-      endif %}\n    {% elif v_action == 'update' %}\n      {% if existing_index |
-      int < 0 %}\n        {{ queue + [incoming_issue] }}\n      {% else %}\n        {%
-      set out = [] %}\n        {% for item in queue %}\n          {% if loop.index0
-      == (existing_index | int) %}\n            {% set merged = dict(item, **incoming_issue)
-      %}\n            {% set out = out + [merged] %}\n          {% else %}\n            {%
-      set out = out + [item] %}\n          {% endif %}\n        {% endfor %}\n        {{
-      out }}\n      {% endif %}\n    {% endif %}\n  {% endif %}\n{% else %}\n  {{
-      queue }}\n{% endif %}\n"
-    should_write: '{{ v_action in [''add'',''update'',''remove'',''clear''] }}'
-    affected_issue: "{% if v_issue_id == '' %}\n  {{ dict() }}\n{% else %}\n  {% for
-      item in new_queue %}\n    {% if item is mapping and item.get('issue_id','')
-      == v_issue_id %}\n      {{ item }}\n      {% break %}\n    {% endif %}\n  {%
-      endfor %}\n{% endif %}\n"
-  sequence:
-  - choose:
-    - conditions:
-      - condition: template
-        value_template: '{{ v_action in [''add'',''update'',''remove''] and v_issue_id
-          == '''' }}'
-      sequence:
-      - event: issue_queue_event
-        event_data:
-          action: error
-          error: missing_issue_id
-          message: issue_id is required for add/update/remove
-      - stop: missing issue_id
-  - choose:
-    - conditions:
-      - condition: template
-        value_template: '{{ should_write }}'
-      sequence:
-      - action: input_text.set_value
-        target:
-          entity_id: '{{ queue_entity }}'
-        data:
-          value: '{{ new_queue | to_json }}'
-  - event: issue_queue_event
-    event_data:
-      action: '{{ v_action }}'
-      issue_id: '{{ v_issue_id }}'
-      issue: '{{ affected_issue | default({}, true) }}'
-      queue_length: '{{ new_queue | length }}'
-      queue: '{{ new_queue }}'
-function_natural_language_date:
-  sequence:
-  - variables:
-      result:
-        natural_date: NOT SET
-  - variables:
-      here_is_test: '{{result.natural_date}}'
-  - action: pyscript.format_natural_date
-    metadata: {}
-    data:
-      date_and_time: '{{ date_and_time }}'
-    response_variable: result
-  - variables:
-      here_is_test: '{{result.natural_date}}'
-  - stop: Script is complete
-    response_variable: result
-  alias: Function - Natural Language Date
-  description: ''
-  fields:
-    date_and_time:
-      selector:
-        datetime:
-      name: Date i am
-      required: true
-    field1:
-      selector:
-        text:
-      default: hello there
-      name: 'field 1 '
-    message_test:
-      selector:
-        text:
-      default: I am.a message
-      name: Message Test
+        resolved_state: '{{ _resolved_state }}'
+        targets: '{{ _target_list }}'
+  - if:
+    - condition: template
+      value_template: '{{ _strict and _failures | length > 0 }}'
+    then:
+    - error: true
+      stop: One or more targets failed — see Activity
+  - response_variable: result
+    stop: Done
 event_dump_tester:
   sequence:
   - variables:
@@ -839,47 +360,12 @@ event_dump_tester:
       description: End of range. Defaults to 7 days from now.
   alias: Event Dump Tester
   description: ''
-open_ai_test:
-  sequence:
-  - variables:
-      info: not set
-      response_text: not set
-  - action: pyscript.entity_info
-    metadata: {}
-    data:
-      flatten_members: 'false'
-      dedupe: 'true'
-      entities:
-      - switch.55g_pumps_heaters
-    response_variable: info
-    enabled: true
-  - action: pyscript.openai_text
-    metadata: {}
-    data:
-      model: gpt-4.1-mini
-      prompt: say green !
-    response_variable: response_text
-  alias: Open AI Test
-  description: ''
-  fields:
-    model_selection:
-      selector:
-        select:
-          options:
-          - gpt-4.1-mini
-          - gpt-4.1
-          - gpt-4.1-nano
-          - gpt-5-mini
-          - gpt-5
-      default: gpt-4.1-mini
-      name: Model
-      description: The model to use for OpenAi
 bambu_printer_progress_reporter:
   sequence:
   - variables:
       sorted_milestone_list: todo
   alias: Bambu Printer Progress Reporter
-  description: ''
+  description: This should become a generic milestone reporter
   fields:
     current_value:
       selector:
@@ -994,183 +480,6 @@ semantic_entity_message_duplicate:
       default: b5fe8030195a7438b8c864fd4f831195
       name: Router Integration
       required: true
-'1791597174747':
-  sequence:
-  - variables:
-      lookup:
-        120g: switch.120g_pumps_heaters
-        55g: switch.55g_pumps_heaters
-        10g Male: switch.10g_m_pumps_heaters
-        20g Long: switch.20g_pumps_heaters
-        10g Upper: switch.20g_pumps_heaters
-        Quarantine: switch.20g_pumps_heaters
-      co2_list:
-      - switch.10g_m_pumps_heaters
-      - switch.20g_pumps_heaters
-    alias: CONST ENUM VARIABLES
-  - variables:
-      aq_list: '{{state_attr(''input_select.aquarium'',''options'')}}'
-      selected_value: '{{aquarium_picker}}'
-      selected_entities: "{%- set ns = namespace(entities=[]) %}\n  {%- for value
-        in selected_value %}\n  {%- set ns.entities = ns.entities + [lookup[value]]
-        %}\n{%- endfor %}{{- ns.entities }}"
-      do_co2: '{{ selected_entities | select(''in'', co2_list) | list | length > 0
-        }}'
-      friendly_names: "{%- set ns = namespace(entities=[]) %}\n  {%- for value in
-        selected_value %}\n  {%- set ns.entities = ns.entities + [ state_attr( lookup[value],'friendly_name')]
-        %}\n{%- endfor %}{{- ns.entities | join(',')}}"
-  - sequence:
-    - action: script.set_state_switch_light
-      metadata: {}
-      data:
-        select_state: 'Off'
-        bool_invert_state: 'Off'
-        target_entity_set:
-          entity_id: '{{selected_entities}}'
-      alias: Turn off pumps
-      enabled: true
-    - alias: Turn off C02 if needed
-      if:
-      - condition: template
-        value_template: '{{ bool( do_co2 ,false) and bool(states(''binary_sensor.aquarium_co2_schedule'',false
-          ))  }}'
-      then:
-      - action: script.set_state_switch_light
-        metadata: {}
-        data:
-          bool_invert_state: 'Off'
-          select_state: 'Off'
-          target_entity_set:
-            entity_id: switch.20g_rack_co2
-      - action: homeassistant.add_label_to_entity
-        metadata: {}
-        data:
-          label_id:
-          - entity_watch_list
-          entity_id:
-          - switch.20g_rack_co2
-      enabled: true
-    - alias: if do notification
-      if:
-      - condition: template
-        value_template: '{{ bool(do_notification ,false)}}'
-      then:
-      - action: script.notification_dispatcher
-        metadata: {}
-        data:
-          notification_channel:
-          - alexa
-          bool_critical: 'OFF'
-          sound: default
-          sms_targets:
-          - 7188138156@mms.att.net
-          email_targets:
-          - gbtunney@mac.com
-          alexa_volume: Maximum Volume
-          alexa_sound: amzn_sfx_doorbell_chime_01
-          message: '{{message}}'
-        enabled: true
-      enabled: false
-    - alias: 'Do logbook entries if filled in '
-      if:
-      - condition: template
-        value_template: '{{ aquarium_clean_notes is defined }} '
-      then:
-      - repeat:
-          sequence:
-          - action: logbook.log
-            metadata: {}
-            data:
-              name: Aquarium Maintenance
-              message: 'Maintenance was logged: {{aquarium_clean_notes | join('','')
-                }}'
-              entity_id: '{{ repeat.item }}'
-          - action: homeassistant.add_label_to_entity
-            metadata: {}
-            data:
-              label_id:
-              - entity_watch_list
-              entity_id:
-              - '{{ repeat.item }}'
-          for_each: '{{selected_entities}}'
-    - action: script.set_state_switch_light
-      metadata: {}
-      data:
-        select_state: 'On'
-        bool_invert_state: 'Off'
-        target_entity_set:
-          entity_id: '{{selected_entities}}'
-      alias: Turn ON pumps
-      enabled: false
-    - alias: Turn ON C02 if needed and  if scheduled
-      if:
-      - condition: template
-        value_template: '{{ bool(do_co2 ,false) and bool(states(''binary_sensor.aquarium_co2_schedule'',false
-          )) }}'
-      then:
-      - alias: Turn on CO2 if scheduled
-        action: script.set_state_switch_light
-        metadata: {}
-        data:
-          bool_invert_state: 'Off'
-          select_state: 'Off'
-          target_entity_set:
-            entity_id: switch.20g_rack_co2
-          entity_trigger:
-            entity_id: binary_sensor.aquarium_co2_schedule
-      enabled: false
-    enabled: true
-  - delay:
-      hours: 0
-      minutes: '{{ first_delay |int }}'
-      seconds: 0
-      milliseconds: 0
-    alias: first delay
-    enabled: false
-  alias: Aquarium Selector v2.5 ui
-  mode: parallel
-  description: ''
-  fields:
-    aquarium_picker:
-      selector:
-        select:
-          options:
-          - 120g
-          - 55g
-          - 10g Male
-          - 20g Long
-          - 10g Upper
-          - Quarantine
-          multiple: true
-      required: true
-      name: Aquarium Picker
-    aquarium_clean_notes:
-      selector:
-        select:
-          options:
-          - Water Change (Vacuum)
-          - Trim Plants
-          - Remove algae
-          - Deep Clean
-          - Clean Filter
-          - Quick water Change (no vacuum)
-          multiple: true
-          custom_value: true
-      name: Aquarium Clean Notes
-  icon: mdi:blinds-open
-'1791609891036':
-  alias: Dummy Text Response
-  description: Test script that returns a dynamic plain text response
-  mode: single
-  sequence:
-  - variables:
-      result: "\U0001F680 **Dynamic Response Test**  \n• **Triggered At:** {{ now().strftime('%I:%M:%S
-        %p') }}   • **Home Assistant Status:** The system is currently *online*.   •
-        **Netgear Router State:** The network gateway is reporting as `{{ states('sensor.netgear_router_wan_status')
-        or 'Connected' }}`.  \n*Every time you tap the card button, this timestamp
-        should increment instantly.*"
-  - stop: Return text
-    response_variable: result
 entity_dump:
   sequence:
   - variables:
@@ -1207,85 +516,6 @@ entity_dump:
     name,\n  current state, integration details, timestamps, and all exposed state\n
     \ attributes. Accepts input_entities and returns a dictionary containing an\n
     \ entities list. Read-only; does not change entities or create alerts."
-wip_test_threshold:
-  sequence:
-  - variables: {}
-  alias: WIP Test Threshold
-  description: ''
-  fields:
-    condition:
-      selector:
-        text:
-      name: Condition
-    input_entities:
-      selector:
-        text:
-      name: Entities
-      required: true
-wan_report_duplicate:
-  sequence:
-  - variables:
-      device_info_response:
-      device_router_data: device_router
-      report_result:
-    enabled: true
-  - alias: Get Entity Info
-    action: pyscript.entity_info
-    data:
-      flatten_members: 'false'
-      dedupe: 'true'
-      devices:
-      - '{{ device_router }}'
-    response_variable: device_info_response
-    enabled: true
-  - alias: Set Entity Info Variables
-    variables:
-      condition: unexpectedly off
-      entity_info: '{{ entity_info_response }}'
-    enabled: false
-  - alias: Generate Semantic Message
-    action: ai_task.generate_data
-    data:
-      task_name: Home Assistant spoken alert renderer
-      instructions: '.Device information:
-
-        {{ device_info_response | string }}
-
-        Generate a concise status report for the supplied device information...'
-    response_variable: generated_message
-    enabled: false
-  - action: ai_task.generate_data
-    data:
-      entity_id: ai_task.openai_ai_task_2
-      task_name: Greeting
-      instructions: 'Device information:{{ device_info_response | string }} Generate
-        a concise status report for the supplied device information.
-
-
-        Check my Home Assistant internet outage history for the last 7 days. Show
-        current WAN status and a table of each disconnection with its start, recovery
-        time, and duration in Buffalo local time. Include total downtime, distinguish
-        missing data from confirmed outages, and compare against external ping monitoring
-        if available.'
-    enabled: true
-    response_variable: device_info_response
-  - action: logbook.log
-    metadata: {}
-    data:
-      name: Teat
-      message: Here is answer {{device_info_response}}
-  alias: Wan Report (Duplicate)
-  description: Collects raw pyscript.entity_info output and exposes it with the condition
-    for trace/debugging.
-  mode: parallel
-  max: 10
-  fields:
-    input_entities:
-      selector:
-        entity:
-          multiple: true
-      name: Input Entities
-      required: true
 gbt_generic_semantic:
   sequence:
   - variables:
@@ -1348,113 +578,6 @@ gbt_generic_semantic:
       required: true
   alias: GBT Generic Semantic
   description: ''
-gbt_threshold_label_issue_caller:
-  alias: GBT Threshold Label Issue Caller
-  description: Checks labeled Home Assistant threshold helpers using each helper's
-    type and position, dispatches a semantic alert, and creates or clears one Spook
-    Repairs issue per helper.
-  mode: queued
-  max: 10
-  fields:
-    threshold_label:
-      name: Threshold label
-      description: Choose a label whose threshold helpers all use the same alert state.
-      required: true
-      selector:
-        label: {}
-      default: monitor_temperature_v2
-    problem_condition:
-      name: Problem condition
-      description: Plain-language issue rule, such as 'cat fountain water is below
-        its limit' or 'reptile room temperature is outside its configured range'.
-      required: false
-      selector:
-        text: {}
-  sequence:
-  - variables:
-      label_members: '{{ label_entities(threshold_label) }}'
-      bad_members: "{% set ns = namespace(ids=[]) %}\n{% for entity_id in label_entities(threshold_label)
-        %}\n  {% set lower = state_attr(entity_id, 'lower') %}\n  {% set upper = state_attr(entity_id,
-        'upper') %}\n  {% set state = states(entity_id) %}\n  {% set has_limits =
-        lower is not none or upper is not none %}\n  {% set is_range = lower is not
-        none and upper is not none %}\n  {% set bad = has_limits and ((is_range and
-        state == 'off') or (not is_range and state == 'on')) %}\n  {% if bad %}{%
-        set ns.ids = ns.ids + [entity_id] %}{% endif %}\n{% endfor %}\n{{ ns.ids }}"
-      bad_count: "{% set ns = namespace(n=0) %}\n{% for entity_id in label_entities(threshold_label)
-        %}\n  {% set lower = state_attr(entity_id, 'lower') %}\n  {% set upper = state_attr(entity_id,
-        'upper') %}\n  {% set state = states(entity_id) %}\n  {% set has_limits =
-        lower is not none or upper is not none %}\n  {% set is_range = lower is not
-        none and upper is not none %}\n  {% if has_limits and ((is_range and state
-        == 'off') or (not is_range and state == 'on')) %}\n    {% set ns.n = ns.n
-        + 1 %}\n  {% endif %}\n{% endfor %}\n{{ ns.n }}"
-  - if:
-    - condition: template
-      value_template: '{{ bad_count | int(0) > 0 }}'
-    then:
-    - action: script.gbt_generic_semantic
-      data:
-        input_entities: '{{ bad_members }}'
-        condition: '{{ problem_condition }}'
-      response_variable: semantic_result
-    - action: persistent_notification.create
-      data:
-        notification_id: threshold_label_test_{{ threshold_label }}
-        title: TEST dispatch — {{ threshold_label }}
-        message: '{{ semantic_result.data }}'
-    else:
-    - action: persistent_notification.dismiss
-      data:
-        notification_id: threshold_label_test_{{ threshold_label }}
-  - repeat:
-      for_each: '{{ label_members }}'
-      sequence:
-      - choose:
-        - conditions:
-          - condition: template
-            value_template: '{{ repeat.item in bad_members }}'
-          sequence:
-          - action: repairs.create
-            data:
-              issue_id: threshold_{{ repeat.item | replace('.', '_') }}
-              title: 'Threshold alert: {{ entity_name(repeat.item) }}'
-              description: '{{ problem_condition }}. Current reading/report: {{ semantic_result.data
-                }}'
-              severity: warning
-              persistent: true
-        - conditions:
-          - condition: template
-            value_template: '{% set lower = state_attr(repeat.item, ''lower'') %}
-
-              {% set upper = state_attr(repeat.item, ''upper'') %}
-
-              {% set state = states(repeat.item) %}
-
-              {% set has_limits = lower is not none or upper is not none %}
-
-              {% set is_range = lower is not none and upper is not none %}
-
-              {{ has_limits and ((is_range and state == ''on'') or (not is_range and
-              state == ''off'')) }}'
-          sequence:
-          - action: repairs.remove
-            data:
-              issue_id: threshold_{{ repeat.item | replace('.', '_') }}
-          - action: repairs.remove
-            data:
-              issue_id: threshold_unavailable_{{ repeat.item | replace('.', '_') }}
-        default:
-        - action: repairs.remove
-          data:
-            issue_id: threshold_{{ repeat.item | replace('.', '_') }}
-        - action: repairs.create
-          data:
-            issue_id: threshold_unavailable_{{ repeat.item | replace('.', '_') }}
-            title: 'Cannot assess: {{ entity_name(repeat.item) }}'
-            description: 'The threshold helper cannot currently be assessed. State:
-              {{ states(repeat.item) }}; type: {{ state_attr(repeat.item, ''type'')
-              }}; position: {{ state_attr(repeat.item, ''position'') }}.'
-            severity: warning
-            persistent: true
 critical_alert_semantic_entity_test:
   alias: Critical Alert — Semantic Entity References (TEST)
   description: Manual test for an Alert Redux generator. Returns semantic text and
@@ -1547,3 +670,334 @@ critical_alert_semantic_entity_test:
           {{ reference_text }}'
   - stop: Return semantic report and exact entity references
     response_variable: result
+aquarium_selector_v2_ui:
+  alias: Aquarium Selector v2 UI
+  description: UI copy of the YAML script, on Set Entity State v3. CO2 steps target
+    switch.20_gallon_rack_c02 (the YAML pointed at a missing switch.20g_rack_co2).
+  fields:
+    aquarium_picker:
+      name: Aquarium Picker
+      required: true
+      selector:
+        select:
+          multiple: true
+          options:
+          - 120g
+          - 55g
+          - 10g Male
+          - 20g Long
+          - 10g Upper
+          - Quarantine
+    aquarium_clean_notes:
+      name: Aquarium Clean Notes
+      selector:
+        select:
+          custom_value: true
+          multiple: true
+          options:
+          - Water Change (Vacuum)
+          - Trim Plants
+          - Remove algae
+          - Deep Clean
+          - Clean Filter
+          - Quick water Change (no vacuum)
+    delay_minutes:
+      default: 45
+      name: Delay Minutes
+      required: true
+      selector:
+        number:
+          max: 245
+          min: 15
+    end_notification_timer:
+      default: 5
+      description: this cannot be greater than the total time.
+      name: End Notification Timer
+      required: false
+      selector:
+        number:
+          max: 25
+          min: 1
+          step: 1
+  mode: parallel
+  sequence:
+  - alias: CONST ENUM VARIABLES
+    variables:
+      co2_list:
+      - switch.10g_m_pumps_heaters
+      - switch.20g_pumps_heaters
+      lookup:
+        10g Male: switch.10g_m_pumps_heaters
+        10g Upper: switch.20g_pumps_heaters
+        120g: switch.120g_pumps_heaters
+        20g Long: switch.20g_pumps_heaters
+        55g: switch.55g_pumps_heaters
+        Quarantine: switch.20g_pumps_heaters
+  - variables:
+      aq_list: '{{state_attr(''input_select.aquarium'',''options'')}}'
+      selected_value: '{{aquarium_picker}}'
+      selected_entities: "{%- set ns = namespace(entities=[]) %}\n  {%- for value
+        in selected_value %}\n  {%- set ns.entities = ns.entities + [lookup[value]]
+        %}\n{%- endfor %}{{- ns.entities }}"
+      do_notification: '{{ bool( end_notification_timer is defined , false )  and
+        bool(( end_notification_timer | int(999)  < delay_minutes | int(999) ),false)
+        }}'
+      first_delay: '{% if do_notification %}{{ ( delay_minutes | int(999) - end_notification_timer|int(999)
+        )| int(999) }}{% else %}{{ delay_minutes | int(999) }} {% endif %}'
+      second_delay: '{% if do_notification %}{{  end_notification_timer|int(999) }}{%
+        else %}{{ 0 | int(999) }} {% endif %}'
+      do_co2: '{{ selected_entities | select(''in'', co2_list) | list | length > 0
+        }}'
+      friendly_names: "{%- set ns = namespace(entities=[]) %}\n  {%- for value in
+        selected_value %}\n  {%- set ns.entities = ns.entities + [ state_attr( lookup[value],'friendly_name')]
+        %}\n{%- endfor %}{{- ns.entities | join(',')}}"
+      message: '"{{ second_delay |int(999) }} minute warning! {{ friendly_names  }}
+        have been off for {{ first_delay |int(999) }} and will be turning back on
+        in {{ second_delay |int(999) }} minutes!!"
+
+        '
+  - enabled: true
+    sequence:
+    - action: script.set_state_switch_light_test_version
+      alias: Turn off pumps
+      data:
+        manual_state: 'off'
+        mode: manual
+        target_entities: '{{ selected_entities }}'
+      enabled: true
+    - alias: Turn off C02 if needed
+      enabled: true
+      if:
+      - condition: template
+        value_template: '{{ bool( do_co2 ,false) and bool(states(''schedule.aquarium_co2_schedule'',false
+          ))  }}'
+      then:
+      - action: script.set_state_switch_light_test_version
+        data:
+          manual_state: 'off'
+          mode: manual
+          target_entities:
+          - switch.20_gallon_rack_c02
+    - alias: first delay
+      delay:
+        hours: 0
+        milliseconds: 0
+        minutes: '{{ first_delay |int }}'
+        seconds: 0
+      enabled: true
+    - alias: if do notification
+      enabled: true
+      if:
+      - condition: template
+        value_template: '{{ bool(do_notification ,false)}}'
+      then:
+      - action: script.notification_dispatcher
+        data:
+          alexa_sound: amzn_sfx_doorbell_chime_01
+          alexa_volume: Maximum Volume
+          bool_critical: 'OFF'
+          email_targets:
+          - gbtunney@mac.com
+          message: '{{message}}'
+          notification_channel:
+          - alexa
+          sms_targets:
+          - 7188138156@mms.att.net
+          sound: default
+        enabled: true
+    - alias: second delay
+      delay:
+        hours: 0
+        milliseconds: 0
+        minutes: '{{ second_delay|int }}'
+        seconds: 0
+      enabled: true
+    - action: script.set_state_switch_light_test_version
+      alias: Turn ON pumps
+      data:
+        manual_state: 'on'
+        mode: manual
+        target_entities: '{{ selected_entities }}'
+      enabled: true
+    - alias: Turn ON C02 if needed and  if scheduled
+      enabled: true
+      if:
+      - condition: template
+        value_template: '{{ bool(do_co2 ,false) and bool(states(''schedule.aquarium_co2_schedule'',false
+          )) }}'
+      then:
+      - action: script.set_state_switch_light_test_version
+        alias: Turn on CO2 if scheduled
+        data:
+          mode: mirror
+          reference_entity: schedule.aquarium_co2_schedule
+          target_entities:
+          - switch.20_gallon_rack_c02
+    - alias: 'Do logbook entries if filled in '
+      if:
+      - condition: template
+        value_template: '{{ aquarium_clean_notes is defined }} '
+      then:
+      - repeat:
+          for_each: '{{selected_entities}}'
+          sequence:
+          - action: logbook.log
+            data:
+              entity_id: '{{ repeat.item }}'
+              message: 'Maintenance was logged: {{aquarium_clean_notes | join('','')
+                }}'
+              name: Aquarium Maintenance
+aquarium_selector_v2_5_ui:
+  alias: Aquarium Selector v2.5 UI
+  description: UI copy of the YAML script, on Set Entity State v3. CO2 steps target
+    switch.20_gallon_rack_c02 (the YAML pointed at a missing switch.20g_rack_co2).
+    Disabled steps kept disabled, as in the YAML.
+  fields:
+    aquarium_picker:
+      name: Aquarium Picker
+      required: true
+      selector:
+        select:
+          multiple: true
+          options:
+          - 120g
+          - 55g
+          - 10g Male
+          - 20g Long
+          - 10g Upper
+          - Quarantine
+    aquarium_clean_notes:
+      name: Aquarium Clean Notes
+      selector:
+        select:
+          custom_value: true
+          multiple: true
+          options:
+          - Water Change (Vacuum)
+          - Trim Plants
+          - Remove algae
+          - Deep Clean
+          - Clean Filter
+          - Quick water Change (no vacuum)
+  icon: mdi:blinds-open
+  mode: parallel
+  sequence:
+  - alias: CONST ENUM VARIABLES
+    variables:
+      co2_list:
+      - switch.10g_m_pumps_heaters
+      - switch.20g_pumps_heaters
+      lookup:
+        10g Male: switch.10g_m_pumps_heaters
+        10g Upper: switch.20g_pumps_heaters
+        120g: switch.120g_pumps_heaters
+        20g Long: switch.20g_pumps_heaters
+        55g: switch.55g_pumps_heaters
+        Quarantine: switch.20g_pumps_heaters
+  - variables:
+      aq_list: '{{state_attr(''input_select.aquarium'',''options'')}}'
+      selected_value: '{{aquarium_picker}}'
+      selected_entities: "{%- set ns = namespace(entities=[]) %}\n  {%- for value
+        in selected_value %}\n  {%- set ns.entities = ns.entities + [lookup[value]]
+        %}\n{%- endfor %}{{- ns.entities }}"
+      do_co2: '{{ selected_entities | select(''in'', co2_list) | list | length > 0
+        }}'
+      friendly_names: "{%- set ns = namespace(entities=[]) %}\n  {%- for value in
+        selected_value %}\n  {%- set ns.entities = ns.entities + [ state_attr( lookup[value],'friendly_name')]
+        %}\n{%- endfor %}{{- ns.entities | join(',')}}"
+  - enabled: true
+    sequence:
+    - action: script.set_state_switch_light_test_version
+      alias: Turn off pumps
+      data:
+        manual_state: 'off'
+        mode: manual
+        target_entities: '{{ selected_entities }}'
+      enabled: true
+    - alias: Turn off C02 if needed
+      enabled: true
+      if:
+      - condition: template
+        value_template: '{{ bool( do_co2 ,false) and bool(states(''schedule.aquarium_co2_schedule'',false
+          ))  }}'
+      then:
+      - action: script.set_state_switch_light_test_version
+        data:
+          manual_state: 'off'
+          mode: manual
+          target_entities:
+          - switch.20_gallon_rack_c02
+      - action: homeassistant.add_label_to_entity
+        data:
+          entity_id:
+          - switch.20_gallon_rack_c02
+          label_id:
+          - entity_watch_list
+    - alias: if do notification
+      enabled: false
+      if:
+      - condition: template
+        value_template: '{{ bool(do_notification ,false)}}'
+      then:
+      - action: script.notification_dispatcher
+        data:
+          alexa_sound: amzn_sfx_doorbell_chime_01
+          alexa_volume: Maximum Volume
+          bool_critical: 'OFF'
+          email_targets:
+          - gbtunney@mac.com
+          message: '{{message}}'
+          notification_channel:
+          - alexa
+          sms_targets:
+          - 7188138156@mms.att.net
+          sound: default
+        enabled: true
+    - alias: 'Do logbook entries if filled in '
+      if:
+      - condition: template
+        value_template: '{{ aquarium_clean_notes is defined }} '
+      then:
+      - repeat:
+          for_each: '{{selected_entities}}'
+          sequence:
+          - action: logbook.log
+            data:
+              entity_id: '{{ repeat.item }}'
+              message: 'Maintenance was logged: {{aquarium_clean_notes | join('','')
+                }}'
+              name: Aquarium Maintenance
+          - action: homeassistant.add_label_to_entity
+            data:
+              entity_id:
+              - '{{ repeat.item }}'
+              label_id:
+              - entity_watch_list
+    - action: script.set_state_switch_light_test_version
+      alias: Turn ON pumps
+      data:
+        manual_state: 'on'
+        mode: manual
+        target_entities: '{{ selected_entities }}'
+      enabled: false
+    - alias: Turn ON C02 if needed and  if scheduled
+      enabled: false
+      if:
+      - condition: template
+        value_template: '{{ bool(do_co2 ,false) and bool(states(''schedule.aquarium_co2_schedule'',false
+          )) }}'
+      then:
+      - action: script.set_state_switch_light_test_version
+        alias: Turn on CO2 if scheduled
+        data:
+          mode: mirror
+          reference_entity: schedule.aquarium_co2_schedule
+          target_entities:
+          - switch.20_gallon_rack_c02
+  - alias: first delay
+    delay:
+      hours: 0
+      milliseconds: 0
+      minutes: '{{ first_delay |int }}'
+      seconds: 0
+    enabled: false
