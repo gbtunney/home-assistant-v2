@@ -1,0 +1,36 @@
+{
+    "version": 1,
+    "minor_version": 3,
+    "key": "core.floor_registry",
+    "data": {
+        "floors": [
+            {
+                "aliases": [],
+                "floor_id": "upstairs",
+                "icon": null,
+                "level": 2,
+                "name": "Upstairs",
+                "created_at": "2024-11-03T08:17:59.218009+00:00",
+                "modified_at": "2024-11-03T08:17:59.218024+00:00"
+            },
+            {
+                "aliases": [],
+                "floor_id": "main_floor",
+                "icon": null,
+                "level": 1,
+                "name": "Main Floor",
+                "created_at": "2024-11-03T08:22:35.575104+00:00",
+                "modified_at": "2024-11-03T08:22:35.575118+00:00"
+            },
+            {
+                "aliases": [],
+                "floor_id": "basement",
+                "icon": "mdi:home-floor-b",
+                "level": 0,
+                "name": "Basement",
+                "created_at": "2025-06-16T01:42:11.397857+00:00",
+                "modified_at": "2025-06-16T01:42:11.397876+00:00"
+            }
+        ]
+    }
+}

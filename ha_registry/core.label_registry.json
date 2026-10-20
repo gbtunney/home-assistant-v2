@@ -1,0 +1,576 @@
+{
+    "version": 1,
+    "minor_version": 2,
+    "key": "core.label_registry",
+    "data": {
+        "labels": [
+            {
+                "color": "blue-grey",
+                "description": null,
+                "icon": "mdi:power-socket-ch",
+                "label_id": "powerstrip",
+                "name": "Powerstrip",
+                "created_at": "2024-11-03T03:42:38.183681+00:00",
+                "modified_at": "2024-11-14T06:30:12.771530+00:00"
+            },
+            {
+                "color": "lime",
+                "description": null,
+                "icon": "mdi:jellyfish",
+                "label_id": "fish_light",
+                "name": "Fish Light",
+                "created_at": "2024-11-08T23:46:25.506961+00:00",
+                "modified_at": "2024-11-14T06:29:03.602962+00:00"
+            },
+            {
+                "color": "blue-grey",
+                "description": null,
+                "icon": "mdi:devices",
+                "label_id": "device",
+                "name": "Device",
+                "created_at": "2024-11-11T02:03:10.923596+00:00",
+                "modified_at": "2024-11-14T06:30:23.034702+00:00"
+            },
+            {
+                "color": "light-blue",
+                "description": null,
+                "icon": "mdi:fish",
+                "label_id": "aquarium",
+                "name": "Aquarium",
+                "created_at": "2024-11-11T06:52:10.246020+00:00",
+                "modified_at": "2024-11-14T06:28:52.292666+00:00"
+            },
+            {
+                "color": "green",
+                "description": null,
+                "icon": "mdi:spa",
+                "label_id": "planted_aquarium_co2",
+                "name": "Planted Aquarium - CO2",
+                "created_at": "2024-11-11T06:53:43.177465+00:00",
+                "modified_at": "2024-11-14T06:30:46.008825+00:00"
+            },
+            {
+                "color": null,
+                "description": null,
+                "icon": "mdi:heat-wave",
+                "label_id": "fish_filter_heater",
+                "name": "Fish Filter / Heater",
+                "created_at": "2024-11-12T00:49:05.666225+00:00",
+                "modified_at": "2024-11-14T06:29:17.693932+00:00"
+            },
+            {
+                "color": "accent",
+                "description": null,
+                "icon": "mdi:lightbulb-group-outline",
+                "label_id": "light_group",
+                "name": "Light Group",
+                "created_at": "2024-11-12T03:36:20.792233+00:00",
+                "modified_at": "2024-11-14T06:27:19.903732+00:00"
+            },
+            {
+                "color": "pink",
+                "description": null,
+                "icon": "mdi:medical-cotton-swab",
+                "label_id": "testing",
+                "name": "Debug: Testing",
+                "created_at": "2024-11-12T04:12:56.479808+00:00",
+                "modified_at": "2026-10-10T03:51:18.116009+00:00"
+            },
+            {
+                "color": "indigo",
+                "description": null,
+                "icon": "mdi:mastodon",
+                "label_id": "todo",
+                "name": "TODO",
+                "created_at": "2024-11-12T05:57:16.247995+00:00",
+                "modified_at": "2024-11-14T06:27:43.162303+00:00"
+            },
+            {
+                "color": "teal",
+                "description": null,
+                "icon": "mdi:snake",
+                "label_id": "reptile",
+                "name": "Reptile",
+                "created_at": "2024-11-14T02:33:16.537314+00:00",
+                "modified_at": "2024-11-14T06:30:37.792679+00:00"
+            },
+            {
+                "color": "red",
+                "description": null,
+                "icon": "mdi:message-alert-outline",
+                "label_id": "notification",
+                "name": "Notification",
+                "created_at": "2024-11-14T06:18:09.806301+00:00",
+                "modified_at": "2024-11-14T06:27:58.870682+00:00"
+            },
+            {
+                "color": "deep-orange",
+                "description": null,
+                "icon": "mdi:ev-plug-chademo",
+                "label_id": "examples",
+                "name": "Examples",
+                "created_at": "2024-12-01T00:54:05.839979+00:00",
+                "modified_at": "2026-10-10T03:41:12.788450+00:00"
+            },
+            {
+                "color": null,
+                "description": null,
+                "icon": "mdi:head-snowflake-outline",
+                "label_id": "llm_vision",
+                "name": "LLM Vision",
+                "created_at": "2024-12-01T01:11:56.770548+00:00",
+                "modified_at": "2024-12-01T01:11:56.770563+00:00"
+            },
+            {
+                "color": null,
+                "description": null,
+                "icon": "mdi:clipboard-file-outline",
+                "label_id": "file_path",
+                "name": "File Path",
+                "created_at": "2024-12-02T06:30:26.422164+00:00",
+                "modified_at": "2024-12-02T06:30:26.422179+00:00"
+            },
+            {
+                "color": "blue-grey",
+                "description": null,
+                "icon": "mdi:clock-outline",
+                "label_id": "schedule",
+                "name": "Schedule",
+                "created_at": "2024-12-07T22:57:51.707648+00:00",
+                "modified_at": "2024-12-07T22:57:51.707664+00:00"
+            },
+            {
+                "color": "deep-orange",
+                "description": null,
+                "icon": "mdi:delete-circle",
+                "label_id": "pending_deletion",
+                "name": "Pending Deletion",
+                "created_at": "2024-12-09T05:59:02.886833+00:00",
+                "modified_at": "2024-12-09T05:59:02.886850+00:00"
+            },
+            {
+                "color": "deep-orange",
+                "description": "A script that is GENERIC and meant to be used for many cases.",
+                "icon": "mdi:function",
+                "label_id": "utility",
+                "name": "Utility",
+                "created_at": "2024-12-14T22:01:47.959515+00:00",
+                "modified_at": "2024-12-14T22:01:47.959531+00:00"
+            },
+            {
+                "color": "brown",
+                "description": null,
+                "icon": null,
+                "label_id": "helpers_copy_switch",
+                "name": "Helpers: Copy Switch",
+                "created_at": "2024-12-16T04:39:25.058455+00:00",
+                "modified_at": "2024-12-16T04:39:25.058471+00:00"
+            },
+            {
+                "color": "blue-grey",
+                "description": null,
+                "icon": "mdi:connection",
+                "label_id": "helpers_connectivity_status",
+                "name": "Helpers: Connectivity Status",
+                "created_at": "2024-12-16T04:41:27.397029+00:00",
+                "modified_at": "2024-12-16T04:47:26.996871+00:00"
+            },
+            {
+                "color": "orange",
+                "description": null,
+                "icon": "mdi:motion-sensor",
+                "label_id": "sensor_automation",
+                "name": "Automation: Sensor",
+                "created_at": "2024-12-16T05:55:29.836474+00:00",
+                "modified_at": "2024-12-18T02:31:33.370019+00:00"
+            },
+            {
+                "color": "indigo",
+                "description": null,
+                "icon": "mdi:test-tube",
+                "label_id": "dummy_input",
+                "name": "Dummy Input",
+                "created_at": "2024-12-18T01:03:50.861323+00:00",
+                "modified_at": "2024-12-18T01:03:50.861339+00:00"
+            },
+            {
+                "color": null,
+                "description": "A non connectivity oriented helper for a specific device",
+                "icon": null,
+                "label_id": "helpers_device",
+                "name": "Helpers: Device",
+                "created_at": "2024-12-18T01:14:24.552009+00:00",
+                "modified_at": "2024-12-18T01:14:24.552026+00:00"
+            },
+            {
+                "color": "orange",
+                "description": null,
+                "icon": "mdi:emoticon-devil-outline",
+                "label_id": "automation_device_specific",
+                "name": "Automation: Device Specific",
+                "created_at": "2024-12-18T02:18:32.756152+00:00",
+                "modified_at": "2024-12-18T02:18:32.756167+00:00"
+            },
+            {
+                "color": "deep-purple",
+                "description": null,
+                "icon": "mdi:alpha-i-circle-outline",
+                "label_id": "tuya",
+                "name": "Tuya",
+                "created_at": "2024-12-22T01:37:11.204535+00:00",
+                "modified_at": "2024-12-22T01:37:11.204552+00:00"
+            },
+            {
+                "color": "red",
+                "description": null,
+                "icon": "mdi:home-import-outline",
+                "label_id": "group_important",
+                "name": "Group: Important",
+                "created_at": "2024-12-24T22:53:11.001975+00:00",
+                "modified_at": "2024-12-24T22:53:11.001990+00:00"
+            },
+            {
+                "color": "amber",
+                "description": null,
+                "icon": null,
+                "label_id": "entity_watch_list",
+                "name": "Entity Watch List",
+                "created_at": "2024-12-31T03:34:15.532379+00:00",
+                "modified_at": "2024-12-31T03:34:15.532395+00:00"
+            },
+            {
+                "color": "#FFFF00",
+                "description": "From entity list manager",
+                "icon": "mdi:format-list-bulleted",
+                "label_id": "entity_list_test_list_alert",
+                "name": "entity_list_test_list_alert",
+                "created_at": "2025-01-02T00:42:18.520881+00:00",
+                "modified_at": "2025-01-02T00:42:18.520896+00:00"
+            },
+            {
+                "color": "#FFFF00",
+                "description": "From entity list manager",
+                "icon": "mdi:format-list-bulleted",
+                "label_id": "entity_list_aquarium_group_switch",
+                "name": "entity_list_aquarium_group_switch",
+                "created_at": "2025-01-03T22:46:23.408138+00:00",
+                "modified_at": "2025-01-03T22:46:23.408151+00:00"
+            },
+            {
+                "color": "#FFFF00",
+                "description": "From entity list manager",
+                "icon": "mdi:format-list-bulleted",
+                "label_id": "entity_list_aquarium_connectivity_monitor",
+                "name": "entity_list_aquarium_connectivity_monitor",
+                "created_at": "2025-01-03T22:50:13.603160+00:00",
+                "modified_at": "2025-01-03T22:50:13.603171+00:00"
+            },
+            {
+                "color": "#FFFF00",
+                "description": "From entity list manager",
+                "icon": "mdi:format-list-bulleted",
+                "label_id": "entity_list_reptile_connectivity_monitor",
+                "name": "entity_list_reptile_connectivity_monitor",
+                "created_at": "2025-01-03T22:51:31.576947+00:00",
+                "modified_at": "2025-01-03T22:51:31.576957+00:00"
+            },
+            {
+                "color": "#FFFF00",
+                "description": "From entity list manager",
+                "icon": "mdi:format-list-bulleted",
+                "label_id": "entity_list_tuya_connectivity_status",
+                "name": "entity_list_tuya_connectivity_status",
+                "created_at": "2025-01-03T22:52:47.286515+00:00",
+                "modified_at": "2025-01-03T22:52:47.286523+00:00"
+            },
+            {
+                "color": "#FFFF00",
+                "description": "From entity list manager",
+                "icon": "mdi:format-list-bulleted",
+                "label_id": "entity_list_leak_detector",
+                "name": "entity_list_leak_detector",
+                "created_at": "2025-01-03T22:59:51.198089+00:00",
+                "modified_at": "2025-01-03T22:59:51.198101+00:00"
+            },
+            {
+                "color": "primary",
+                "description": null,
+                "icon": null,
+                "label_id": "room_lighting",
+                "name": "Room Lighting",
+                "created_at": "2025-01-20T07:48:03.030663+00:00",
+                "modified_at": "2025-01-20T07:48:03.030685+00:00"
+            },
+            {
+                "color": null,
+                "description": null,
+                "icon": "mdi:dishwasher-alert",
+                "label_id": "updated",
+                "name": "Updated",
+                "created_at": "2025-01-20T07:54:55.967776+00:00",
+                "modified_at": "2025-01-20T07:54:55.967795+00:00"
+            },
+            {
+                "color": "amber",
+                "description": null,
+                "icon": "mdi:alert",
+                "label_id": "alert_notification",
+                "name": "Alert / Notification",
+                "created_at": "2025-01-20T09:21:31.085190+00:00",
+                "modified_at": "2025-01-20T09:22:43.933206+00:00"
+            },
+            {
+                "color": "blue",
+                "description": null,
+                "icon": "mdi:remote",
+                "label_id": "remote",
+                "name": "Remote",
+                "created_at": "2025-04-19T09:41:19.318097+00:00",
+                "modified_at": "2025-04-19T09:41:19.318113+00:00"
+            },
+            {
+                "color": "dark-grey",
+                "description": null,
+                "icon": "mdi:archive-arrow-down",
+                "label_id": "archived",
+                "name": "Archived",
+                "created_at": "2025-04-27T09:43:31.324610+00:00",
+                "modified_at": "2026-10-18T12:40:10.130600+00:00"
+            },
+            {
+                "color": null,
+                "description": null,
+                "icon": null,
+                "label_id": "problem",
+                "name": "problem",
+                "created_at": "2025-11-04T08:33:55.618496+00:00",
+                "modified_at": "2025-11-04T08:33:55.618512+00:00"
+            },
+            {
+                "color": "green",
+                "description": null,
+                "icon": "mdi:progress-alert",
+                "label_id": "wip_work_in_progress",
+                "name": "WIP : Work in progress",
+                "created_at": "2025-12-18T01:09:20.703914+00:00",
+                "modified_at": "2025-12-18T01:09:20.703941+00:00"
+            },
+            {
+                "color": "pink",
+                "description": null,
+                "icon": "mdi:function",
+                "label_id": "function",
+                "name": "Function",
+                "created_at": "2026-03-19T23:08:13.290395+00:00",
+                "modified_at": "2026-03-19T23:08:13.290409+00:00"
+            },
+            {
+                "color": "accent",
+                "description": null,
+                "icon": "mdi:calendar-check-outline",
+                "label_id": "calendar",
+                "name": "Calendar",
+                "created_at": "2026-03-20T04:00:06.908543+00:00",
+                "modified_at": "2026-03-20T04:00:06.908560+00:00"
+            },
+            {
+                "color": "red",
+                "description": null,
+                "icon": null,
+                "label_id": "red",
+                "name": "red",
+                "created_at": "2026-09-30T06:36:48.254735+00:00",
+                "modified_at": "2026-09-30T06:36:48.254750+00:00"
+            },
+            {
+                "color": "brown",
+                "description": null,
+                "icon": null,
+                "label_id": "brown",
+                "name": "brown",
+                "created_at": "2026-09-30T06:36:53.312439+00:00",
+                "modified_at": "2026-09-30T06:36:53.312454+00:00"
+            },
+            {
+                "color": "primary",
+                "description": null,
+                "icon": null,
+                "label_id": "primary",
+                "name": "primary",
+                "created_at": "2026-09-30T06:36:58.881823+00:00",
+                "modified_at": "2026-09-30T06:36:58.881841+00:00"
+            },
+            {
+                "color": null,
+                "description": "Physical sub-location managed by the equipment inventory. Parent location: Living Room.",
+                "icon": "mdi:map-marker-radius-outline",
+                "label_id": "loc_living_room_120_aquarium",
+                "name": "Location: Living Room / 120 Aquarium",
+                "created_at": "2026-10-03T02:57:02.856490+00:00",
+                "modified_at": "2026-10-03T02:57:19.854000+00:00"
+            },
+            {
+                "color": null,
+                "description": "Physical sub-location managed by the equipment inventory. Parent location: Storage Room.",
+                "icon": "mdi:map-marker-radius-outline",
+                "label_id": "loc_storage_room_shelf_a",
+                "name": "Location: Storage Room / Shelf A",
+                "created_at": "2026-10-03T02:57:24.988034+00:00",
+                "modified_at": "2026-10-03T02:57:26.343587+00:00"
+            },
+            {
+                "color": null,
+                "description": "Sublocation within Library: Seafoam's enclosure.",
+                "icon": "mdi:map-marker",
+                "label_id": "location_seafoam_s_enclosure",
+                "name": "Location: Seafoam's Enclosure",
+                "created_at": "2026-10-03T08:15:00.834038+00:00",
+                "modified_at": "2026-10-03T08:18:28.077087+00:00"
+            },
+            {
+                "color": null,
+                "description": "Sublocation within Library: Plasmolysis enclosure.",
+                "icon": "mdi:map-marker",
+                "label_id": "location_plasmolysis_enclosure",
+                "name": "Location: Plasmolysis Enclosure",
+                "created_at": "2026-10-03T08:15:01.567306+00:00",
+                "modified_at": "2026-10-03T08:18:28.832643+00:00"
+            },
+            {
+                "color": "brown",
+                "description": "Esp board - currently only bluetooth proxys running",
+                "icon": "mdi:car-esp",
+                "label_id": "esp32",
+                "name": "esp32",
+                "created_at": "2026-10-10T03:28:14.513267+00:00",
+                "modified_at": "2026-10-10T03:42:18.459685+00:00"
+            },
+            {
+                "color": "brown",
+                "description": "device has a usb micro power source",
+                "icon": "mdi:usb-port",
+                "label_id": "usb_micro",
+                "name": "USB Micro",
+                "created_at": "2026-10-10T03:31:41.108646+00:00",
+                "modified_at": "2026-10-10T03:32:33.393847+00:00"
+            },
+            {
+                "color": "brown",
+                "description": "device has usb c power source",
+                "icon": "mdi:usb-c-port",
+                "label_id": "usb_c",
+                "name": "USB C",
+                "created_at": "2026-10-10T03:32:18.185365+00:00",
+                "modified_at": "2026-10-10T03:32:18.185379+00:00"
+            },
+            {
+                "color": "brown",
+                "description": "its NAKED!!!! Alert!!",
+                "icon": "mdi:developer-board",
+                "label_id": "no_enclosure",
+                "name": "No enclosure",
+                "created_at": "2026-10-10T03:38:23.402821+00:00",
+                "modified_at": "2026-10-10T03:38:23.402848+00:00"
+            },
+            {
+                "color": "brown",
+                "description": "Has 3d printed case",
+                "icon": "mdi:car-esp",
+                "label_id": "enclosure",
+                "name": "Enclosure",
+                "created_at": "2026-10-10T03:40:08.824749+00:00",
+                "modified_at": "2026-10-10T03:40:08.824766+00:00"
+            },
+            {
+                "color": "pink",
+                "description": "Trigger for automation, used for testing the notification",
+                "icon": "mdi:car-brake-temperature",
+                "label_id": "trigger",
+                "name": "Automation: Trigger",
+                "created_at": "2026-10-10T03:49:14.972088+00:00",
+                "modified_at": "2026-10-10T03:50:47.458783+00:00"
+            },
+            {
+                "color": "accent",
+                "description": "Testing",
+                "icon": "fab:buy-n-large",
+                "label_id": "monitor_temperature_v2",
+                "name": "Monitor Temperature v2",
+                "created_at": "2026-10-17T10:36:06.481776+00:00",
+                "modified_at": "2026-10-17T10:36:06.481791+00:00"
+            },
+            {
+                "color": null,
+                "description": null,
+                "icon": null,
+                "label_id": "gippet",
+                "name": "gippet",
+                "created_at": "2026-10-17T11:28:03.433185+00:00",
+                "modified_at": "2026-10-17T11:28:03.433201+00:00"
+            },
+            {
+                "color": null,
+                "description": "Every Alert Redux alert. New alerts get it automatically.",
+                "icon": "mdi:alert-rhombus",
+                "label_id": "alert_redux",
+                "name": "Alert Redux",
+                "created_at": "2026-10-17T13:53:23.617433+00:00",
+                "modified_at": "2026-10-17T13:53:23.617442+00:00"
+            },
+            {
+                "color": "brown",
+                "description": "Fleet: ble_proxy (esphome/fleets/ble_proxy.yaml). ESP32 proxies + their Bluetooth radio devices.",
+                "icon": "mdi:bluetooth-connect",
+                "label_id": "ble_proxy",
+                "name": "BLE Proxy",
+                "created_at": "2026-10-17T21:34:12.493011+00:00",
+                "modified_at": "2026-10-17T21:34:12.493025+00:00"
+            },
+            {
+                "color": "blue",
+                "description": "Number helpers for testing Alert Redux threshold generators.",
+                "icon": "mdi:tune-vertical",
+                "label_id": "alert_test_numbers",
+                "name": "Alert Test Numbers",
+                "created_at": "2026-10-17T23:04:03.812300+00:00",
+                "modified_at": "2026-10-17T23:04:03.812313+00:00"
+            },
+            {
+                "color": "purple",
+                "description": "Toggle helpers for testing Alert Redux state generators.",
+                "icon": "mdi:toggle-switch",
+                "label_id": "alert_test_toggles",
+                "name": "Alert Test Toggles",
+                "created_at": "2026-10-17T23:04:04.537943+00:00",
+                "modified_at": "2026-10-17T23:04:04.537957+00:00"
+            },
+            {
+                "color": "orange",
+                "description": "Test threshold helpers with both lower and upper limits; watch for off in a State generator.",
+                "icon": "mdi:thermometer-check",
+                "label_id": "alert_test_ranges",
+                "name": "Alert Test Ranges",
+                "created_at": "2026-10-18T02:42:51.147392+00:00",
+                "modified_at": "2026-10-18T02:42:51.147406+00:00"
+            },
+            {
+                "color": null,
+                "description": null,
+                "icon": null,
+                "label_id": "idk",
+                "name": "idk",
+                "created_at": "2026-10-18T08:24:50.224016+00:00",
+                "modified_at": "2026-10-18T08:24:50.224029+00:00"
+            },
+            {
+                "color": "black",
+                "description": "old mostly for. reference",
+                "icon": null,
+                "label_id": "depricated",
+                "name": "Depricated",
+                "created_at": "2026-10-18T12:27:58.180938+00:00",
+                "modified_at": "2026-10-18T12:27:58.180952+00:00"
+            }
+        ]
+    }
+}

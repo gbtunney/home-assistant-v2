@@ -240,5 +240,7 @@ custom_components.disabled.ha_run.lock
 /notification-dispatcher-*.txt
 /scripts-diff.txt
 
+!ha_registry/
+!ha_registry/core.*.json
 # Temporary recovery artifacts
 /recovery-artifacts/
