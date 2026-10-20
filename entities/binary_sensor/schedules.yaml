@@ -1,8 +1,0 @@
-# times of day sensor
-- platform: tod
-  name: Reptile Lighting Schedule
-  after: sunrise
-  after_offset: "2:30"
-  before: sunset
-  before_offset: "1:15"
-  unique_id: reptile_lighting_schedule

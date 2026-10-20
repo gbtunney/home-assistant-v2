@@ -1,0 +1,39 @@
+{
+    "version": 1,
+    "minor_version": 2,
+    "key": "core.category_registry",
+    "data": {
+        "categories": {
+            "script": [
+                {
+                    "category_id": "01KA7R57V4T0DCHKWKQMTB80PY",
+                    "created_at": "2025-11-17T01:51:33.732632+00:00",
+                    "icon": "mdi:ab-testing",
+                    "modified_at": "2025-11-17T01:51:33.732657+00:00",
+                    "name": "Testing"
+                },
+                {
+                    "category_id": "01KA7R8R1AA7K5TCJNYNQ3QEG3",
+                    "created_at": "2025-11-17T01:53:28.618132+00:00",
+                    "icon": "mdi:integrated-circuit-chip",
+                    "modified_at": "2025-11-17T01:53:28.618156+00:00",
+                    "name": "AI"
+                },
+                {
+                    "category_id": "01KG8M05R5JGJFYBCN15H4ZZNY",
+                    "created_at": "2026-01-30T23:32:18.821326+00:00",
+                    "icon": null,
+                    "modified_at": "2026-01-30T23:32:18.821349+00:00",
+                    "name": "entities"
+                },
+                {
+                    "category_id": "01KG8M0W6KZHF7N2SAHYKXNV9F",
+                    "created_at": "2026-01-30T23:32:41.811323+00:00",
+                    "icon": "mdi:account-convert",
+                    "modified_at": "2026-01-30T23:32:41.811344+00:00",
+                    "name": "consumer"
+                }
+            ]
+        }
+    }
+}

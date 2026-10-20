@@ -1,17 +1,34 @@
 domains:
   - sun2
-  #- automation
-  #- update
+
 entity_globs:
-  - "switch.*g*light"
-  - "*.*clone*"
-  - "*clone*"
-  #  - sensor.sun*
-  # - weather.*
+  # clock / date sensors
+  - sensor.time*
+  - sensor.date*
+
+  # raw backing switches for switch-as-x helpers
+  - switch.*_switch
+  - switch.*_switch_*
+
+  # clone / copied helper entities
+  - switch.*clone*
+  - light.*clone*
+  - binary_sensor.*clone*
+  - sensor.*clone*
+
+  # diagnostics / connectivity noise
+  - sensor.*_uptime*
+  - sensor.*_rssi*
+  - sensor.*_wifi*
+  - sensor.*_linkquality*
+  - sensor.*_connected*
+  - sensor.*connectivity*
+  - binary_sensor.*_connected*
+  - binary_sensor.*connectivity*
+
 entities:
+  # explicit exclusions
+  - sun.sun
   - sensor.ha_uptime
-  - sun.sun # Don't record sun data
-
-
-  #- sensor.date
-  #- sensor.last_boot # Comes from 'systemmonitor' sensor platform
+  - sensor.time_date
+  - sensor.date_time

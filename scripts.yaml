@@ -1,65 +1,3 @@
-llm_vision_describe_scene:
-  alias: LLM Vision Describe Scene
-  description: 'LLM Vision: Describe the Camera Feed in Sentence'
-  fields:
-    prompt:
-      selector:
-        text:
-      name: prompt
-      required: true
-      default: "\"Summarize what's happening in the camera feed (one sentence max).\n
-        Don't describe the scene! If there is a person, describe what they're\n doing
-        and what they look like. If they look like a courier mention that!\n If nothing
-        is happening, say so.\"\n"
-  sequence:
-  - variables:
-      llv_response: undefined
-  - action: llmvision.image_analyzer
-    metadata: {}
-    data:
-      include_filename: false
-      target_width: 800
-      detail: low
-      max_tokens: 100
-      temperature: 0.5
-      provider: 01JDVNFP4KWD6XERDGQ5V3TY6W
-      message: '{{ prompt }}'
-      remember: false
-      expose_images: false
-      image_file: /media/{{ states( 'input_text.url_llv')  }}
-    response_variable: llv_response
-  - action: input_text.set_value
-    metadata: {}
-    data:
-      value: '{{ llv_response }}'
-    target:
-      entity_id: input_text.llm_response
-  icon: mdi:camera
-llv_prompt_test:
-  alias: LLV Prompt Test
-  fields:
-    prompt:
-      selector:
-        text:
-      name: prompt
-      required: true
-  sequence:
-  - variables:
-      result: not set
-  - action: extended_openai_conversation.query_image
-    metadata: {}
-    data:
-      images: []
-      max_tokens: 300
-      config_entry: 01JETKDY6JSNVZJNREFAM115J0
-      prompt: 'hello say hi if u gwt this no i afes
-
-        '
-    response_variable: result
-  - action: homeassistant.create_floor
-    metadata: {}
-    data: {}
-  description: ''
 llv_numeric_question:
   alias: LLV Numeric Question
   sequence:
@@ -135,7 +73,7 @@ api_adapter_notification_dispatcher:
       notification_channel_count: '{{target_notification_channel |  list | count }}'
       action_callback: '{{callback}}'
     enabled: false
-  - action: script.notification_dispatcher_ui
+  - action: script.notification_dispatcher
     metadata: {}
     data:
       message: '{{message}}'
@@ -449,187 +387,129 @@ tv_remote_volume_2:
   alias: TV Remote Volume
   description: ''
 set_state_switch_light_test_version:
+  alias: Set Entity State v3.0
+  description: Turn on or off one or more entities. State source is either manual
+    selection, mirrored from a reference entity, or inverted from a reference entity.
+  icon: mdi:toggle-switch-off
+  fields:
+    target_entities:
+      name: Target Entities
+      description: One or more switch/light/input_boolean entities to control.
+      required: true
+      selector:
+        entity:
+          multiple: true
+          domain:
+          - switch
+          - light
+          - input_boolean
+    mode:
+      name: Mode
+      description: 'How to determine the state to apply. Manual: use the State field.
+        Mirror: copy state from the reference entity. Invert: apply the opposite of
+        the reference entity''s state.'
+      required: true
+      default: manual
+      selector:
+        select:
+          options:
+          - label: Manual
+            value: manual
+          - label: Mirror reference entity
+            value: mirror
+          - label: Invert reference entity
+            value: invert
+    manual_state:
+      name: State
+      description: The state to apply. Only used when Mode is Manual.
+      required: false
+      default: 'off'
+      selector:
+        select:
+          options:
+          - label: 'On'
+            value: 'on'
+          - label: 'Off'
+            value: 'off'
+    reference_entity:
+      name: Reference Entity
+      description: Entity whose state is mirrored or inverted. Only used when Mode
+        is Mirror or Invert.
+      required: false
+      selector:
+        entity:
+          domain:
+          - binary_sensor
+          - schedule
+          - switch
+          - light
+          - input_boolean
   sequence:
   - variables:
-      use_trigger: '{{ bool( entity_trigger is defined , false ) }}'
-      bool_invert: '{{ bool(bool_invert_state,false) }}'
-      valid_trigger_value: '{{-  bool(use_trigger, false )  and bool(states( entity_trigger.entity_id
-        ) in [''on'',''off'' ], false )  -}}'
-      valid_select_value: '{{-  bool(use_trigger, false ) == false  and bool( select_state
-        | lower in [''on'',''off'' ], false )  -}}'
-      exec_rest: '{{- bool( ( bool( use_trigger, false ) and  bool(valid_trigger_value,
-        false ) ) or ( bool( use_trigger, false ) == false and  bool(valid_select_value,
-        false ) ),false) -}}'
-      target_list: '{{ [] if (target_entity_set is not defined ) else target_entity_set.entity_id
-        if target_entity_set.entity_id is list else [target_entity_set.entity_id]
-        }}'
-      result:
-        action_called: false
-        action: undefined
-        trigger_state: undefined
-        trigger_entity_id: undefined
-        target_entity_id: undefined
-        invert: '{{bool(bool_invert,false)}}'
-  - alias: if executing the script
-    if:
+      _mode: '{{ mode | default(''manual'') | lower }}'
+      _target_list: "{%- if target_entities is string -%}\n  {{ [target_entities]
+        }}\n{%- elif target_entities is iterable -%}\n  {{ target_entities | list
+        }}\n{%- else -%}\n  {{ [] }}\n{%- endif -%}"
+      _ref_id: '{{ reference_entity | default('''') }}'
+      _ref_state: "{%- if _ref_id != '' and states(_ref_id) in ['on', 'off'] -%}\n
+        \ {{ states(_ref_id) }}\n{%- else -%}\n  invalid\n{%- endif -%}"
+      _resolved_state: "{%- if _mode == 'manual' -%}\n  {{ manual_state | default('off')
+        | lower }}\n{%- elif _mode == 'mirror' -%}\n  {{ _ref_state }}\n{%- elif _mode
+        == 'invert' -%}\n  {%- if _ref_state == 'on' -%}off\n  {%- elif _ref_state
+        == 'off' -%}on\n  {%- else -%}invalid{%- endif -%}\n{%- else -%}\n  invalid\n{%-
+        endif -%}"
+      _valid: "{{\n  _resolved_state in ['on', 'off']\n  and _target_list | length
+        > 0\n}}"
+  - if:
     - condition: template
-      value_template: '{{ bool ( exec_rest,false )}}'
+      value_template: '{{ not _valid }}'
     then:
-    - repeat:
-        for_each: '{{ target_list }}'
-        sequence:
-        - variables:
-            default_domain: switch
-            target_entity: '{{ repeat.item }}'
-            use_target: '{{ target_entity is defined and target_entity is string and
-              is_state(target_entity, [''on'', ''off'']) }}'
-            domain: "{%- if use_target and target_entity is string and '.' in target_entity
-              -%}\n  {{ target_entity.split('.')[0] }}\n{%- else -%}\n  {{ default_domain
-              }}\n{%- endif %}"
-            pre_state: "{%- if bool(use_trigger, false ) -%}\n  {%- if bool(states(
-              entity_trigger.entity_id ) in ['on' ], false ) -%}on{%- else -%}off{%-
-              endif -%}\n{%- else -%}{{- select_state | lower -}}{%- endif  -%}"
-            the_state: "{%- if bool(bool_invert, false ) -%}\n  {%- if bool( pre_state
-              \ in ['on' ], false ) -%}off{%- else -%}on{%- endif -%}\n{%- else -%}{{pre_state}}{%-
-              endif  -%}"
-            action: '{{- domain }}.turn_{{- the_state }}'
-            logbook_message: '''{% if use_target %}Going to call action {{ action
-              }} on {{ state_attr( target_entity, "friendly_name" ) }} {% else %}
-              not calling action because NO target has been selected{% endif %}''
-
-              '
-            result:
-              action_called: '{{ bool( use_target , false) }}'
-              action: '{{action}}'
-              trigger_state: '{{the_state}}'
-              trigger_entity_id: "{%- if bool(use_trigger, false ) -%}\n  {{ entity_trigger.entity_id
-                }}\n{%- else -%}manual{%- endif -%}"
-              target_entity_id: "{% if use_target %}\n  {{ target_entity }}\n{%- else
-                -%}false{%- endif -%}"
-              logbook_message: '{{logbook_message}}'
-          alias: 'todo: fix result variable'
-        - alias: if trigger is being used
-          if:
-          - condition: template
-            value_template: '{{ bool(use_trigger,false) }}'
-            alias: if using manually selected state
-          then:
-          - action: logbook.log
-            metadata: {}
-            data:
-              name: 'State: {{ the_state | upper }} '
-              message: '{{ logbook_message }}'
-              entity_id: '{{ entity_trigger.entity_id }}'
-            enabled: true
-          else:
-          - action: logbook.log
-            metadata: {}
-            data:
-              name: Manually selected {{ the_state | upper }}
-              message: '{{logbook_message}}'
-          enabled: true
-        - alias: if target is set, call the action.
-          if:
-          - condition: template
-            value_template: '{{ bool(use_target,false) }}'
-          then:
-          - action: '{{ action }}'
-            metadata: {}
-            data: {}
-            target:
-              entity_id:
-              - '{{ target_entity }}'
-            enabled: true
-    else:
-    - variables:
-        the_state: "{%- if bool(use_trigger, false ) -%}\n  {{ states(entity_trigger.entity_id
-          )}}\n{%- else -%}{{- select_state | lower -}}{%- endif  -%}"
-        logbook_message: '''Script Execution is STOPPED, trigger state is INVALID
-          and set to {{ the_state }}''
-
-          '
-        result:
-          action_called: false
-          action: undefined
-          trigger_state: '{{the_state}}'
-          trigger_entity_id: "{%- if bool(use_trigger, false ) -%}\n  {{ entity_trigger.entity_id
-            }}\n{%- else -%}manual{%- endif -%}"
-          target_entity_id: "{% if use_target %}\n  {{ target_entity_set.entity_id
-            }}\n{%- else -%}undefined{%- endif -%}"
-          logbook_message: '{{logbook_message}}'
-    - alias: action NOT being called
-      if:
-      - condition: template
-        value_template: '{{ bool(use_trigger,false) }}'
-      then:
-      - action: logbook.log
-        metadata: {}
-        data:
-          name: 'Invalid State: {{ the_state | upper }} '
-          message: '{{ logbook_message }}'
-          entity_id: '{{entity_trigger.entity_id}}'
-        enabled: true
-      else:
-      - action: logbook.log
-        metadata: {}
-        data:
-          name: 'Manually selected: {{ the_state | upper }} '
-          message: '{{logbook_message}}'
-    enabled: true
-  - stop: '{% if exec_rest %}Action call complete{% else %}Action NOT called{% endif
-      %}'
+    - action: logbook.log
+      data:
+        name: Set Entity State — SKIPPED
+        message: Mode={{ _mode }}, resolved_state={{ _resolved_state }}, targets={{
+          _target_list | join(', ') or 'none' }}, ref={{ _ref_id or 'none' }}, ref_state={{
+          _ref_state }}
+    - stop: Invalid inputs — action not called
+      response_variable: result
+  - repeat:
+      for_each: '{{ _target_list }}'
+      sequence:
+      - variables:
+          _entity: '{{ repeat.item }}'
+          _domain: "{%- if '.' in _entity -%}\n  {{ _entity.split('.')[0] }}\n{%-
+            else -%}\n  switch\n{%- endif -%}"
+          _action: '{{ _domain }}.turn_{{ _resolved_state }}'
+          _name: '{{ state_attr(_entity, ''friendly_name'') or _entity }}'
+      - if:
+        - condition: template
+          value_template: '{{ is_state(_entity, [''on'', ''off'']) }}'
+        then:
+        - action: '{{ _action }}'
+          target:
+            entity_id: '{{ _entity }}'
+        - action: logbook.log
+          data:
+            name: Set Entity State — {{ _resolved_state | upper }}
+            message: Called {{ _action }} on {{ _name }} (mode={{ _mode }} {%- if
+              _mode in ['mirror','invert'] %}, ref={{ _ref_id }}, ref_state={{ _ref_state
+              }}{% endif %})
+            entity_id: '{{ _entity }}'
+        else:
+        - action: logbook.log
+          data:
+            name: Set Entity State — SKIPPED entity
+            message: '{{ _name }} ({{ _entity }}) is {{ states(_entity) }} — not on/off,
+              skipping.'
+  - variables:
+      result:
+        mode: '{{ _mode }}'
+        resolved_state: '{{ _resolved_state }}'
+        targets: '{{ _target_list }}'
+        reference_entity: '{{ _ref_id or none }}'
+        reference_state: '{{ _ref_state }}'
+  - stop: Done
     response_variable: result
-    enabled: true
-  alias: Set State Switch/Light v2.0
-  fields:
-    target_entity_set:
-      selector:
-        target:
-          entity:
-            domain:
-            - switch
-            - light
-      name: Target Entity to Set State
-      required: true
-      description: 'todo: handle multiple targets'
-    entity_trigger:
-      selector:
-        target:
-          entity:
-            domain:
-            - binary_sensor
-            - schedule
-            - switch
-            - light
-            - input_boolean
-      name: Entity State to use as trigger
-      required: false
-      description: Entity to mock trigger from (like time of day sensor, schedule)
-    select_state:
-      selector:
-        select:
-          options:
-          - 'On'
-          - 'Off'
-          - Unavailable
-          - Unknown
-      name: State
-      description: Set the target's state directly. Not used if a trigger entity is
-        selected (like time of day sensor, schedule)
-      required: true
-      default: 'Off'
-    bool_invert_state:
-      selector:
-        select:
-          options:
-          - 'On'
-          - 'Off'
-      name: Invert State
-      description: Negates on and off states to toggle
-      default: 'Off'
-      required: false
-  description: TODO Target to turn on or off (setting the state)
-  icon: mdi:toggle-switch-off
 issue_queue_command:
   alias: Issue Queue Command
   mode: parallel
@@ -959,3 +839,711 @@ event_dump_tester:
       description: End of range. Defaults to 7 days from now.
   alias: Event Dump Tester
   description: ''
+open_ai_test:
+  sequence:
+  - variables:
+      info: not set
+      response_text: not set
+  - action: pyscript.entity_info
+    metadata: {}
+    data:
+      flatten_members: 'false'
+      dedupe: 'true'
+      entities:
+      - switch.55g_pumps_heaters
+    response_variable: info
+    enabled: true
+  - action: pyscript.openai_text
+    metadata: {}
+    data:
+      model: gpt-4.1-mini
+      prompt: say green !
+    response_variable: response_text
+  alias: Open AI Test
+  description: ''
+  fields:
+    model_selection:
+      selector:
+        select:
+          options:
+          - gpt-4.1-mini
+          - gpt-4.1
+          - gpt-4.1-nano
+          - gpt-5-mini
+          - gpt-5
+      default: gpt-4.1-mini
+      name: Model
+      description: The model to use for OpenAi
+bambu_printer_progress_reporter:
+  sequence:
+  - variables:
+      sorted_milestone_list: todo
+  alias: Bambu Printer Progress Reporter
+  description: ''
+  fields:
+    current_value:
+      selector:
+        number:
+          min: 1
+          max: 100
+      default: 62
+      name: Current Value
+    milestones:
+      selector:
+        text:
+          multiple: true
+      default:
+      - '20'
+      - '40'
+      - '60'
+      - '80'
+      - '90'
+    milestone_sort_order:
+      selector:
+        select:
+          options:
+          - ASC
+          - DSC
+      default: ASC
+      name: Milestone Sort Order
+    threshold_a:
+      selector:
+        number:
+          min: -1000
+          max: 1000
+          step: 1
+      default: 0
+      name: Threshold A
+    threshold_b:
+      selector:
+        number:
+          min: -1000
+          max: 1000
+          step: 1
+      default: 100
+      name: Threshold B
+semantic_entity_message_duplicate:
+  sequence:
+  - variables:
+      device_info_response:
+      device_router_data: device_router
+      report_result:
+    enabled: true
+  - alias: Get Entity Info
+    action: pyscript.entity_info
+    data:
+      flatten_members: 'false'
+      dedupe: 'true'
+      devices:
+      - '{{ device_router }}'
+    response_variable: device_info_response
+    enabled: true
+  - alias: Set Entity Info Variables
+    variables:
+      condition: unexpectedly off
+      entity_info: '{{ entity_info_response }}'
+    enabled: false
+  - alias: Generate Semantic Message
+    action: ai_task.generate_data
+    data:
+      task_name: Home Assistant spoken alert renderer
+      instructions: '.Device information:
+
+        {{ device_info_response | string }}
+
+        Generate a concise status report for the supplied device information...'
+    response_variable: generated_message
+    enabled: false
+  - action: ai_task.generate_data
+    data:
+      entity_id: ai_task.openai_ai_task_2
+      task_name: Greeting
+      instructions: 'Device information:{{ device_info_response | string }} Generate
+        a concise status report for the supplied device information.
+
+
+        Check my Home Assistant internet outage history for the last 7 days. Show
+        current WAN status and a table of each disconnection with its start, recovery
+        time, and duration in Buffalo local time. Include total downtime, distinguish
+        missing data from confirmed outages, and compare against external ping monitoring
+        if available.'
+    enabled: true
+    response_variable: device_info_response
+  - action: logbook.log
+    metadata: {}
+    data:
+      name: Teat
+      message: Here is answer {{device_info_response}}
+  - action: script.entity_dump
+    metadata: {}
+    data:
+      input_entities:
+      - input_number.10g_f_temperature
+      - binary_sensor.20g_powerstrip_status
+  alias: Wan Report
+  description: Collects raw pyscript.entity_info output and exposes it with the condition
+    for trace/debugging.
+  mode: parallel
+  max: 10
+  fields:
+    device_router:
+      selector:
+        device:
+          filter:
+          - integration: netgear
+      default: b5fe8030195a7438b8c864fd4f831195
+      name: Router Integration
+      required: true
+'1791597174747':
+  sequence:
+  - variables:
+      lookup:
+        120g: switch.120g_pumps_heaters
+        55g: switch.55g_pumps_heaters
+        10g Male: switch.10g_m_pumps_heaters
+        20g Long: switch.20g_pumps_heaters
+        10g Upper: switch.20g_pumps_heaters
+        Quarantine: switch.20g_pumps_heaters
+      co2_list:
+      - switch.10g_m_pumps_heaters
+      - switch.20g_pumps_heaters
+    alias: CONST ENUM VARIABLES
+  - variables:
+      aq_list: '{{state_attr(''input_select.aquarium'',''options'')}}'
+      selected_value: '{{aquarium_picker}}'
+      selected_entities: "{%- set ns = namespace(entities=[]) %}\n  {%- for value
+        in selected_value %}\n  {%- set ns.entities = ns.entities + [lookup[value]]
+        %}\n{%- endfor %}{{- ns.entities }}"
+      do_co2: '{{ selected_entities | select(''in'', co2_list) | list | length > 0
+        }}'
+      friendly_names: "{%- set ns = namespace(entities=[]) %}\n  {%- for value in
+        selected_value %}\n  {%- set ns.entities = ns.entities + [ state_attr( lookup[value],'friendly_name')]
+        %}\n{%- endfor %}{{- ns.entities | join(',')}}"
+  - sequence:
+    - action: script.set_state_switch_light
+      metadata: {}
+      data:
+        select_state: 'Off'
+        bool_invert_state: 'Off'
+        target_entity_set:
+          entity_id: '{{selected_entities}}'
+      alias: Turn off pumps
+      enabled: true
+    - alias: Turn off C02 if needed
+      if:
+      - condition: template
+        value_template: '{{ bool( do_co2 ,false) and bool(states(''binary_sensor.aquarium_co2_schedule'',false
+          ))  }}'
+      then:
+      - action: script.set_state_switch_light
+        metadata: {}
+        data:
+          bool_invert_state: 'Off'
+          select_state: 'Off'
+          target_entity_set:
+            entity_id: switch.20g_rack_co2
+      - action: homeassistant.add_label_to_entity
+        metadata: {}
+        data:
+          label_id:
+          - entity_watch_list
+          entity_id:
+          - switch.20g_rack_co2
+      enabled: true
+    - alias: if do notification
+      if:
+      - condition: template
+        value_template: '{{ bool(do_notification ,false)}}'
+      then:
+      - action: script.notification_dispatcher
+        metadata: {}
+        data:
+          notification_channel:
+          - alexa
+          bool_critical: 'OFF'
+          sound: default
+          sms_targets:
+          - 7188138156@mms.att.net
+          email_targets:
+          - gbtunney@mac.com
+          alexa_volume: Maximum Volume
+          alexa_sound: amzn_sfx_doorbell_chime_01
+          message: '{{message}}'
+        enabled: true
+      enabled: false
+    - alias: 'Do logbook entries if filled in '
+      if:
+      - condition: template
+        value_template: '{{ aquarium_clean_notes is defined }} '
+      then:
+      - repeat:
+          sequence:
+          - action: logbook.log
+            metadata: {}
+            data:
+              name: Aquarium Maintenance
+              message: 'Maintenance was logged: {{aquarium_clean_notes | join('','')
+                }}'
+              entity_id: '{{ repeat.item }}'
+          - action: homeassistant.add_label_to_entity
+            metadata: {}
+            data:
+              label_id:
+              - entity_watch_list
+              entity_id:
+              - '{{ repeat.item }}'
+          for_each: '{{selected_entities}}'
+    - action: script.set_state_switch_light
+      metadata: {}
+      data:
+        select_state: 'On'
+        bool_invert_state: 'Off'
+        target_entity_set:
+          entity_id: '{{selected_entities}}'
+      alias: Turn ON pumps
+      enabled: false
+    - alias: Turn ON C02 if needed and  if scheduled
+      if:
+      - condition: template
+        value_template: '{{ bool(do_co2 ,false) and bool(states(''binary_sensor.aquarium_co2_schedule'',false
+          )) }}'
+      then:
+      - alias: Turn on CO2 if scheduled
+        action: script.set_state_switch_light
+        metadata: {}
+        data:
+          bool_invert_state: 'Off'
+          select_state: 'Off'
+          target_entity_set:
+            entity_id: switch.20g_rack_co2
+          entity_trigger:
+            entity_id: binary_sensor.aquarium_co2_schedule
+      enabled: false
+    enabled: true
+  - delay:
+      hours: 0
+      minutes: '{{ first_delay |int }}'
+      seconds: 0
+      milliseconds: 0
+    alias: first delay
+    enabled: false
+  alias: Aquarium Selector v2.5 ui
+  mode: parallel
+  description: ''
+  fields:
+    aquarium_picker:
+      selector:
+        select:
+          options:
+          - 120g
+          - 55g
+          - 10g Male
+          - 20g Long
+          - 10g Upper
+          - Quarantine
+          multiple: true
+      required: true
+      name: Aquarium Picker
+    aquarium_clean_notes:
+      selector:
+        select:
+          options:
+          - Water Change (Vacuum)
+          - Trim Plants
+          - Remove algae
+          - Deep Clean
+          - Clean Filter
+          - Quick water Change (no vacuum)
+          multiple: true
+          custom_value: true
+      name: Aquarium Clean Notes
+  icon: mdi:blinds-open
+'1791609891036':
+  alias: Dummy Text Response
+  description: Test script that returns a dynamic plain text response
+  mode: single
+  sequence:
+  - variables:
+      result: "\U0001F680 **Dynamic Response Test**  \n• **Triggered At:** {{ now().strftime('%I:%M:%S
+        %p') }}   • **Home Assistant Status:** The system is currently *online*.   •
+        **Netgear Router State:** The network gateway is reporting as `{{ states('sensor.netgear_router_wan_status')
+        or 'Connected' }}`.  \n*Every time you tap the card button, this timestamp
+        should increment instantly.*"
+  - stop: Return text
+    response_variable: result
+entity_dump:
+  sequence:
+  - variables:
+      entity_info: "{% set entities = [input_entities]\n   if input_entities is string
+        else input_entities %}\n{% set ns = namespace(results=[]) %}\n{% for entity
+        in entities %}\n  {% set item = states[entity] %}\n  {% set entry = config_entry_id(entity)
+        %}\n\n  \n  {% set ns.results = ns.results + [{\n    \"entity_id\": entity,\n
+        \   \"exists\": item is not none,\n    \"name\": state_attr(entity, 'friendly_name'),\n
+        \   \"state\": states(entity),\n    \"integration\": {\n      \"domain\":
+        config_entry_attr(entry, 'domain') if entry else none,\n      \"title\": config_entry_attr(entry,
+        'title') if entry else none,\n      \"config_entry_id\": entry\n    },\n    \"metadata\":
+        {\n      \"last_changed\": item.last_changed.isoformat()\n                      if
+        item is not none else none,\n      \"last_updated\": item.last_updated.isoformat()\n
+        \                     if item is not none else none\n    },\n    \"attributes\":
+        dict(item.attributes) if item is not none else {}\n  }] %}\n{% endfor %}\n{{
+        ns.results }}"
+  - variables:
+      result: '{{ entity_info }}'
+    enabled: true
+  - stop: Return entity info
+    response_variable: result
+    enabled: true
+  fields:
+    input_entities:
+      selector:
+        entity:
+          multiple: true
+      required: true
+      name: Input Entities
+      default:
+      - input_number.10g_f_temperature
+  alias: Attribute Trace
+  description: "Returns information for one or more selected entities, including their
+    name,\n  current state, integration details, timestamps, and all exposed state\n
+    \ attributes. Accepts input_entities and returns a dictionary containing an\n
+    \ entities list. Read-only; does not change entities or create alerts."
+wip_test_threshold:
+  sequence:
+  - variables: {}
+  alias: WIP Test Threshold
+  description: ''
+  fields:
+    condition:
+      selector:
+        text:
+      name: Condition
+    input_entities:
+      selector:
+        text:
+      name: Entities
+      required: true
+wan_report_duplicate:
+  sequence:
+  - variables:
+      device_info_response:
+      device_router_data: device_router
+      report_result:
+    enabled: true
+  - alias: Get Entity Info
+    action: pyscript.entity_info
+    data:
+      flatten_members: 'false'
+      dedupe: 'true'
+      devices:
+      - '{{ device_router }}'
+    response_variable: device_info_response
+    enabled: true
+  - alias: Set Entity Info Variables
+    variables:
+      condition: unexpectedly off
+      entity_info: '{{ entity_info_response }}'
+    enabled: false
+  - alias: Generate Semantic Message
+    action: ai_task.generate_data
+    data:
+      task_name: Home Assistant spoken alert renderer
+      instructions: '.Device information:
+
+        {{ device_info_response | string }}
+
+        Generate a concise status report for the supplied device information...'
+    response_variable: generated_message
+    enabled: false
+  - action: ai_task.generate_data
+    data:
+      entity_id: ai_task.openai_ai_task_2
+      task_name: Greeting
+      instructions: 'Device information:{{ device_info_response | string }} Generate
+        a concise status report for the supplied device information.
+
+
+        Check my Home Assistant internet outage history for the last 7 days. Show
+        current WAN status and a table of each disconnection with its start, recovery
+        time, and duration in Buffalo local time. Include total downtime, distinguish
+        missing data from confirmed outages, and compare against external ping monitoring
+        if available.'
+    enabled: true
+    response_variable: device_info_response
+  - action: logbook.log
+    metadata: {}
+    data:
+      name: Teat
+      message: Here is answer {{device_info_response}}
+  alias: Wan Report (Duplicate)
+  description: Collects raw pyscript.entity_info output and exposes it with the condition
+    for trace/debugging.
+  mode: parallel
+  max: 10
+  fields:
+    input_entities:
+      selector:
+        entity:
+          multiple: true
+      name: Input Entities
+      required: true
+gbt_generic_semantic:
+  sequence:
+  - variables:
+      entity_result:
+      result:
+  - action: pyscript.entity_info
+    metadata: {}
+    data:
+      flatten_members: 'false'
+      dedupe: 'true'
+      entities: '{{ input_entities }}'
+    response_variable: entity_result
+  - action: ai_task.generate_data
+    metadata: {}
+    data:
+      task_name: Semantic State Report
+      instructions: 'Optional problem condition:
+
+        {{ condition | default('''', true) }}
+
+
+        Entity information:
+
+        {{ entity_result }}
+
+
+        Turn this entity information into a concise, natural, speech-friendly status
+        report.
+
+        Use friendly names, areas, and labels to identify equipment clearly. Group
+        related entities by area or device and avoid repetition.
+
+        Report current states neutrally; “off” is not inherently a problem.
+
+        Only use alert wording when a non-empty, explicit problem condition was supplied.
+        Otherwise, summarize the current states neutrally.
+
+        Describe unknown or unavailable states accurately. Do not infer that everything
+        is healthy just because no problem condition was supplied. Do not invent causes,
+        thresholds, or statuses.
+
+        Return only the report text, with no heading, markdown, or extra explanation.'
+      entity_id: ai_task.openai_ai_task
+    response_variable: result
+    enabled: true
+  - stop: Return generated report
+    response_variable: result
+  fields:
+    condition:
+      selector:
+        text:
+      name: Condition
+      required: false
+    input_entities:
+      selector:
+        entity:
+          multiple: true
+      description: Entity to describe for the ai
+      name: Input Entities
+      required: true
+  alias: GBT Generic Semantic
+  description: ''
+gbt_threshold_label_issue_caller:
+  alias: GBT Threshold Label Issue Caller
+  description: Checks labeled Home Assistant threshold helpers using each helper's
+    type and position, dispatches a semantic alert, and creates or clears one Spook
+    Repairs issue per helper.
+  mode: queued
+  max: 10
+  fields:
+    threshold_label:
+      name: Threshold label
+      description: Choose a label whose threshold helpers all use the same alert state.
+      required: true
+      selector:
+        label: {}
+      default: monitor_temperature_v2
+    problem_condition:
+      name: Problem condition
+      description: Plain-language issue rule, such as 'cat fountain water is below
+        its limit' or 'reptile room temperature is outside its configured range'.
+      required: false
+      selector:
+        text: {}
+  sequence:
+  - variables:
+      label_members: '{{ label_entities(threshold_label) }}'
+      bad_members: "{% set ns = namespace(ids=[]) %}\n{% for entity_id in label_entities(threshold_label)
+        %}\n  {% set lower = state_attr(entity_id, 'lower') %}\n  {% set upper = state_attr(entity_id,
+        'upper') %}\n  {% set state = states(entity_id) %}\n  {% set has_limits =
+        lower is not none or upper is not none %}\n  {% set is_range = lower is not
+        none and upper is not none %}\n  {% set bad = has_limits and ((is_range and
+        state == 'off') or (not is_range and state == 'on')) %}\n  {% if bad %}{%
+        set ns.ids = ns.ids + [entity_id] %}{% endif %}\n{% endfor %}\n{{ ns.ids }}"
+      bad_count: "{% set ns = namespace(n=0) %}\n{% for entity_id in label_entities(threshold_label)
+        %}\n  {% set lower = state_attr(entity_id, 'lower') %}\n  {% set upper = state_attr(entity_id,
+        'upper') %}\n  {% set state = states(entity_id) %}\n  {% set has_limits =
+        lower is not none or upper is not none %}\n  {% set is_range = lower is not
+        none and upper is not none %}\n  {% if has_limits and ((is_range and state
+        == 'off') or (not is_range and state == 'on')) %}\n    {% set ns.n = ns.n
+        + 1 %}\n  {% endif %}\n{% endfor %}\n{{ ns.n }}"
+  - if:
+    - condition: template
+      value_template: '{{ bad_count | int(0) > 0 }}'
+    then:
+    - action: script.gbt_generic_semantic
+      data:
+        input_entities: '{{ bad_members }}'
+        condition: '{{ problem_condition }}'
+      response_variable: semantic_result
+    - action: persistent_notification.create
+      data:
+        notification_id: threshold_label_test_{{ threshold_label }}
+        title: TEST dispatch — {{ threshold_label }}
+        message: '{{ semantic_result.data }}'
+    else:
+    - action: persistent_notification.dismiss
+      data:
+        notification_id: threshold_label_test_{{ threshold_label }}
+  - repeat:
+      for_each: '{{ label_members }}'
+      sequence:
+      - choose:
+        - conditions:
+          - condition: template
+            value_template: '{{ repeat.item in bad_members }}'
+          sequence:
+          - action: repairs.create
+            data:
+              issue_id: threshold_{{ repeat.item | replace('.', '_') }}
+              title: 'Threshold alert: {{ entity_name(repeat.item) }}'
+              description: '{{ problem_condition }}. Current reading/report: {{ semantic_result.data
+                }}'
+              severity: warning
+              persistent: true
+        - conditions:
+          - condition: template
+            value_template: '{% set lower = state_attr(repeat.item, ''lower'') %}
+
+              {% set upper = state_attr(repeat.item, ''upper'') %}
+
+              {% set state = states(repeat.item) %}
+
+              {% set has_limits = lower is not none or upper is not none %}
+
+              {% set is_range = lower is not none and upper is not none %}
+
+              {{ has_limits and ((is_range and state == ''on'') or (not is_range and
+              state == ''off'')) }}'
+          sequence:
+          - action: repairs.remove
+            data:
+              issue_id: threshold_{{ repeat.item | replace('.', '_') }}
+          - action: repairs.remove
+            data:
+              issue_id: threshold_unavailable_{{ repeat.item | replace('.', '_') }}
+        default:
+        - action: repairs.remove
+          data:
+            issue_id: threshold_{{ repeat.item | replace('.', '_') }}
+        - action: repairs.create
+          data:
+            issue_id: threshold_unavailable_{{ repeat.item | replace('.', '_') }}
+            title: 'Cannot assess: {{ entity_name(repeat.item) }}'
+            description: 'The threshold helper cannot currently be assessed. State:
+              {{ states(repeat.item) }}; type: {{ state_attr(repeat.item, ''type'')
+              }}; position: {{ state_attr(repeat.item, ''position'') }}.'
+            severity: warning
+            persistent: true
+critical_alert_semantic_entity_test:
+  alias: Critical Alert — Semantic Entity References (TEST)
+  description: Manual test for an Alert Redux generator. Returns semantic text and
+    exact entity references; only creates a local test notification when requested.
+    Does not fire alerts or send mobile critical notifications.
+  mode: queued
+  max: 5
+  fields:
+    generator_entity:
+      name: Generator
+      default: sensor.alert_redux_generator_test_label_wip
+      selector:
+        entity:
+          domain: sensor
+    input_entities:
+      name: Override entity references
+      description: Optional explicit subjects for testing; otherwise uses currently
+        firing generated alerts.
+      selector:
+        entity:
+          multiple: true
+    create_notification:
+      name: Create local test notification
+      default: false
+      selector:
+        boolean:
+  sequence:
+  - variables:
+      generator: '{{ generator_entity | default(''sensor.alert_redux_generator_test_label_wip'',true)
+        }}'
+  - variables:
+      alert_ids: '{{ state_attr(generator,''alerts'') | default([],true) }}'
+      all_targets: '{{ state_attr(generator,''targets'') | default([],true) }}'
+  - variables:
+      firing_alerts: '{{ expand(alert_ids) | selectattr(''state'',''in'',[''active'',''ack''])
+        | map(attribute=''entity_id'') | list }}'
+  - variables:
+      subjects: '{{ input_entities | default(expand(firing_alerts) | map(attribute=''attributes.subject_entity'')
+        | select(''string'') | unique | list, true) }}'
+      semantic_result: {}
+      fallback: '{% if not has_value(generator) %}Generator data is unavailable; no
+        conclusion about equipment health can be made.{% elif firing_alerts | count
+        == 0 %}No currently firing alerts were found in this generator.{% else %}Currently
+        firing alert subjects: {{ subjects | join('', '') }}.{% endif %}'
+  - if:
+    - condition: template
+      value_template: '{{ subjects | count > 0 }}'
+    then:
+    - action: script.gbt_generic_semantic
+      data:
+        input_entities: '{{ subjects }}'
+        condition: '{% if input_entities | default([],true) | count > 0 %}Manual test
+          of these entities. Describe their current states without inferring a fault.{%
+          else %}These entities are subjects of currently firing Alert Redux alerts.
+          {% for id in firing_alerts %}{{ state_attr(id,''message'') | default(id,true)
+          }} {% endfor %}Do not infer a physical cause from the alert name alone.{%
+          endif %}'
+      response_variable: semantic_result
+      continue_on_error: true
+  - variables:
+      report: '{{ semantic_result.data | default(fallback,true) }}'
+      references: '{% set ns=namespace(rows=[]) %}{% for id in subjects %}{% set ns.rows
+        = ns.rows + [dict(entity_id=id,name=state_attr(id,''friendly_name'') | default(id,true),state=states(id),area=area_name(id),labels=labels(id))]
+        %}{% endfor %}{{ ns.rows }}'
+      reference_text: '{% for id in subjects %}
+
+        - {{ state_attr(id,''friendly_name'') | default(id,true) }} — `{{ id }}` ({{
+        states(id) }}){% endfor %}'
+  - variables:
+      result:
+        message: '{{ report }}'
+        entities: '{{ subjects }}'
+        references: '{{ references }}'
+        generator: '{{ generator }}'
+        alerts: '{{ firing_alerts }}'
+        all_targets: '{{ all_targets }}'
+  - if:
+    - condition: template
+      value_template: '{{ create_notification | default(false) | bool }}'
+    then:
+    - action: persistent_notification.create
+      data:
+        notification_id: critical_alert_semantic_entity_test
+        title: TEST — Critical alert with entity references
+        message: '{{ report }}
+
+
+          Entity references:
+
+          {{ reference_text }}'
+  - stop: Return semantic report and exact entity references
+    response_variable: result

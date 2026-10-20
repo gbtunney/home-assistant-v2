@@ -1,0 +1,8 @@
+#####
+# Pyscript Config
+#####
+
+pyscript:
+  allow_all_imports: true
+  hass_is_global: true
+  openai_api_key: !secret openai_api_key

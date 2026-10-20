@@ -1,0 +1,29 @@
+# ha_mcp_backup
+schema_version: 1
+domain: automation
+entity_id: automation.reptile_lighting_schedule_ui
+captured: '2026-10-01T02:11:03.213667+00:00'
+tool: ha_config_set_automation
+config:
+  id: '1744261059099'
+  alias: Reptile Lighting Schedule UI
+  description: Uses Time of day sensor now
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.reptile_lighting_schedule
+    enabled: true
+    attribute: next_update
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.to_state.state in [''on'', ''off''] }}'
+  actions:
+  - action: script.set_state_switch_light_test_version
+    metadata: {}
+    data:
+      mode: mirror
+      manual_state: 'off'
+      target_entities:
+      - light.reptile_lights
+      reference_entity: binary_sensor.reptile_lighting_schedule
+  mode: single

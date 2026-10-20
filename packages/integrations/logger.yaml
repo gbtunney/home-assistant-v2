@@ -1,0 +1,15 @@
+#####
+# Logger - only log warning and up
+# https://www.home-assistant.io/integrations/logger/
+#####
+
+logger:
+  default: warn
+
+  logs:
+    #custom_components.tuya_local: debug
+    custom_components.hass_cozylife_local_pull: debug
+
+    # recorder debugging
+    #homeassistant.components.recorder: debug
+    #homeassistant.components.recorder.util: debug
