@@ -356,10 +356,10 @@ def _core_entity(hass, entity_id, dreg, ereg, areg):
             name = fn
 
     area_id = None
-    if device and getattr(device, "area_id", None):
-        area_id = device.area_id
-    elif entry and getattr(entry, "area_id", None):
+    if entry and getattr(entry, "area_id", None):
         area_id = entry.area_id
+    elif device and getattr(device, "area_id", None):
+        area_id = device.area_id
 
     area_name = None
     if area_id:
@@ -368,8 +368,10 @@ def _core_entity(hass, entity_id, dreg, ereg, areg):
             area_name = area.name
 
     device_name = None
+    device_default_name = None
     if device:
-        device_name = device.name or device.model
+        device_default_name = device.name or device.model
+        device_name = device.name_by_user or device_default_name
 
     state, state_kind, state_number = _norm_state(hass, entity_id, domain)
 
@@ -382,6 +384,7 @@ def _core_entity(hass, entity_id, dreg, ereg, areg):
         "state_number": state_number,
         "device_id": dev_id,
         "device_name": device_name,
+        "device_default_name": device_default_name,
         "device_labels": _labels_from_entry(device) if device else [],
         "entity_labels": _labels_from_entry(entry) if entry else [],
         "area_id": area_id,
@@ -443,6 +446,7 @@ def _build_entry(hass, entity_id, dreg, ereg, areg, errors):
         if (not base.get("device_id")) and group_entities:
             base["device_id"] = group_entities[0].get("device_id")
             base["device_name"] = group_entities[0].get("device_name")
+            base["device_default_name"] = group_entities[0].get("device_default_name")
             base["device_labels"] = group_entities[0].get("device_labels")
         if (not base.get("area_id")) and group_entities:
             base["area_id"] = group_entities[0].get("area_id")
@@ -534,7 +538,7 @@ def entity_info(
       errors:
         description: Any validation or processing errors
       items:
-        description: Structured entity info records
+        description: Structured entity info records. device_name is the name you gave the device, device_default_name is the name from its integration, and area comes from the entity before its device.
       items_json:
         description: JSON string of items for templating
     """
