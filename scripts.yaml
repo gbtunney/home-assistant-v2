@@ -465,7 +465,7 @@ semantic_entity_message_duplicate:
     data:
       input_entities:
       - input_number.10g_f_temperature
-      - binary_sensor.20g_powerstrip_status
+      - binary_sensor.ps_6_status
   alias: Wan Report
   description: Collects raw pyscript.entity_info output and exposes it with the condition
     for trace/debugging.
@@ -517,67 +517,160 @@ entity_dump:
     \ attributes. Accepts input_entities and returns a dictionary containing an\n
     \ entities list. Read-only; does not change entities or create alerts."
 gbt_generic_semantic:
+  alias: GBT Generic Semantic
+  description: Turns entities into a short spoken status report via AI. Threshold
+    helpers, and sensors watched by one, are expanded to source value and lower/upper
+    limits. Returns {text, condition, thresholds}.
+  fields:
+    condition:
+      name: Condition
+      required: false
+      selector:
+        text:
+    input_entities:
+      description: Entity to describe for the ai
+      name: Input Entities
+      required: true
+      selector:
+        entity:
+          multiple: true
   sequence:
-  - variables:
-      entity_result:
-      result:
+  - alias: Describe the sensor, not the threshold helper
+    note: Threshold helpers are swapped for the sensor they watch, so area, device
+      and labels come from the real sensor. The threshold block is added back later.
+    variables:
+      describe_entities: '{% set ns = namespace(o=[]) %}{% for e in [input_entities]
+        | flatten if e %}{% set entry = config_entry_id(e) %}{% set integ = config_entry_attr(entry,
+        ''domain'') if entry else none %}{% set src = state_attr(e, ''entity_id'')
+        if integ == ''threshold'' else none %}{% set ns.o = ns.o + [src if src else
+        e] %}{% endfor %}{{ ns.o | unique | list }}'
   - action: pyscript.entity_info
-    metadata: {}
     data:
-      flatten_members: 'false'
       dedupe: 'true'
-      entities: '{{ input_entities }}'
-    response_variable: entity_result
-  - action: ai_task.generate_data
+      entities: '{{ describe_entities }}'
+      flatten_members: 'false'
     metadata: {}
+    response_variable: entity_result
+  - note: Adds integration domain to each item. Threshold helpers, or sensors a threshold
+      helper watches, get a threshold block with source value and limits.
+    variables:
+      entities: "{% set ns = namespace(out=[]) %}\n{% for i in entity_result['items']
+        %}\n  {% set entry = config_entry_id(i.entity_id) %}\n  {% set integ = config_entry_attr(entry,
+        'domain') if entry else none %}\n  {% if integ == 'threshold' %}\n    {% set
+        th = i.entity_id %}\n  {% else %}\n    {% set th = integration_entities('threshold')
+        | select('is_state_attr', 'entity_id', i.entity_id) | first | default(none)
+        %}\n  {% endif %}\n  {% set extra = {'integration': integ} %}\n  {% if th
+        %}\n    {% set src = state_attr(th, 'entity_id') %}{% set al = states.alert_redux
+        | selectattr('attributes.source_entity', 'eq', th) | list | first | default(none)
+        %}{% set since = (al.attributes.firing_since if al else none) or states[th].last_changed
+        %}{% set mins = (((now() | as_timestamp) - (since | as_timestamp)) / 60) |
+        round(0) | int if state_attr(th, 'position') != 'in_range' else none %}\n
+        \   {% set extra = dict(extra, threshold={\n      'helper': th,\n      'helper_name':
+        state_attr(th, 'friendly_name'),\n      'source_entity': src,\n      'source_name':
+        state_attr(src, 'friendly_name'),\n      'value': state_attr(th, 'sensor_value'),\n
+        \     'unit': state_attr(src, 'unit_of_measurement'),\n      'type': state_attr(th,
+        'type'),\n      'lower': state_attr(th, 'lower'),\n      'upper': state_attr(th,
+        'upper'),\n      'hysteresis': state_attr(th, 'hysteresis'),\n      'position':
+        state_attr(th, 'position'), 'minutes_out_of_range': mins}) %}\n  {% endif
+        %}\n  {% set ns.out = ns.out + [dict(i, **extra)] %}\n{% endfor %}\n{{ ns.out
+        }}"
+  - alias: Trim what the AI sees
+    note: 'Only name, state, unit, area, spot, device and label names go to the AI.
+      A label named Spot: X becomes spot X, a place inside the area. Device names
+      lose code tokens such as ps_44 or (ps_3) and hardware words such as power strip,
+      so 55 gallon ps_44 becomes 55 gallon.'
+    variables:
+      ai_items: "{% set ns = namespace(out=[]) %}\n{% for e in entities %}\n  {% set
+        dev = (e.device_name or '') | regex_replace(find='[^ ]*_[^ ]*', replace='')
+        | regex_replace(find='[(][ ]*[)]', replace='') | regex_replace(find='power
+        strip', replace='', ignorecase=True) | regex_replace(find='[ ]+', replace='
+        ') | trim %}\n  {% set ids = ((e.entity_labels or []) + (e.device_labels or
+        [])) | unique | list %}\n  {% set spot = ids | select('match', 'spot_') |
+        map('label_name') | select | map('regex_replace', find='^ *spot *: *', replace='',
+        ignorecase=True) | first | default(none) %}\n  {% set labels = ids | reject('match',
+        'spot_') | map('label_name') | select | list %}\n  {% set item = {'name':
+        e.name, 'state': e.state, 'unit': state_attr(e.entity_id, 'unit_of_measurement'),
+        'area': e.area_name, 'spot': spot, 'device': dev or none, 'labels': labels}
+        %}\n  {% if e.threshold is defined %}{% set item = dict(item, threshold=e.threshold)
+        %}{% endif %}\n  {% set ns.out = ns.out + [item] %}\n{% endfor %}\n{{ ns.out
+        }}"
+  - action: ai_task.generate_data
     data:
-      task_name: Semantic State Report
-      instructions: 'Optional problem condition:
+      entity_id: ai_task.openai_ai_task
+      instructions: 'Problem condition (may be empty):
 
         {{ condition | default('''', true) }}
 
 
-        Entity information:
+        Entities (JSON):
 
-        {{ entity_result }}
+        {{ ai_items | tojson }}
 
 
-        Turn this entity information into a concise, natural, speech-friendly status
-        report.
+        Write a short, natural, speech-friendly report on these entities, to be read
+        aloud.
 
-        Use friendly names, areas, and labels to identify equipment clearly. Group
-        related entities by area or device and avoid repetition.
 
-        Report current states neutrally; “off” is not inherently a problem.
+        If a problem condition is given, open with it as an alert in plain words,
+        then give the current values that back it up. If no condition is given, report
+        current states neutrally with no alert wording.
 
-        Only use alert wording when a non-empty, explicit problem condition was supplied.
-        Otherwise, summarize the current states neutrally.
 
-        Describe unknown or unavailable states accurately. Do not infer that everything
-        is healthy just because no problem condition was supplied. Do not invent causes,
-        thresholds, or statuses.
+        Name each thing the way a person in this home would say it. Start from its
+        friendly name, then add only the context needed to make it clear: a meaningful
+        device name, its spot, labels (such as aquarium), and the area. A spot is
+        a place inside the area, so a light with spot Mirror in the Bathroom is the
+        bathroom mirror light. Skip any name or label that looks like a code or ID
+        (such as ps_44, a hex string or a model number), and never repeat a word that
+        is already in the name. Fold that context into the name itself, as in the
+        garage chest freezer, rather than adding a separate sentence about it. When
+        several entities share a device, label or area, say that context once and
+        list them under it, as in the garage freezer and fridge are both on. If two
+        things would otherwise sound the same, use the device name to tell them apart,
+        as in the upstairs bathroom fan and the downstairs bathroom fan, and once
+        you do, use it for every one of them, never just one. Leave hardware words
+        such as power strip, plug or socket out of device names. Group things that
+        share a state and say that state once for the whole group, as in the garage
+        freezer, fridge and dehumidifier are all on, and the porch light is off. If
+        everything is in the same state, say it in one sentence. Mention a thing on
+        its own only when its state differs from the rest. Never restate a state in
+        another sentence. Round numbers the way a person would say them, to at most
+        one decimal place.
 
-        Return only the report text, with no heading, markdown, or extra explanation.'
-      entity_id: ai_task.openai_ai_task
+
+        Entities with a "threshold" block have a threshold monitor. Never report a
+        threshold monitor''s on/off state. Instead, give the source value with its
+        unit and compare it to the limits using "position": "below" means under the
+        lower limit, "above" means over the upper limit, "in_range" means within limits.
+        Mention only the limit that matters.
+
+
+        "Off" is not a problem by itself. Report unknown or unavailable states as
+        such. Don''t assume everything is fine because no condition was given. Don''t
+        invent causes, limits or statuses that aren''t in the data, and don''t add
+        judgments such as running smoothly, working fine or healthy; just say the
+        state.
+
+
+        For a threshold block, the item is the sensor itself, so describe it by its
+        name with its device and area, such as the reptile room temperature from the
+        BTHome sensor in the library, and never mention the monitor or helper. State
+        the value with its unit and whether it is within the range of lower to upper,
+        or above the maximum or below the minimum. If minutes_out_of_range is 2 or
+        more, say how long it has been out of range in natural units such as about
+        20 minutes or about 2 hours. Return only the report text, with no heading,
+        markdown or explanation.'
+      task_name: Semantic State Report
+    metadata: {}
     response_variable: result
-    enabled: true
-  - stop: Return generated report
-    response_variable: result
-  fields:
-    condition:
-      selector:
-        text:
-      name: Condition
-      required: false
-    input_entities:
-      selector:
-        entity:
-          multiple: true
-      description: Entity to describe for the ai
-      name: Input Entities
-      required: true
-  alias: GBT Generic Semantic
-  description: ''
+  - variables:
+      report:
+        condition: '{{ condition | default('''', true) }}'
+        text: '{{ result.data }}'
+        thresholds: '{{ entities | selectattr(''threshold'', ''defined'') | map(attribute=''threshold'')
+          | unique(attribute=''helper'') | list }}'
+  - response_variable: report
+    stop: Return generated report
 critical_alert_semantic_entity_test:
   alias: Critical Alert — Semantic Entity References (TEST)
   description: Manual test for an Alert Redux generator. Returns semantic text and
@@ -638,7 +731,7 @@ critical_alert_semantic_entity_test:
       response_variable: semantic_result
       continue_on_error: true
   - variables:
-      report: '{{ semantic_result.data | default(fallback,true) }}'
+      report: '{{ semantic_result.text | default(fallback,true) }}'
       references: '{% set ns=namespace(rows=[]) %}{% for id in subjects %}{% set ns.rows
         = ns.rows + [dict(entity_id=id,name=state_attr(id,''friendly_name'') | default(id,true),state=states(id),area=area_name(id),labels=labels(id))]
         %}{% endfor %}{{ ns.rows }}'
@@ -673,7 +766,7 @@ critical_alert_semantic_entity_test:
 aquarium_selector_v2_ui:
   alias: Aquarium Selector v2 UI
   description: UI copy of the YAML script, on Set Entity State v3. CO2 steps target
-    switch.20_gallon_rack_c02 (the YAML pointed at a missing switch.20g_rack_co2).
+    switch.ps_6_2_co2 (the YAML pointed at a missing switch.20g_rack_co2).
   fields:
     aquarium_picker:
       name: Aquarium Picker
@@ -777,7 +870,7 @@ aquarium_selector_v2_ui:
           manual_state: 'off'
           mode: manual
           target_entities:
-          - switch.20_gallon_rack_c02
+          - switch.ps_6_2_co2
     - alias: first delay
       delay:
         hours: 0
@@ -832,7 +925,7 @@ aquarium_selector_v2_ui:
           mode: mirror
           reference_entity: schedule.aquarium_co2_schedule
           target_entities:
-          - switch.20_gallon_rack_c02
+          - switch.ps_6_2_co2
     - alias: 'Do logbook entries if filled in '
       if:
       - condition: template
@@ -850,8 +943,8 @@ aquarium_selector_v2_ui:
 aquarium_selector_v2_5_ui:
   alias: Aquarium Selector v2.5 UI
   description: UI copy of the YAML script, on Set Entity State v3. CO2 steps target
-    switch.20_gallon_rack_c02 (the YAML pointed at a missing switch.20g_rack_co2).
-    Disabled steps kept disabled, as in the YAML.
+    switch.ps_6_2_co2 (the YAML pointed at a missing switch.20g_rack_co2). Disabled
+    steps kept disabled, as in the YAML.
   fields:
     aquarium_picker:
       name: Aquarium Picker
@@ -926,11 +1019,11 @@ aquarium_selector_v2_5_ui:
           manual_state: 'off'
           mode: manual
           target_entities:
-          - switch.20_gallon_rack_c02
+          - switch.ps_6_2_co2
       - action: homeassistant.add_label_to_entity
         data:
           entity_id:
-          - switch.20_gallon_rack_c02
+          - switch.ps_6_2_co2
           label_id:
           - entity_watch_list
     - alias: if do notification
@@ -993,7 +1086,7 @@ aquarium_selector_v2_5_ui:
           mode: mirror
           reference_entity: schedule.aquarium_co2_schedule
           target_entities:
-          - switch.20_gallon_rack_c02
+          - switch.ps_6_2_co2
   - alias: first delay
     delay:
       hours: 0
@@ -1001,3 +1094,360 @@ aquarium_selector_v2_5_ui:
       minutes: '{{ first_delay |int }}'
       seconds: 0
     enabled: false
+gbt_threshold_label_issue_caller:
+  alias: GBT Threshold Label Issue Caller
+  description: Checks labeled Home Assistant threshold helpers using each helper's
+    type and position, dispatches a semantic alert, and creates or clears one Spook
+    Repairs issue per helper.
+  mode: queued
+  max: 10
+  fields:
+    threshold_label:
+      name: Threshold label
+      description: Choose a label whose threshold helpers all use the same alert state.
+      required: true
+      selector:
+        label:
+      default: monitor_temperature_v2
+    problem_condition:
+      name: Problem condition
+      description: Plain-language issue rule, such as 'cat fountain water is below
+        its limit' or 'reptile room temperature is outside its configured range'.
+      required: false
+      selector:
+        text:
+  sequence:
+  - variables:
+      label_members: '{{ label_entities(threshold_label) }}'
+      bad_members: "{% set ns = namespace(ids=[]) %}\n{% for entity_id in label_entities(threshold_label)
+        %}\n  {% set kind = state_attr(entity_id, 'type') %}\n  {% set pos = state_attr(entity_id,
+        'position') %}\n  {% set bad = (kind == 'lower' and pos == 'below') or (kind
+        == 'upper' and pos == 'above') or (kind == 'range' and pos in ['below', 'above'])
+        %}\n  {% if bad %}{% set ns.ids = ns.ids + [entity_id] %}{% endif %}\n{% endfor
+        %}\n{{ ns.ids }}"
+      bad_count: "{% set ns = namespace(n=0) %}\n{% for entity_id in label_entities(threshold_label)
+        %}\n  {% set kind = state_attr(entity_id, 'type') %}\n  {% set pos = state_attr(entity_id,
+        'position') %}\n  {% if (kind == 'lower' and pos == 'below') or (kind == 'upper'
+        and pos == 'above') or (kind == 'range' and pos in ['below', 'above']) %}\n
+        \   {% set ns.n = ns.n + 1 %}\n  {% endif %}\n{% endfor %}\n{{ ns.n }}"
+  - if:
+    - condition: template
+      value_template: '{{ bad_count | int(0) > 0 }}'
+    then:
+    - action: script.gbt_generic_semantic
+      data:
+        input_entities: '{{ bad_members }}'
+        condition: '{{ problem_condition }}'
+      response_variable: semantic_result
+    - action: persistent_notification.create
+      data:
+        notification_id: threshold_label_test_{{ threshold_label }}
+        title: TEST dispatch — {{ threshold_label }}
+        message: '{{ semantic_result.text }}'
+    else:
+    - action: persistent_notification.dismiss
+      data:
+        notification_id: threshold_label_test_{{ threshold_label }}
+  - repeat:
+      for_each: '{{ label_members }}'
+      sequence:
+      - choose:
+        - conditions:
+          - condition: template
+            value_template: '{{ repeat.item in bad_members }}'
+          sequence:
+          - action: repairs.create
+            data:
+              issue_id: threshold_{{ repeat.item | replace('.', '_') }}
+              title: 'Threshold alert: {{ entity_name(repeat.item) }}'
+              description: '{{ problem_condition }}. Current reading/report: {{ semantic_result.text
+                }}'
+              severity: warning
+              persistent: true
+        - conditions:
+          - condition: template
+            value_template: '{% set kind = state_attr(repeat.item, ''type'') %}
+
+              {% set pos = state_attr(repeat.item, ''position'') %}
+
+              {{ (kind == ''lower'' and pos == ''above'') or (kind == ''upper'' and
+              pos == ''below'') or (kind == ''range'' and pos == ''in_range'') }}'
+          sequence:
+          - action: repairs.remove
+            data:
+              issue_id: threshold_{{ repeat.item | replace('.', '_') }}
+          - action: repairs.remove
+            data:
+              issue_id: threshold_unavailable_{{ repeat.item | replace('.', '_') }}
+        default:
+        - action: repairs.remove
+          data:
+            issue_id: threshold_{{ repeat.item | replace('.', '_') }}
+        - action: repairs.create
+          data:
+            issue_id: threshold_unavailable_{{ repeat.item | replace('.', '_') }}
+            title: 'Cannot assess: {{ entity_name(repeat.item) }}'
+            description: 'The threshold helper cannot currently be assessed. State:
+              {{ states(repeat.item) }}; type: {{ state_attr(repeat.item, ''type'')
+              }}; position: {{ state_attr(repeat.item, ''position'') }}.'
+            severity: warning
+            persistent: true
+custom_alexa_notification_ui:
+  alias: Alexa Custom Notification UI
+  description: 'Send an Alexa announcement at a set volume, then restore the speaker''s
+    previous volume. UI copy of the YAML Alexa Custom Notification without its quiet-hours
+    logic: quiet hours and repeats are handled by Alert Redux (its loud Alexa notifier
+    group holds lower-priority alerts overnight and re-announces unacknowledged ones).
+    Called by notify.alexa_sound. If the message is about a currently firing Alert
+    Redux alert, it is first rewritten into one short spoken sentence by GBT Generic
+    Semantic (set semantic to false to skip); any failure falls back to the original
+    message. Alert Redux done messages (stopped firing after ...) are treated as clear_notification
+    so Alexa says nothing when an alert ends.'
+  fields:
+    local_mute:
+      description: Mute for testing purposes. Global alexa mute entity is input_boolean.bool_mute_alexa_notifications
+      name: Local Mute
+      selector:
+        select:
+          options:
+          - 'On'
+          - 'Off'
+    message:
+      default: 'No message set. '
+      name: Message
+      required: true
+      selector:
+        text:
+    sound:
+      description: Be annoying!!
+      name: Sound
+      selector:
+        select:
+          options:
+          - amzn_sfx_doorbell_chime_01
+          - bell_02
+          - buzzers_pistols_01
+          - amzn_sfx_church_bell_1x_02
+          - amzn_sfx_doorbell_01
+          - amzn_sfx_doorbell_chime_01
+          - amzn_sfx_doorbell_chime_02
+          - christmas_05
+          - horror_10
+          - air_horn_03
+          - boing_01
+          - boing_03
+          - camera_01
+          - squeaky_12
+          - clock_01
+          - amzn_sfx_trumpet_bugle_04
+          - amzn_sfx_cat_meow_1x_01
+          - amzn_sfx_dog_med_bark_1x_02
+          - amzn_sfx_lion_roar_02
+          - amzn_sfx_rooster_crow_01
+          - amzn_sfx_wolf_howl_02
+          - futuristic_10
+          - amzn_sfx_scifi_engines_on_02
+          - amzn_sfx_scifi_alarm_04
+          - amzn_sfx_scifi_sheilds_up_01
+          - amzn_sfx_scifi_alarm_01
+          - zap_01
+          - amzn_sfx_crowd_applause_01
+          - amzn_sfx_large_crowd_cheer_01
+    target_alexa_speaker:
+      default:
+        entity_id: media_player.alexa_s_baby
+      name: Alexa Speaker
+      required: false
+      selector:
+        target:
+          entity:
+            domain: media_player
+            integration: alexa_media
+    volume:
+      default: Normal Volume
+      description: 'Speaker volume for the announcement: Maximum 1.0, Normal 0.65,
+        or Current to leave it alone. The previous volume is restored afterwards.'
+      name: Volume
+      required: true
+      selector:
+        select:
+          options:
+          - Maximum Volume
+          - Normal Volume
+          - Current
+    semantic:
+      name: Semantic message
+      description: On (default) rewrites alert messages about a firing Alert Redux
+        threshold alert into one short spoken sentence via GBT Generic Semantic. Off
+        speaks the message as given.
+      required: false
+      default: true
+      selector:
+        boolean:
+  icon: mdi:bullhorn-outline
+  sequence:
+  - alias: Stay silent when an alert is fixed
+    variables:
+      message: '{{ ''clear_notification'' if ''stopped firing'' in (message | default('''',
+        true)) else message }}'
+  - alias: 'Semantic: find firing alerts this message is about'
+    variables:
+      sem_clear: '{{ ''clear_notification'' in (message | default('''', true)) }}'
+      sem_targets: '{% set ns = namespace(ids=[]) %}{% set m = message | default('''',
+        true) %}{% for a in states.alert_redux if a.attributes.get(''firing_since'')
+        and a.attributes.get(''source_entity'') %}{% set h = a.attributes.source_entity
+        %}{% set src = state_attr(h, ''entity_id'') %}{% set nm = state_attr(src,
+        ''friendly_name'') if src else none %}{% if nm and nm in m %}{% set ns.ids
+        = ns.ids + [h] %}{% endif %}{% endfor %}{{ ns.ids | unique | list }}'
+  - alias: 'Semantic: ask for one short sentence'
+    if:
+    - condition: template
+      value_template: '{{ (semantic | default(true)) | bool(true) and sem_targets
+        | length > 0 and not sem_clear }}'
+    then:
+    - action: script.gbt_generic_semantic
+      continue_on_error: true
+      data:
+        condition: 'Alert: {{ message }} Say it as ONE short spoken sentence: the
+          sensor by its real name with its device and area, its current value, the
+          limit it crossed, and how long it has been out of range if known. Do not
+          use the alert name. If the message starts with Critical alert, begin your
+          sentence with the words Critical alert. Otherwise no preamble.'
+        input_entities: '{{ sem_targets }}'
+      response_variable: semantic_result
+  - alias: 'Semantic: use it, or keep the original message'
+    variables:
+      message: '{% if semantic_result is defined and (semantic_result.text | default('''',
+        true) | length > 0) %}{{ semantic_result.text | trim | truncate(300, true,
+        '''') }}{% else %}{{ message }}{% endif %}'
+  - variables:
+      bool_clear_message: '{{ bool((''clear_notification'' in message) ,false )}}'
+      bool_local_mute: '{{  bool( ''Off'' if local_mute is not defined else bool(
+        local_mute,false),false) }}'
+      global_mute: '{{ bool(states(''input_boolean.bool_mute_alexa_notifications''),false)
+        }}'
+      message_real: '"{{ message | regex_replace(find=''(\\d+)\\s*g\\s+'', replace=''\\1
+        gallon '', ignorecase=True) }}"
+
+        '
+      play_sound: '{{ false if sound is not defined or sound == ''no_sound'' else
+        true }}'
+      speaker_id: '{{ (target_alexa_speaker | default({''entity_id'': ''media_player.alexa_s_baby''})).entity_id
+        }}'
+      volume: '{{ volume | default(''Normal Volume'') }}'
+    alias: Read inputs
+  - alias: Derive mute, volume change and previous volume
+    variables:
+      bool_mute: '{{bool(( global_mute or local_mute ),false)}}'
+      previous_volume: '{{ state_attr(speaker_id,''volume_level'') }}'
+      do_volume_change: '{{ volume != ''Current'' }}'
+  - alias: Derive announcement volume
+    variables:
+      volume_float: "{% if volume == 'Maximum Volume' %}\n  1.0\n{%- elif volume ==
+        'Normal Volume' -%}\n  .65\n{%- else -%}\n  {{ previous_volume }}\n{%- endif
+        %}"
+  - alias: Clear the message if contains "clear_notification"
+    else:
+    - choose:
+      - alias: If alexa is MUTED
+        conditions:
+        - condition: template
+          value_template: '{{ bool(bool_mute,false )  }}'
+        sequence:
+        - action: logbook.log
+          data:
+            entity_id: '{{ speaker_id }}'
+            message: 'Alexa was MUTED and is not allowed to say the following message,
+              {{ message_real }} | Sound: {{play_sound}} {{ sound }} | Volume: {{volume_float}}
+              | Prev Volume: {{previous_volume}}'
+            name: Alexa Muted
+          metadata: {}
+      default:
+      - alias: Set temporary vol
+        enabled: true
+        if:
+        - condition: template
+          value_template: '{{ bool(do_volume_change, false)}}'
+        then:
+        - action: media_player.volume_set
+          data:
+            volume_level: '{{ volume_float| float (0.5) }}'
+          metadata: {}
+          target:
+            entity_id: '{{ speaker_id }}'
+      - alias: play a sound!
+        if:
+        - condition: template
+          value_template: '{{ bool(play_sound , false )}}'
+        then:
+        - action: media_player.play_media
+          data:
+            media_content_id: '{{ sound }}'
+            media_content_type: sound
+          target:
+            entity_id: '{{ speaker_id }}'
+      - action: notify.alexa_media
+        alias: send notification, replace 'g' with gallon
+        data:
+          message: '{{message_real}}'
+          target: '{{speaker_id}}'
+        enabled: true
+        metadata: {}
+      - alias: play sound again
+        if:
+        - condition: template
+          value_template: '{{ bool(play_sound , false )}}'
+        then:
+        - action: media_player.play_media
+          data:
+            media_content_id: '{{ sound }}'
+            media_content_type: sound
+          target:
+            entity_id: '{{ speaker_id }}'
+      - alias: Wait for Alexa to finish the sounds and speech
+        if:
+        - condition: template
+          value_template: '{{ bool(do_volume_change, false) }}'
+        then:
+        - delay:
+            seconds: '{{ [3 + (message_real | length / 12) | round(0, ''ceil'') +
+              (10 if bool(play_sound, false) else 0), 45] | min | int }}'
+      - alias: 'Restore orig. volume '
+        if:
+        - condition: template
+          value_template: '{{ bool(do_volume_change, false)}}'
+        then:
+        - action: media_player.volume_set
+          data:
+            volume_level: '{{   previous_volume | float (0.5) }}'
+          metadata: {}
+          target:
+            entity_id: '{{ speaker_id }}'
+      - action: logbook.log
+        data:
+          entity_id: '{{ speaker_id }}'
+          message: 'Alexa was dispatched to say the following message, {{ message_real
+            }} | Sound: {{play_sound}} {{ sound }} | Volume: {{volume_float}} | Prev
+            Volume: {{previous_volume}}'
+          name: Alexa Notification Dispatched
+        metadata: {}
+    if:
+    - condition: template
+      value_template: '{{ bool( bool_clear_message,false)}}'
+    then:
+    - action: logbook.log
+      data:
+        entity_id: '{{ speaker_id }}'
+        message: Alexa was MUTED bc the notification is being cleared.
+        name: Alexa Clear_Notification
+      metadata: {}
+  mode: queued
+  max: 10
+find_my_iphone:
+  sequence:
+  - action: icloud3.find_iphone_alert
+    metadata: {}
+    data:
+      device_name: e887be41fdb4535fe8968cc7a75dac91
+  alias: Find my iphone
+  description: ''

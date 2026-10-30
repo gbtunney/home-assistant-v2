@@ -2,6 +2,10 @@
 # AQUARIUM DEFAULTs
 #####
 
+# i had to move this so it doesnt get overriden
+"switch.*":
+  icon: mdi:toggle-switch-outline
+  sort_order: 40
 # Aquarium Default Icons
 "switch.*heater*":
   icon: mdi:heat-wave

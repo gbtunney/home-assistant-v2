@@ -244,3 +244,6 @@ custom_components.disabled.ha_run.lock
 !ha_registry/core.*.json
 # Temporary recovery artifacts
 /recovery-artifacts/
+
+.ha_mcp/*
+!.ha_mcp/*.json

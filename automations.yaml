@@ -45,12 +45,12 @@
   triggers:
   - trigger: numeric_state
     entity_id:
-    - sensor.reptile_room_hygrometer_temperature
+    - sensor.hyg_17_temp
     - input_number.temperature_notification_test_trigger
     below: 65
   - trigger: numeric_state
     entity_id:
-    - sensor.reptile_room_hygrometer_temperature
+    - sensor.hyg_17_temp
     - input_number.temperature_notification_test_trigger
     above: 85
   conditions: []
@@ -84,14 +84,14 @@
   triggers:
   - trigger: state
     entity_id:
-    - binary_sensor.hallway_light_status
-    - binary_sensor.living_room_light_status
-    - binary_sensor.bedroom_light_status
-    - binary_sensor.seafoam_light_status
-    - binary_sensor.dorn_lighting_status
-    - binary_sensor.10g_m_powerstrip_status
-    - binary_sensor.120g_powerstrip_status
-    - binary_sensor.20g_powerstrip_status
+    - binary_sensor.sp_47_status
+    - binary_sensor.sp_49_status
+    - binary_sensor.sp_48_status
+    - binary_sensor.sp_21_status
+    - binary_sensor.sp_50_status
+    - binary_sensor.ps_5_status
+    - binary_sensor.ps_3_status
+    - binary_sensor.ps_6_status
     - binary_sensor.dummypowerstrip_status
     to:
     - 'off'
@@ -290,8 +290,7 @@
       reference_entity: schedule.aquarium_lighting_schedule
       target_entities:
       - light.aquarium_lighting
-      - light.120g_aquarium_light
-      - switch.120g_aquarium_pump
+      - switch.ps_3_3_pump
     metadata: {}
   mode: queued
 - id: '1760738048232'
@@ -533,7 +532,7 @@
       mode: mirror
       reference_entity: schedule.aquarium_co2_schedule
       target_entities:
-      - switch.20_gallon_rack_c02
+      - switch.ps_6_2_co2
   - if:
     - condition: trigger
       id: schedule_change
@@ -541,9 +540,51 @@
     - action: script.notification_dispatcher
       data:
         alexa_sound: amzn_sfx_trumpet_bugle_04
-        message: CO2 is {{ 'on' if is_state('switch.20_gallon_rack_c02', 'on') else
-          'off' }}
+        message: CO2 is {{ 'on' if is_state('switch.ps_6_2_co2', 'on') else 'off'
+          }}
         notification_channel:
         - alexa
         sound: default
   mode: queued
+- id: '1792561272086'
+  alias: 55g Filter - Turn back on when timer finishes
+  description: Turn the filter switch.ps_44_2_filter back on when its adjustable return
+    timer finishes. Start the timer for the desired duration when needed.
+  triggers:
+  - trigger: timer.finished
+    target:
+      entity_id: timer.ps_44_2_return
+  conditions: []
+  actions:
+  - action: switch.turn_on
+    target:
+      entity_id: switch.ps_44_2_filter
+  mode: single
+  initial_state: true
+- id: '1793275224366'
+  alias: Aquarium outlets back on 20261029
+  description: One-hour timer requested for ps_6_4_filter and the 55g outlets labeled
+    Outlet:Essential. Turn all four on at timer completion, delete the temporary timer,
+    and disable this automation.
+  triggers:
+  - trigger: timer.finished
+    target:
+      entity_id: timer.aquarium_outlets_back_on_20261029
+  actions:
+  - action: switch.turn_on
+    target:
+      entity_id:
+      - switch.ps_6_4_filter
+      - switch.ps_44_2_filter
+      - switch.ps_44_3_heater
+      - switch.ps_44_4_pump
+  - action: timer.delete
+    data:
+      entity_id:
+      - timer.aquarium_outlets_back_on_20261029
+  - action: automation.turn_off
+    target:
+      entity_id: automation.aquarium_outlets_back_on_20261029
+    data:
+      stop_actions: false
+  mode: single
