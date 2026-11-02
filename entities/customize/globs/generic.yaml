@@ -1,8 +1,11 @@
+"light.*":
+  icon: mdi:lightbulb
+  sort_order: 10
+"camera.*":
+  icon: mdi:camera-outline
+  sort_order: 20
 "switch.*light*":
   #friendly_name: ""
-  icon: mdi:lightbulb
-
-"light.*":
   icon: mdi:lightbulb
 
 # STATUS ( Likely to be a binary sensor )
@@ -10,23 +13,29 @@
   #friendly_name: ""
   icon: mdi:check-network-outline
   device_class: connectivity
+"*.*raw*":
+  icon: mdi:eye-closed
+  sort_order: 999
+
+"*.*usb*":
+  icon: mdi:usb-port
+  sort_order: 200
 
 # unoccupied
 "*.*unoccupied*":
   icon: mdi:beaker-question-outline
-
+  sort_order: 100
 # unoccupied
 "*.*alert*":
   icon: mdi:alert-outline
 
 "*.*dummy*":
   icon: mdi:ab-testing
+  sort_order: 600
 
 "*.*test*":
   icon: mdi:ab-testing
-
-"camera.*":
-  icon: mdi:camera-outline
+  sort_order: 600
 
 "*.*profile*":
   icon: mdi:camera-outline

@@ -1,0 +1,10 @@
+{
+  "enable_tool_search": true,
+  "enable_beta_features": true,
+  "enable_yaml_config_editing": true,
+  "enable_yaml_edit_confirm": true,
+  "enable_yaml_packages_automation": true,
+  "enable_yaml_packages_script": true,
+  "enable_dashboard_screenshot": true,
+  "enable_dev_mode": true
+}

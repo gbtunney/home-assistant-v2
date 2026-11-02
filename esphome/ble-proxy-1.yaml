@@ -17,7 +17,7 @@ substitutions:
   # ----------------------------------------------------------
   device_id: ble_proxy_1
   device_hostname: "ble-proxy-1"
-  device_friendly_name: "Ble Proxy 1"
+  device_friendly_name: "BLE Proxy 1"
   device_description: "BLE proxy 1 (Living Room)"
 
   ble_rescan_duration: "30s"
