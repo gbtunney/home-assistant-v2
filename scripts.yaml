@@ -507,10 +507,9 @@ entity_dump:
       selector:
         entity:
           multiple: true
-      required: true
-      name: Input Entities
       default:
-      - input_number.10g_f_temperature
+      - switch.ps_44_3_heater
+      - switch.ps_6_6_heater
   alias: Attribute Trace
   description: "Returns information for one or more selected entities, including their
     name,\n  current state, integration details, timestamps, and all exposed state\n
@@ -1450,4 +1449,175 @@ find_my_iphone:
     data:
       device_name: e887be41fdb4535fe8968cc7a75dac91
   alias: Find my iphone
+  description: ''
+essential_outlet_on:
+  alias: Essential Outlet On
+  fields:
+    entity_id:
+      selector:
+        entity:
+          domain: switch
+  sequence:
+  - action: switch.turn_on
+    target:
+      entity_id: '{{ entity_id }}'
+gbt_entity_info:
+  alias: GBT Entity Info
+  description: Generic semantic wrapper around pyscript.entity_info. Accepts the same
+    selectors and returns the Pyscript response to the caller.
+  icon: mdi:information-outline
+  mode: parallel
+  max: 10
+  fields:
+    entities:
+      name: Entities
+      description: One or more entities to inspect directly.
+      required: false
+      selector:
+        entity:
+          multiple: true
+    areas:
+      name: Areas
+      description: One or more areas. Entities from these areas will be included.
+      required: false
+      selector:
+        area:
+          multiple: true
+    devices:
+      name: Devices
+      description: One or more devices. Entities from these devices will be included.
+      required: false
+      selector:
+        device:
+          multiple: true
+    labels:
+      name: Labels
+      description: Select one or more labels. Matching labeled entities, devices,
+        and areas will be expanded to entities.
+      required: false
+      selector:
+        label:
+          multiple: true
+  sequence:
+  - action: pyscript.entity_info
+    data:
+      entities: '{{ entities | default([], true) }}'
+      areas: '{{ areas | default([], true) }}'
+      devices: '{{ devices | default([], true) }}'
+      labels: '{{ labels | default([], true) }}'
+    response_variable: entity_info_response
+  - stop: Entity info complete
+    response_variable: entity_info_response
+generic_semantic_state_reporter:
+  sequence:
+  - variables:
+      entity_result:
+      result:
+  - action: pyscript.entity_info
+    metadata: {}
+    data:
+      flatten_members: 'false'
+      dedupe: 'true'
+      entities: '{{ input_entities | default([], true) }}'
+      devices: '{{ devices | default([], true) }}'
+      areas: '{{ areas if areas is defined else [] }}'
+      labels: '{{ labels | default([], true) }}'
+    response_variable: entity_result
+  - action: ai_task.generate_data
+    metadata: {}
+    data:
+      task_name: Semantic State Report
+      instructions: 'Optional reporting instruction:
+
+        {{ condition | default('''', true) }}
+
+
+        Entity information:
+
+        {{ entity_result }}
+
+
+        Turn this entity information into a concise, natural, speech-friendly status
+        report.
+
+        Treat the optional instruction as a natural-language reporting rule and follow
+        its wording literally, including AND/OR, negation, shorter/longer, above/below,
+        before/after, and explicit numeric limits.
+
+        By default report the relevant entities and their current states. If the instruction
+        explicitly says only, omit, exclude, report entities where, or otherwise clearly
+        requests filtering, report ONLY entities that satisfy the complete requested
+        criteria. Do not mention nonmatching entities for context, comparison, or
+        explanation. If nothing matches, say so concisely.
+
+        If the instruction says flag, highlight, warn, call attention to, or otherwise
+        asks to identify a condition without requesting filtering, keep the relevant
+        entities in the report and call attention only to matches.
+
+        The user''s reporting instruction takes precedence over the default goal of
+        a comprehensive status report.
+
+        Use structured entity data as authoritative when it directly represents the
+        requested condition. Use state_age_seconds for how long the current state
+        has lasted, state_number for numeric state comparisons, and semantic/attributes
+        metadata for units, device classes, thresholds, helper configuration, and
+        other domain-specific meaning. Do not estimate a duration from prose when
+        state_age_seconds is available.
+
+        Do not add details the instruction says are unnecessary. For example, if asked
+        to flag entities off longer than 10 minutes but not mention how long, flag
+        the matching entities without stating their elapsed time.
+
+        If no instruction is supplied, summarize the current states neutrally.
+
+        Use friendly names, areas, devices, and labels to identify equipment clearly
+        and avoid repetition.
+
+        Describe unknown or unavailable states accurately. Do not invent causes, thresholds,
+        statuses, or matches.
+
+        Return only the report text, with no heading, markdown, or extra explanation.'
+      entity_id: ai_task.openai_ai_task
+    response_variable: result
+    enabled: true
+  - stop: Return generated report
+    response_variable: result
+  fields:
+    condition:
+      selector:
+        text:
+      name: Condition
+      required: false
+      description: 'Optional natural-language report instruction. Examples: ''Flag
+        anything that has been off longer than 10 minutes''; ''Only report entities
+        that are off and have been off less than 10 minutes''; ''Flag temperatures
+        outside 72–80 °F''; ''Only report batteries below 20%''. Words like only/omit/exclude
+        make the instruction a filter; flag/highlight/warn keep the other relevant
+        entities in the report.'
+    input_entities:
+      selector:
+        entity:
+          multiple: true
+      description: Entity to describe for the ai
+      name: Entities
+      required: false
+    devices:
+      selector:
+        device:
+          multiple: true
+      name: Devices
+      required: false
+    areas:
+      selector:
+        area:
+          multiple: true
+      name: Areas
+      required: false
+    labels:
+      selector:
+        label:
+          multiple: true
+      name: Labels
+      required: false
+  alias: Generic Semantic State Reporter
   description: ''
